@@ -50,6 +50,7 @@ Feel free to use or modify this table for your project!
  ```docker-compose up --build```
 
 ## dns reset windows
+<<<<<<< Updated upstream
 ```ipconfig /flushdns```
 
 # NPM
@@ -65,3 +66,6 @@ npm install -g npm@11.4.2
 
 npm run dev
 ```
+=======
+```ipconfig /flushdns```
+>>>>>>> Stashed changes
