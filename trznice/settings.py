@@ -84,9 +84,6 @@ else:
 
 # Application definition
 MY_CREATED_APPS = [
-    'api',
-    'home',
-    'downloader',
 ]
 
 INSTALLED_APPS = [
@@ -206,17 +203,26 @@ TEMPLATES = [
 ASGI_APPLICATION = 'vontor_cz.asgi.application' #daphne
 
 
-
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DATABASE_ENGINE'),
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
+if DEBUG == True:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',  # Database engine
+            'NAME': BASE_DIR / 'db.sqlite3',         # Path to the SQLite database file
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.getenv('DATABASE_ENGINE'),
+            'NAME': os.getenv('DATABASE_NAME'),
+            'USER': os.getenv('DATABASE_USER'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+            'HOST': os.getenv('DATABASE_HOST'),
+            'PORT': os.getenv('DATABASE_PORT'),
+        }
+    }
+    
+    
 
 #DATABASE HEALTCHECK
 try:
