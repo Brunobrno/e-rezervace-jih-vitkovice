@@ -1,21 +1,18 @@
-# Use the official Python image from the Docker Hub
-FROM python:3
+# Use an official Node.js runtime as a parent image
+FROM node:16-alpine
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set the working directory in the container
+WORKDIR /app
 
-# Set the working directory
-WORKDIR /code
+# Copy package.json and install dependencies
+COPY package*.json ./
+RUN npm install
 
-# Copy the requirements file and install dependencies
-COPY requirements.txt .
+# Copy the rest of the application code into the container
+COPY . /app/
 
-RUN pip install -r requirements.txt
+# Expose the port React will run on
+EXPOSE 3000
 
-RUN apt-get update
-
-
-
-# Copy the project files
-COPY . .
+# Run the React development server
+CMD ["npm", "start"]
