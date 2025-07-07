@@ -53,3 +53,9 @@ Feel free to use or modify this table for your project!
 
 ## dns reset windows
 ```ipconfig /flushdns```
+
+npm create vite@latest frontend -- --template react
+cd frontend
+npm install 
+npm install -g npm@11.4.2
+npm run dev
