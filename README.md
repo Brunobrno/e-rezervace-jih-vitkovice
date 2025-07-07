@@ -1,7 +1,5 @@
 # e-rezervace-jih-vitkovice
 
-# vontor-cz
-
 ## venv
 - windows
 
@@ -14,13 +12,13 @@ python -m venv venv
 .\venv\Scripts\Activate
 
 #start server
-daphne -b localhost -p 8000 vontor_cz.asgi:application
+daphne -b localhost -p 8000 trznice.asgi:application
 ```
 
 
 
 ## django command that will use barebones settings.py for basic work
-```python manage.py runserver --settings=vontor_cz.base_settings```
+```python manage.py runserver --settings=trznice.base_settings```
 
 # Django Management Commands
 
@@ -54,8 +52,16 @@ Feel free to use or modify this table for your project!
 ## dns reset windows
 ```ipconfig /flushdns```
 
+# NPM
+
+```
 npm create vite@latest frontend -- --template react
 cd frontend
-npm install 
+npm config set strict-ssl false
+npm install --progress=false --cache
+
+npm install vite --save-de
 npm install -g npm@11.4.2
+
 npm run dev
+```
