@@ -1,0 +1,99 @@
+services:
+  web:
+    container_name: web-vontor-cz
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_ENGINE: ${DATABASE_ENGINE}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME}
+      AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME}
+      REDIS_PASSWORD: ${REDIS}
+      DEBUG: ${DEBUG}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_USER_PASSWORD: ${EMAIL_USER_PASSWORD}
+    depends_on:
+      - db
+      - redis
+    command: sh -c "
+      python manage.py check &&
+      python manage.py collectstatic --clear --noinput --verbosity 3 &&
+      python manage.py makemigrations --noinput &&
+      python manage.py migrate --verbosity 3 --noinput &&
+      gunicorn -k uvicorn.workers.UvicornWorker vontor_cz.asgi:application --bind 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+
+  db:
+    container_name: db-vontor-cz
+    image: postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - data:/var/lib/postgresql/data
+
+  backup:
+    container_name: backup-vontor-cz
+    image: postgres  # Používáme oficiální obraz PostgreSQL, protože má `pg_dump`
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PGPASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_NAME: ${DATABASE_NAME}
+    depends_on:
+      - db  # Zálohovací služba závisí na databázi
+    volumes:
+      - ./backups:/backups  # Ukládáme zálohy do lokální složky ./backups
+    entrypoint: >
+      sh -c '
+      mkdir -p /backups &&
+      while true; do
+        pg_dump -h db -U ${DATABASE_USER} ${DATABASE_NAME} > /backups/backup-$(date +%Y%m%d-%H%M%S).sql;
+        sleep 86400;
+      done'
+
+  redis:
+    container_name: redis-vontor-cz
+    image: redis:alpine
+    restart: always
+    environment:
+      - REDIS_PASSWORD=${REDIS}
+    volumes:
+      - redis-data:/data
+    expose:
+      - "6379"
+
+  #peerjs:
+  # image: peerjs/peerjs-server:latest
+  #  container_name: peerjs-server
+  #  environment:
+  #    - PORT=9000
+  #    - PATH=/app
+  #    - KEY=peerjs
+  #  ports:
+  #    - "9000:9000"
+  #  restart: unless-stopped
+
+volumes:
+  data:
+  redis-data:
+
+
+#OBNOVA ZÁLOHY (spustin vevnitř containeru databáze)
+#docker-compose run --rm db psql -U ${DATABASE_USER} -d ${DATABASE_NAME} -f /backups/<název-zálohy>.sql
