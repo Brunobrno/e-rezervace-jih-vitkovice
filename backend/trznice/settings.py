@@ -20,6 +20,8 @@ from django.conf import settings
 from django.db import OperationalError, connections
 from dotenv import load_dotenv
 
+from datetime import timedelta
+
 
 load_dotenv()  # Pouze načte proměnné lokálně, pokud nejsou dostupné
 
@@ -57,7 +59,7 @@ print(f"USE_AWS state: {str(USE_AWS)}\nUSE_AWS .env raw: {os.getenv("USE_AWS", "
 
 
 
-ALLOWED_HOSTS = ["www.vontor.cz", "vontor.cz", "https://peerjs.vontor.cz"]
+ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = ['https://vontor.cz', "https://www.vontor.cz", "https://peerjs.vontor.cz"]
 
 if DEBUG:
@@ -84,6 +86,7 @@ else:
 
 # Application definition
 MY_CREATED_APPS = [
+    'spravce'
 ]
 
 INSTALLED_APPS = [
@@ -403,3 +406,6 @@ TINYMCE_DEFAULT_CONFIG = {
 }
 TINYMCE_SPELLCHECKER = True
 TINYMCE_COMPRESSOR = True
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWS_CREDENTIALS = True
