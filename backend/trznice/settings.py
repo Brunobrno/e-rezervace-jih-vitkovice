@@ -60,7 +60,8 @@ print(f"USE_AWS state: {str(USE_AWS)}\nUSE_AWS .env raw: {os.getenv("USE_AWS", "
 
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ['https://domena.cz', "https://www.domena.cz", ""]
+
+CSRF_TRUSTED_ORIGINS = ['https://domena.cz', "https://www.domena.cz"]
 
 if DEBUG:
     ALLOWED_HOSTS.extend(["localhost", "127.0.0.1"])
@@ -86,7 +87,7 @@ else:
 
 # Application definition
 MY_CREATED_APPS = [
-    'spravce'
+    'account'
 ]
 
 INSTALLED_APPS = [
@@ -246,13 +247,13 @@ print("-------------------------")
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication', # For admin or user auth
-        'rest_framework_api_key.permissions.HasAPIKey', # For API key auth
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny', # Public access by default
-    ]
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 
@@ -267,7 +268,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Optional, if you want a default sender
 EMAIL_TIMEOUT = 20
 
 
-#AUTH_USER_MODEL = 'api.User'
+AUTH_USER_MODEL = 'account.CustomUser'
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
