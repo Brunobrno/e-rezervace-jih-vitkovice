@@ -114,17 +114,19 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_api_key',
 
+    'drf_yasg',
+    'drf_spectacular', #rest framework, grafické zobrazení
+
     'django.contrib.sitemaps',
 
     'tinymce',
     
+
     #kvůli bugum je lepší to dát na poslední místo v INSTALLED_APPS
     'django_cleanup.apps.CleanupConfig', #app která maže nepoužité soubory(media) z databáze na S3
 ]
 
 INSTALLED_APPS = INSTALLED_APPS[:-1] + MY_CREATED_APPS + INSTALLED_APPS[-1:]
-
-
 
 
 MIDDLEWARE = [
@@ -249,6 +251,8 @@ print("-------------------------")
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -289,7 +293,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'trznice.backend.EmailOrUsernameModelBackend', #custom backend z authentication aplikace
+    #'trznice.backend.EmailOrUsernameModelBackend', #custom backend z authentication aplikace
     'django.contrib.auth.backends.ModelBackend',
 ]
 
