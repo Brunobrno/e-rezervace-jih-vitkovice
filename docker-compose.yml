@@ -1,10 +1,14 @@
 services:
-  web:
+  backend:
     container_name: web-vontor-cz
-    build: .
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: always
     env_file:
       - .env
+    networks:
+      - app_network
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: ${DATABASE_PORT}
@@ -22,51 +26,34 @@ services:
       EMAIL_USER: ${EMAIL_USER}
       EMAIL_USER_PASSWORD: ${EMAIL_USER_PASSWORD}
     depends_on:
-      - db
+      #- db
       - redis
     command: sh -c "
       python manage.py check &&
       python manage.py collectstatic --clear --noinput --verbosity 3 &&
       python manage.py makemigrations --noinput &&
       python manage.py migrate --verbosity 3 --noinput &&
-      gunicorn -k uvicorn.workers.UvicornWorker vontor_cz.asgi:application --bind 0.0.0.0:8000"
+      gunicorn -k uvicorn.workers.UvicornWorker trznice.asgi:application --bind 0.0.0.0:8000"
     ports:
       - "8000:8000"
 
-  db:
-    container_name: db-vontor-cz
-    image: postgres
-    restart: always
-    env_file:
-      - .env
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    container_name: frontend
     environment:
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME}
-    volumes:
-      - data:/var/lib/postgresql/data
-
-  backup:
-    container_name: backup-vontor-cz
-    image: postgres  # Používáme oficiální obraz PostgreSQL, protože má `pg_dump`
-    restart: always
-    env_file:
-      - .env
-    environment:
-      PGPASSWORD: ${DATABASE_PASSWORD}
-      DATABASE_USER: ${DATABASE_USER}
-      DATABASE_NAME: ${DATABASE_NAME}
+      - REACT_APP_API_URL=http://backend:8000/api  # Django backend URL
+    ports:
+      - "3000:3000"
     depends_on:
-      - db  # Zálohovací služba závisí na databázi
-    volumes:
-      - ./backups:/backups  # Ukládáme zálohy do lokální složky ./backups
-    entrypoint: >
-      sh -c '
-      mkdir -p /backups &&
-      while true; do
-        pg_dump -h db -U ${DATABASE_USER} ${DATABASE_NAME} > /backups/backup-$(date +%Y%m%d-%H%M%S).sql;
-        sleep 86400;
-      done'
+      - backend
+    networks:
+      - app_network
+
+    env_file:
+      - .env
+
 
   redis:
     container_name: redis-vontor-cz
@@ -79,16 +66,9 @@ services:
     expose:
       - "6379"
 
-  #peerjs:
-  # image: peerjs/peerjs-server:latest
-  #  container_name: peerjs-server
-  #  environment:
-  #    - PORT=9000
-  #    - PATH=/app
-  #    - KEY=peerjs
-  #  ports:
-  #    - "9000:9000"
-  #  restart: unless-stopped
+networks:
+  app_network:
+    driver: bridge
 
 volumes:
   data:
