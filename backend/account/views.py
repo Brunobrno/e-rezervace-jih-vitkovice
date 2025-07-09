@@ -1,14 +1,15 @@
 from django.contrib.auth import get_user_model
 from .serializers import *
+from .permissions import *
 
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 
 User = get_user_model()
 
-class MyModelViewSet(viewsets.ModelViewSet):
+class User(viewsets.ModelViewSet):
     """
     Provides CRUD operations for MyModel.
 
@@ -16,11 +17,11 @@ class MyModelViewSet(viewsets.ModelViewSet):
     - Restricts access to authenticated users with specific roles.
     """
 
-    queryset = MyModel.objects.all()  # all objects, customize with filters if needed
-    serializer_class = MyModelSerializer
+    queryset = User.objects.all()  # all objects, customize with filters if needed
+    serializer_class = UserSerializer
 
     # Require authentication and role permission
-    permission_classes = [IsAuthenticated, IsRoleAllowed]
+    permission_classes = [IsAuthenticated, IsOfficer, IsAdmin]
     
     
 class CreateUserWithTokenView(generics.GenericAPIView):

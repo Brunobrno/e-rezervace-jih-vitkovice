@@ -1,6 +1,7 @@
 # permissions.py
 from rest_framework.permissions import BasePermission
 
+'''
 class IsRoleAllowed(BasePermission):
     """
     Custom permission to allow access only to users with
@@ -14,12 +15,12 @@ class IsRoleAllowed(BasePermission):
     def has_permission(self, request, view):
         # Check if user is authenticated and role is allowed
         user = request.user
-        return bool(user and user.is_authenticated and user.role in self.allowed_roles)
+        return bool(user and user.is_authenticated and user.role in self.allowed_roles)'''
     
 
 
 
-class IsAuthenticatedUser(BasePermission):
+class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated
 

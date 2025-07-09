@@ -8,16 +8,9 @@ from rest_framework_simplejwt.views import (
 )
 
 urlpatterns = [
-    path('register/', RegisterView.as_view(), name='register'), #registrace uživatele
-    path('me/', UserDetailView.as_view(), name='user-detail'), #kdo jsem?
+    path('user/', RegisterView.as_view(), name='register'), #registrace uživatele
 
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), #přihlášení
-    
-    
-
-    
-    
-
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     #potom co access token vyprší tak se pomocí refresh tokenu získa další
     

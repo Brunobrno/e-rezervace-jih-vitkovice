@@ -13,6 +13,13 @@ User = get_user_model()
 
 from .models import OneTimeLoginToken
 
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = '__all__'  # Všechny fieldy z modelu User
+
 class CreateUserWithTokenSerializer(serializers.Serializer):
     username = serializers.CharField()
     email = serializers.EmailField()
