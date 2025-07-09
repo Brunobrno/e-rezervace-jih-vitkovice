@@ -5,6 +5,7 @@ import './App.css';
 import { Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Home from './pages/Home';
+import Register from './pages/Register';
 
 function App() {
 
@@ -14,20 +15,19 @@ function App() {
       <NavBar />
     </header>
     
-    <div className='main'>
       <Routes>
-        <Route path="" element={<Home />}/>
-        <Route/>
+        <Route path="/" element={<Home />}/>
+        <Route path="/register" element={<Register />}/>
         <Route/>
         <Route/>  
       </Routes>
-    </div>
-    <footer className="text-center mt-auto">
+
+    <footer className="mt-auto">
       <p> 
-        ePřepážka © 
+        eTržnice © 
         <a href="mailto:helpdesk@vitkovice.com"> VÍTKOVICE IT SOLUTIONS a.s. </a>
              | 
-        <a href="https://e-prepazka.ovajih.cz/portal/help"> Nápověda</a>
+        <a href="#"> Nápověda</a>
         </p>
     </footer>
     </>

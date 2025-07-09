@@ -10,7 +10,7 @@ function NavBar(){
 
         <Navbar expand="lg">
       <Container>
-        <Navbar.Brand href="#home">
+        <Navbar.Brand href="/">
             <img
               src="./src/assets/img/logo.png"
               className="d-none d-sm-block"
@@ -20,7 +20,7 @@ function NavBar(){
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="navbar-nav ml-auto text-uppercase">
-            <Nav.Link href="#home">Přihlášení </Nav.Link>
+            <Nav.Link href="/">Přihlášení </Nav.Link>
             
           </Nav>
         </Navbar.Collapse>
