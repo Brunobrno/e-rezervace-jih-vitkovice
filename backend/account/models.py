@@ -10,9 +10,6 @@ from datetime import timedelta
 import uuid
 
 
-
-
-
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
         ('admin', 'Administrátor'),
