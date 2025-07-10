@@ -7,8 +7,8 @@ import ToggleButton from "react-bootstrap/ToggleButton";
 import Container from "react-bootstrap/Container";
 import InputGroup from "react-bootstrap/InputGroup";
 import Modal from "react-bootstrap/Modal";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
   faUniversity,
