@@ -42,7 +42,7 @@ class IsOfficerOrReservationManager(BasePermission):
 
 class IsSeller(BasePermission):
     def has_permission(self, request):
-        return request.user.is_authenticated and request.user.role == 'seller'
+        return request.user.is_authenticated and request.user.role in ['seller']        
 
 class IsPublic(BasePermission):
     """Pouze pro nepřihlášené uživatele."""
