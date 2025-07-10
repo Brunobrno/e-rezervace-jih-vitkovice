@@ -40,6 +40,10 @@ class IsOfficerOrReservationManager(BasePermission):
     def has_permission(self, request):
         return request.user.is_authenticated and request.user.role in ['cityClerk', 'checker']
 
+class IsSeller(BasePermission):
+    def has_permission(self, request):
+        return request.user.is_authenticated and request.user.role in ['seller']        
+
 class IsPublic(BasePermission):
     """Pouze pro nepřihlášené uživatele."""
     def has_permission(self, request):
