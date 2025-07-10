@@ -1,25 +1,36 @@
-from rest_framework import viewsets
-from account.permissions import *
-from .models import Event, Cell, Reservation
-from .serializers import EventSerializer, CellSerializer, ReservationSerializer
+from rest_framework import viewsets, permissions
+from .models import Event, Area, Reservation, Space
+from .serializers import EventSerializer, AreaSerializer, ReservationSerializer, SpaceSerializer
+from ..account.permissions import *
 
-# 1. Akce
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    permission_classes = [IsAuthenticated, IsOfficer]
 
-    permission_classes = [IsOfficerOrReservationManager, IsSeller, IsOfficer, IsAdmin]
 
-# 2. Buňky
-class CellViewSet(viewsets.ModelViewSet):
-    queryset = Cell.objects.all()
-    serializer_class = CellSerializer
+class AreaViewSet(viewsets.ModelViewSet):
+    queryset = Area.objects.all()
+    serializer_class = AreaSerializer
+    permission_classes = [IsAuthenticated, IsReservationManager]
 
-    permission_classes = [IsOfficerOrReservationManager, IsSeller, IsOfficer, IsAdmin]
 
-# 3. Rezervace
+class SpaceViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Space.objects.all().select_related("reservation", "area")
+    serializer_class = SpaceSerializer
+    permission_classes = [permissions.AllowAny]  # veřejně čitelný grid
+
+
 class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.all()
+    queryset = Reservation.objects.all().select_related("event", "user")
     serializer_class = ReservationSerializer
+    permission_classes = [IsAuthenticated, IsSeller | IsOfficer | IsAdmin]
 
-    permission_classes = [IsOfficerOrReservationManager, IsSeller, IsOfficer, IsAdmin]
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ["cityClerk", "admin", "squareManager"]:
+            return self.queryset
+        return self.queryset.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

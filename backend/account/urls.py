@@ -17,9 +17,9 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     #potom co access token vyprší tak se pomocí refresh tokenu získa další
     
-    path('user/registration/', UserRegistrationViewSet.as_view({'post': 'create'}), name='create_seller'),
-    path('user/activation-varsymbol', UserActivationViewSet.as_view({'patch': 'partial_update'}), name='activate_user_and_input_var_symbol'),
+    path('users/registration/', UserRegistrationViewSet.as_view({'post': 'create'}), name='create_seller'),
+    path('users/activation-varsymbol', UserActivationViewSet.as_view({'patch': 'partial_update'}), name='activate_user_and_input_var_symbol'),
 
-    path("user/reset-password/", PasswordResetRequestView.as_view(), name="reset-password-request"),
-    path("user/reset-password/<uidb64>/<token>/", PasswordResetConfirmView.as_view(), name="reset-password-confirm"),
+    path("users/reset-password/", PasswordResetRequestView.as_view(), name="reset-password-request"),
+    path("users/reset-password/<uidb64>/<token>/", PasswordResetConfirmView.as_view(), name="reset-password-confirm"),
 ]

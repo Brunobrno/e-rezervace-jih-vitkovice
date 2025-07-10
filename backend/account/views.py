@@ -27,7 +27,7 @@ class UserView(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     # Require authentication and role permission
-    permission_classes = [IsAuthenticated, IsOfficer, IsAdmin]
+    permission_classes = [IsAuthenticated, IsOfficer | IsAdmin]
     
 
 
@@ -67,11 +67,11 @@ class EmailVerificationView(APIView):
         else:
             return Response({"error": "Token je neplatný nebo expirovaný."}, status=400)
 
-#3. seller activation API
+#3. seller activation API (var_symbol)
 class UserActivationViewSet(ModelViewSet):
     queryset = CustomUser.objects.filter(is_active=False)
     serializer_class = UserActivationSerializer
-    permission_classes = [IsAuthenticated, IsAdmin, IsOfficer]
+    permission_classes = [IsAuthenticated, IsAdmin | IsOfficer]
     http_method_names = ['patch']
 
     @swagger_auto_schema(

@@ -20,6 +20,12 @@ class CustomUser(AbstractUser):
     )
     role = models.CharField(max_length=32, choices=ROLE_CHOICES, null=True, blank=True)
 
+    ACCOUNT_TYPES = (
+        ('company', 'Firma'),
+        ('individual', 'Fyzická osoba')
+    )
+    account_type = models.CharField(max_length=32, choices=ROLE_CHOICES, null=True, blank=True)
+
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(

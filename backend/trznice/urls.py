@@ -39,7 +39,8 @@ urlpatterns = [
     
     path('admin/', admin.site.urls),
 
-    path('', include('account.urls')),
+    path('account', include('account.urls')),
+    path('booking', include('booking.urls')),
 
     #rest framework, map of api
     path('swagger<format>.json|.yaml', schema_view.without_ui(cache_timeout=0), name='schema-json'),
