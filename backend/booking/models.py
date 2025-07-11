@@ -46,14 +46,17 @@ class Reservation(models.Model):
         ("reserved", "Zarezervováno"),
         ("cancelled", "Zrušeno")
     ]
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservations")
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reservations")
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservations")
+
     reserved_from = models.DateTimeField()
     reserved_to = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="reserved")
     note = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    
 
     def clean(self):
         # Kontrola překrývajících se rezervací v rámci stejného eventu

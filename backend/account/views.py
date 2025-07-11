@@ -13,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
+
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -38,7 +40,7 @@ class UserRegistrationViewSet(ModelViewSet):
     http_method_names = ['post']
 
     @swagger_auto_schema(
-        operation_description="Registrace nového uživatele. Uživateli přijde email s odkazem na ověření.",
+        operation_description="Registrace nového uživatele(firmy). Uživateli přijde email s odkazem na ověření.",
         responses={201: UserRegistrationSerializer}
     )
     def create(self, request, *args, **kwargs):
@@ -124,3 +126,5 @@ class PasswordResetConfirmView(APIView):
             return Response({"detail": "Heslo bylo úspěšně změněno."})
         return Response(serializer.errors, status=400)
     
+def index(request):
+    return rende

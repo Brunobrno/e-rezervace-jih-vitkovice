@@ -31,7 +31,7 @@ class AreaSerializer(serializers.ModelSerializer):
             "y": {"help_text": "Počáteční Y pozice area"},
             "w": {"help_text": "Šířka v buňkách"},
             "h": {"help_text": "Výška v buňkách"},
-            "available": {"help_text": "Zda je plocha rezervovatelná"},
+            "available": {"help_text": "Zda je plocha volná/rezervovatelná"},
             "event": {"help_text": "ID eventu, ke kterému area patří"}
         }
 

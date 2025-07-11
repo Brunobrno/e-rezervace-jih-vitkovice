@@ -24,14 +24,13 @@ class CustomUser(AbstractUser):
         ('company', 'Firma'),
         ('individual', 'Fyzická osoba')
     )
-    account_type = models.CharField(max_length=32, choices=ROLE_CHOICES, null=True, blank=True)
+    account_type = models.CharField(max_length=32, choices=ACCOUNT_TYPES, null=True, blank=True)
 
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
         max_length=15,
         blank=True,
-        unique=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]
     )
     
@@ -43,9 +42,9 @@ class CustomUser(AbstractUser):
     bank_acc = models.IntegerField(null=True, blank=True)
     ICO = models.IntegerField(null=True, blank=True)
 
-    city = models.TextField(null=True, blank=True)
-    street = models.TextField(null=True, blank=True)
-    PSC = models.TextField(null=True, blank=True)
+    city = models.CharField(null=True, blank=True)
+    street = models.CharField(null=True, blank=True)
+    PSC = models.IntegerField(null=True, blank=True)
 
     is_active = models.BooleanField(default=False)
 
