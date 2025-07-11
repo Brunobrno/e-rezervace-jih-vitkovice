@@ -1,11 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import EventViewSet, AreaViewSet, ReservationViewSet, SpaceViewSet
+from .views import EventViewSet, AreaViewSet, ReservationViewSet, CellViewSet
 
 router = DefaultRouter()
 router.register(r'events', EventViewSet, basename='event')
 router.register(r'areas', AreaViewSet, basename='area')
-router.register(r'spaces', SpaceViewSet, basename='space')
+router.register(r'cells', CellViewSet, basename='cell')
 router.register(r'reservations', ReservationViewSet, basename='reservation')
 
 urlpatterns = [

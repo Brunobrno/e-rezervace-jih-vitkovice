@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Event, Area, Reservation, Space
+from .models import Event, Area, Reservation, Cell
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
@@ -22,8 +22,8 @@ class ReservationAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "user__email", "event__name", "note")
     ordering = ("-created_at",)
 
-@admin.register(Space)
-class SpaceAdmin(admin.ModelAdmin):
+@admin.register(Cell)
+class CellAdmin(admin.ModelAdmin):
     list_display = ("area", "x", "y", "w", "h", "reservation", "created_at")
     list_filter = ("area",)
     search_fields = ("area__event__name", "reservation__user__username")

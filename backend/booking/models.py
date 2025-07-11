@@ -71,14 +71,14 @@ class Reservation(models.Model):
     def __str__(self):
         return f"Rezervace {self.user} na event {self.event.name}"
 
-class Space(models.Model):
+class Cell(models.Model):
     x = models.IntegerField()
     y = models.IntegerField()
     w = models.IntegerField()
     h = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-    area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="spaces")
-    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, related_name="spaces", null=True, blank=True)
+    area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="cells")
+    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, related_name="cells", null=True, blank=True)
 
     def __str__(self):
-        return f"Space at ({self.x},{self.y}) {self.w}x{self.h}"
+        return f"Cell at ({self.x},{self.y}) {self.w}x{self.h}"

@@ -1,8 +1,8 @@
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Event, Area, Reservation, Space
-from .serializers import EventSerializer, AreaSerializer, ReservationSerializer, SpaceSerializer
+from .models import Event, Area, Reservation, Cell
+from .serializers import EventSerializer, AreaSerializer, ReservationSerializer, CellSerializer
 from account.permissions import *
 
 from django.contrib.auth import get_user_model
@@ -19,16 +19,16 @@ class AreaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
-class SpaceViewSet(viewsets.ModelViewSet):
-    queryset = Space.objects.all().select_related("reservation", "area")
-    serializer_class = SpaceSerializer
+class CellViewSet(viewsets.ModelViewSet):
+    queryset = Cell.objects.all().select_related("reservation", "area")
+    serializer_class = CellSerializer
     permission_classes = [IsAuthenticated]
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all().select_related("event", "user")
     serializer_class = ReservationSerializer
-    permission_classes = [IsAuthenticated, IsSeller | IsOfficer | IsAdmin | IsReservationManager | IsAuthenticated]
+    permission_classes = [IsAuthenticated, RoleAllowed('seller','cityClerk','admin', 'checker')]
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):

@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Area',
+            name='Cells',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('x', models.IntegerField()),
@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Space',
+            name='Cell',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('x', models.IntegerField()),
@@ -60,8 +60,8 @@ class Migration(migrations.Migration):
                 ('w', models.IntegerField()),
                 ('h', models.IntegerField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('area', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='spaces', to='booking.area')),
-                ('reservation', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='spaces', to='booking.reservation')),
+                ('area', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='areas', to='booking.area')),
+                ('reservation', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='areas', to='booking.reservation')),
             ],
         ),
     ]
