@@ -1,36 +1,93 @@
+from django.db import transaction
 from rest_framework import serializers
-from .models import Event, Cell, Reservation
-from account.models import CustomUser  # dle tvé struktury
+from drf_spectacular.utils import extend_schema_field
+from .models import Event, Area, Reservation, Space
 
-# 1. Event
+
+
+# Primárně pro výpis/čtení Spacu v Areas
+class SpaceSerializer(serializers.ModelSerializer):
+    @extend_schema_field(str)
+    def get_i(self, obj):
+        return str(obj.id)
+
+    i = serializers.SerializerMethodField(help_text="String ID pro react-grid-layout")
+
+    class Meta:
+        model = Space
+        fields = ["id", "x", "y", "w", "h", "i", "reservation"]
+        extra_kwargs = {
+            "reservation": {"help_text": "ID rezervace pokud je místo zabrané, jinak null"}
+        }
+
+
+# Vytvoření nebo úprava Area
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ["id", "event", "x", "y", "w", "h", "available"]
+        extra_kwargs = {
+            "x": {"help_text": "Počáteční X pozice area"},
+            "y": {"help_text": "Počáteční Y pozice area"},
+            "w": {"help_text": "Šířka v buňkách"},
+            "h": {"help_text": "Výška v buňkách"},
+            "available": {"help_text": "Zda je plocha volná/rezervovatelná"},
+            "event": {"help_text": "ID eventu, ke kterému area patří"}
+        }
+
+
+# Používá se pro výpis a vytvoření eventů
 class EventSerializer(serializers.ModelSerializer):
+    area = AreaSerializer(read_only=True, help_text="Automaticky vytvořená nebo navázaná plocha")
+
     class Meta:
         model = Event
-        fields = '__all__'  # nebo vyjmenovat: ['id', 'name', 'description', ...]
+        fields = [
+            "id", "name", "description", "start", "end",
+            "grid_resolution", "price_per_m2", "area"
+        ]
+        extra_kwargs = {
+            "grid_resolution": {"help_text": "Velikost jedné buňky v metrech"},
+            "price_per_m2": {"help_text": "Cena za m² rezervovaného místa"}
+        }
 
-# 2. Cell
-class CellSerializer(serializers.ModelSerializer):
-    event = serializers.PrimaryKeyRelatedField(read_only=True)  # nebo allow editing if needed
 
-    class Meta:
-        model = Cell
-        fields = '__all__'
-
-# 3. Reservation
+# Používá obchodník pro vytvoření rezervace
 class ReservationSerializer(serializers.ModelSerializer):
+    spaces = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Space.objects.filter(reservation__isnull=True),
+        help_text="Seznam ID políček (Spaces), které chce obchodník zabrat"
+    )
+
     class Meta:
         model = Reservation
-        fields = '__all__'
+        fields = [
+            "id", "user", "event", "reserved_from", "reserved_to",
+            "status", "note", "created_at", "spaces"
+        ]
+        read_only_fields = ["id", "created_at"]
+        extra_kwargs = {
+            "user": {"help_text": "ID aktuálně přihlášeného obchodníka"},
+            "event": {"help_text": "ID eventu, pro který se rezervace vytváří"},
+            "reserved_from": {"help_text": "Datum a čas začátku rezervace"},
+            "reserved_to": {"help_text": "Datum a čas konce rezervace"},
+            "status": {"help_text": "Stav rezervace"},
+            "note": {"help_text": "Poznámka od úředníka"}
+        }
 
-    def validate(self, data):
-        seller = data['seller']
-        cell = data['cell']
-        event = cell.event
+    
 
-        # Max 5 cells check
-        existing = Reservation.objects.filter(seller=seller, cell__event=event)
-        # if self.instance:
-        #     existing = existing.exclude(pk=self.instance.pk)
-        if existing.count() >= 5:
-            raise serializers.ValidationError("Lze rezervovat maximálně 5 míst pro jednu akci.")
-        return data
+    def create(self, validated_data):
+        spaces = validated_data.pop("spaces")
+        with transaction.atomic():
+            reservation = Reservation.objects.create(**validated_data)
+            for space in spaces:
+                # Ověření, že space skutečně náleží eventu přes Area
+                if space.area.event != reservation.event:
+                    raise serializers.ValidationError(
+                        f"Políčko ({space.x},{space.y}) nepatří do eventu {reservation.event.name}."
+                    )
+                space.reservation = reservation
+                space.save()
+        return reservation
