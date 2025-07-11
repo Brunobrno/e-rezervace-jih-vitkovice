@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "react-router-dom": "^7.6.3",
+    "sass": "^1.89.2"
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.7"
+  }
+}
