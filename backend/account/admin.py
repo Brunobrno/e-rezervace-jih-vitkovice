@@ -30,6 +30,11 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.is_active = True
+        super().save_model(request, obj, form, change) 
+
 custom_admin_site.register(CustomUser, CustomUserAdmin)
 
 
