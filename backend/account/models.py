@@ -78,6 +78,11 @@ class CustomUser(AbstractUser):
         if not self.pk and not self.username:
             self.username = self.generate_username()
 
+        if self.email_verified:
+            self.is_active = True
+        else:
+            self.is_active = False 
+
         is_new = self.pk is None
         if is_new and not self.username:
             self.username = self.generate_username()

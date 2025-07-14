@@ -7009,82 +7009,168 @@ button.bg-dark:focus {
   background-color: transparent !important;
 }
 
+
 .border {
-  border: 1px solid #dee2e6 !important;
-}
-
-.border-top {
-  border-top: 1px solid #dee2e6 !important;
-}
-
-.border-right {
-  border-right: 1px solid #dee2e6 !important;
-}
-
-.border-bottom {
-  border-bottom: 1px solid #dee2e6 !important;
-}
-
-.border-left {
-  border-left: 1px solid #dee2e6 !important;
+  border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
 }
 
 .border-0 {
   border: 0 !important;
 }
 
+.border-top {
+  border-top: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+}
+
 .border-top-0 {
   border-top: 0 !important;
 }
 
-.border-right-0 {
+.border-end {
+  border-right: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+}
+
+.border-end-0 {
   border-right: 0 !important;
+}
+
+.border-bottom {
+  border-bottom: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
 }
 
 .border-bottom-0 {
   border-bottom: 0 !important;
 }
 
-.border-left-0 {
+.border-start {
+  border-left: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+}
+
+.border-start-0 {
   border-left: 0 !important;
 }
 
 .border-primary {
-  border-color: #3490dc !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-primary-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-secondary {
-  border-color: #6c757d !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-secondary-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-success {
-  border-color: #38c172 !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-success-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-info {
-  border-color: #6cb2eb !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-info-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-warning {
-  border-color: #ffed4a !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-warning-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-danger {
-  border-color: #e3342f !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-danger-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-light {
-  border-color: #f8f9fa !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-light-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-dark {
-  border-color: #343a40 !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-dark-rgb), var(--bs-border-opacity)) !important;
+}
+
+.border-black {
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-black-rgb), var(--bs-border-opacity)) !important;
 }
 
 .border-white {
-  border-color: #fff !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-white-rgb), var(--bs-border-opacity)) !important;
 }
 
+.border-primary-subtle {
+  border-color: var(--bs-primary-border-subtle) !important;
+}
+
+.border-secondary-subtle {
+  border-color: var(--bs-secondary-border-subtle) !important;
+}
+
+.border-success-subtle {
+  border-color: var(--bs-success-border-subtle) !important;
+}
+
+.border-info-subtle {
+  border-color: var(--bs-info-border-subtle) !important;
+}
+
+.border-warning-subtle {
+  border-color: var(--bs-warning-border-subtle) !important;
+}
+
+.border-danger-subtle {
+  border-color: var(--bs-danger-border-subtle) !important;
+}
+
+.border-light-subtle {
+  border-color: var(--bs-light-border-subtle) !important;
+}
+
+.border-dark-subtle {
+  border-color: var(--bs-dark-border-subtle) !important;
+}
+
+.border-1 {
+  border-width: 1px !important;
+}
+
+.border-2 {
+  border-width: 2px !important;
+}
+
+.border-3 {
+  border-width: 3px !important;
+}
+
+.border-4 {
+  border-width: 4px !important;
+}
+
+.border-5 {
+  border-width: 5px !important;
+}
+
+.border-opacity-10 {
+  --bs-border-opacity: 0.1;
+}
+
+.border-opacity-25 {
+  --bs-border-opacity: 0.25;
+}
+
+.border-opacity-50 {
+  --bs-border-opacity: 0.5;
+}
+
+.border-opacity-75 {
+  --bs-border-opacity: 0.75;
+}
+
+.border-opacity-100 {
+  --bs-border-opacity: 1;
+}
 .rounded-sm {
   border-radius: 0.2rem !important;
 }
@@ -17855,4 +17941,43 @@ footer p {
   margin-right: calc(-0.5 * var(--bs-offcanvas-padding-x));
   margin-bottom: calc(-0.5 * var(--bs-offcanvas-padding-y));
   margin-left: auto;
+}
+
+
+/* Custom CSS for the reservation editor */
+.grid {
+  user-select: none;
+  background-color: #f8f9fa;
+}
+
+.cell {
+  border: 1px solid #dee2e6;
+  background-color: white;
+}
+
+.reservation {
+  cursor: grab;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reservation.dragging {
+  cursor: grabbing;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 3 !important;
+}
+
+.reservation-draft {
+  border: 1px dashed #0d6efd;
+  box-sizing: border-box;
+}
+
+.status-select {
+  cursor: pointer;
+  z-index: 4;
+}
+
+.resize-handle {
+  border-radius: 2px 0 0 0;
 }
