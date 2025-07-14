@@ -88,7 +88,8 @@ else:
 # Application definition
 MY_CREATED_APPS = [
     'account',
-    'booking'
+    'booking',
+    'product'
 ]
 
 INSTALLED_APPS = [
