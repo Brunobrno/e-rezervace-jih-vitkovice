@@ -17942,3 +17942,42 @@ footer p {
   margin-bottom: calc(-0.5 * var(--bs-offcanvas-padding-y));
   margin-left: auto;
 }
+
+
+/* Custom CSS for the reservation editor */
+.grid {
+  user-select: none;
+  background-color: #f8f9fa;
+}
+
+.cell {
+  border: 1px solid #dee2e6;
+  background-color: white;
+}
+
+.reservation {
+  cursor: grab;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reservation.dragging {
+  cursor: grabbing;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 3 !important;
+}
+
+.reservation-draft {
+  border: 1px dashed #0d6efd;
+  box-sizing: border-box;
+}
+
+.status-select {
+  cursor: pointer;
+  z-index: 4;
+}
+
+.resize-handle {
+  border-radius: 2px 0 0 0;
+}

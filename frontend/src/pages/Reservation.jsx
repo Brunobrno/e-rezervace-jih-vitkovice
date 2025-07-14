@@ -1,10 +1,10 @@
-import MyResponsiveGrid from "../components/DynamicMap"
+import ReservationEditor from "../components/DynamicGrid"
 
 function Reservation(){
 
     return(
         <div>
-            <MyResponsiveGrid/>
+            <ReservationEditor />
         </div>
     )
 }

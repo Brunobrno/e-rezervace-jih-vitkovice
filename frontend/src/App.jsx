@@ -22,7 +22,7 @@ function App() {
         <Route path="/" element={<Home />}/>
         <Route path="/register" element={<Register />}/>
         <Route path="/reservation" element={<Reservation />}/>
-        <Route/>  
+        <Route path="/admin" element={<></>}/>  
       </Routes>
 
     <footer className="mt-auto">
