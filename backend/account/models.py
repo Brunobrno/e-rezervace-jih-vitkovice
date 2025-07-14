@@ -69,10 +69,24 @@ class CustomUser(AbstractUser):
     
     
     def save(self, *args, **kwargs):
-        if not self.pk and not self.username:  # nový uživatel a ještě není username
+        # Assign staff status automatically based on role
+        if self.role in ['admin', 'squareManager', 'cityClerk']:
+            self.is_staff = True
+        else:
+            self.is_staff = False
+
+        if not self.pk and not self.username:
             self.username = self.generate_username()
+
+        is_new = self.pk is None
+        if is_new and not self.username:
+            self.username = self.generate_username()
+
         super().save(*args, **kwargs)
-    
+
+        if is_new and self.role:
+            from account.utils import assign_permissions_based_on_role
+            assign_permissions_based_on_role(self)
 
 
 class OneTimeLoginToken(models.Model):
