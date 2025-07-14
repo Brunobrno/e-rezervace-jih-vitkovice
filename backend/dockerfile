@@ -26,10 +26,3 @@ RUN apt-get update
 
 # Copy the project files
 COPY . .
-
-from django.contrib.auth import get_user_model
-User = get_user_model()
-
-user = User.objects.get(email="dede@€vef.fe")  # nebo podle username
-user.is_staff = True
-user.save()

@@ -76,6 +76,8 @@ class Cell(models.Model):
     y = models.IntegerField()
     w = models.IntegerField()
     h = models.IntegerField()
+    
+
     created_at = models.DateTimeField(auto_now_add=True)
     area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="cells")
     reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, related_name="cells", null=True, blank=True)
