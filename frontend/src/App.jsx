@@ -1,26 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import reactLogo from './assets/react.svg';
+import viteLogo from '/vite.svg';
+import './App.css';
+import { Routes, Route } from 'react-router-dom';
+import NavBar from './components/NavBar';
+import Home from './pages/Home';
+import Register from './pages/Register';
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(0);
-  const [currentDate, setCurrentDate] = useState(0);
-  
-  useEffect(() => {
-  fetch(' http://127.0.0.1:8000/').then(res => res.json()).then(data => {
-      setCurrentTime(data.time);
-      setCurrentDate(data.date)
-    });
-  }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-      <p>The date is {currentDate} and the time is {currentTime}.</p> <br/>
+    <>
+    <header>
+      <NavBar />
+    </header>
+    
+      <Routes>
+        <Route path="/" element={<Home />}/>
+        <Route path="/register" element={<Register />}/>
+        <Route/>
+        <Route/>  
+      </Routes>
 
-      </header>
-    </div>
+    <footer className="mt-auto">
+      <p> 
+        eTržnice © 
+        <a href="mailto:helpdesk@vitkovice.com"> VÍTKOVICE IT SOLUTIONS a.s. </a>
+             | 
+        <a href="#"> Nápověda</a>
+        </p>
+    </footer>
+    </>
+    
   )
 }
 
