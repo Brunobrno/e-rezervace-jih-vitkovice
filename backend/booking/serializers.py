@@ -1,17 +1,18 @@
 from django.db import transaction
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from .models import Event, Area, Reservation, Cell
+from .models import Event, Reservation, Cell, CHOICE_SQUARES
 
 
-
-# Primárně pro výpis/čtení Spacu v Areas
 class CellSerializer(serializers.ModelSerializer):
     @extend_schema_field(str)
     def get_i(self, obj):
         return str(obj.id)
-
+    
     i = serializers.SerializerMethodField(help_text="String ID pro react-grid-layout")
+
+    def get_i(self, obj):
+        return str(obj.id)
 
     class Meta:
         model = Cell
@@ -21,38 +22,6 @@ class CellSerializer(serializers.ModelSerializer):
         }
 
 
-# Vytvoření nebo úprava Area
-class AreaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Area
-        fields = ["id", "event", "x", "y", "w", "h", "available"]
-        extra_kwargs = {
-            "x": {"help_text": "Počáteční X pozice area"},
-            "y": {"help_text": "Počáteční Y pozice area"},
-            "w": {"help_text": "Šířka v buňkách"},
-            "h": {"help_text": "Výška v buňkách"},
-            "available": {"help_text": "Zda je plocha volná/rezervovatelná"},
-            "event": {"help_text": "ID eventu, ke kterému area patří"}
-        }
-
-
-# Používá se pro výpis a vytvoření eventů
-class EventSerializer(serializers.ModelSerializer):
-    area = AreaSerializer(read_only=True, help_text="Automaticky vytvořená nebo navázaná plocha")
-
-    class Meta:
-        model = Event
-        fields = [
-            "id", "name", "description", "start", "end",
-            "grid_resolution", "price_per_m2", "area"
-        ]
-        extra_kwargs = {
-            "grid_resolution": {"help_text": "Velikost jedné buňky v metrech"},
-            "price_per_m2": {"help_text": "Cena za m² rezervovaného místa"}
-        }
-
-
-# Používá obchodník pro vytvoření rezervace
 class ReservationSerializer(serializers.ModelSerializer):
     cells = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -67,27 +36,56 @@ class ReservationSerializer(serializers.ModelSerializer):
             "status", "note", "created_at", "cells"
         ]
         read_only_fields = ["id", "created_at"]
-        extra_kwargs = {
-            "user": {"help_text": "ID aktuálně přihlášeného obchodníka"},
-            "event": {"help_text": "ID eventu, pro který se rezervace vytváří"},
-            "reserved_from": {"help_text": "Datum a čas začátku rezervace"},
-            "reserved_to": {"help_text": "Datum a čas konce rezervace"},
-            "status": {"help_text": "Stav rezervace"},
-            "note": {"help_text": "Poznámka od úředníka"}
-        }
 
-    
+    def validate(self, data):
+        cells = data.get("cells", [])
+        event = data.get("event")
+
+        for cell in cells:
+            if cell.event != event:
+                raise serializers.ValidationError(
+                    f"Cell ID {cell.id} nepatří do eventu {event.name}."
+                )
+            if cell.reservation is not None:
+                raise serializers.ValidationError(
+                    f"Cell ID {cell.id} je už rezervován."
+                )
+        return data
 
     def create(self, validated_data):
         cells = validated_data.pop("cells")
         with transaction.atomic():
             reservation = Reservation.objects.create(**validated_data)
             for cell in cells:
-                # Ověření, že cell skutečně náleží eventu přes Area
-                if cell.area.event != reservation.event:
-                    raise serializers.ValidationError(
-                        f"Políčko ({cell.x},{cell.y}) nepatří do eventu {reservation.event.name}."
-                    )
                 cell.reservation = reservation
                 cell.save()
         return reservation
+
+
+class EventSerializer(serializers.ModelSerializer):
+    square_size = serializers.ChoiceField(
+        choices=[(str(dim[0]) + "x" + str(dim[1]), label) for dim, label in CHOICE_SQUARES],
+        help_text="Vyberte rozměry náměstí"
+    )
+    w = serializers.IntegerField(read_only=True, help_text="Šířka gridu (nastavena automaticky)")
+    h = serializers.IntegerField(read_only=True, help_text="Výška gridu (nastavena automaticky)")
+
+    class Meta:
+        model = Event
+        fields = [
+            "id", "name", "description", "start", "end", "grid_resolution", "price_per_m2",
+            "x", "y", "square_size", "w", "h",
+            "street", "city", "psc", "image",
+        ]
+        read_only_fields = ["id", "w", "h"]
+
+    def create(self, validated_data):
+        # w a h se nastaví v modelu save()
+        event = Event.objects.create(**validated_data)
+        return event
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

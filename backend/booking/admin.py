@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Event, Area, Reservation, Space
+from .models import Event, Reservation, Cell
 
 from trznice.admin import custom_admin_site
 
@@ -12,15 +12,6 @@ class EventAdmin(admin.ModelAdmin):
 
 custom_admin_site.register(Event, EventAdmin)
 
-# @admin.register(Area)
-class AreaAdmin(admin.ModelAdmin):
-    list_display = ("event", "x", "y", "w", "h", "available")
-    list_filter = ("available", "event")
-    search_fields = ("event__name",)
-    ordering = ("event", "x", "y")
-
-custom_admin_site.register(Area, AreaAdmin)
-
 # @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
     list_display = ("event", "user", "reserved_from", "reserved_to", "status", "created_at")
@@ -30,11 +21,11 @@ class ReservationAdmin(admin.ModelAdmin):
 
 custom_admin_site.register(Reservation, ReservationAdmin)
 
-# @admin.register(Space)
-class SpaceAdmin(admin.ModelAdmin):
-    list_display = ("area", "x", "y", "w", "h", "reservation", "created_at")
-    list_filter = ("area",)
-    search_fields = ("area__event__name", "reservation__user__username")
-    ordering = ("-created_at",)
 
-custom_admin_site.register(Space, SpaceAdmin)
+# @admin.register(Cell)
+class CellAdmin(admin.ModelAdmin):
+    list_display = ("id", "x", "y", "w", "h", "event", "reservation", "created_at")
+    list_filter = ("event", "reservation")
+    search_fields = ("event__name", "reservation__user__username")
+    readonly_fields = ("created_at",)
+    ordering = ("event", "y", "x")
