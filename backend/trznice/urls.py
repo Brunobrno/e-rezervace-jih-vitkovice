@@ -39,11 +39,13 @@ sitemaps = {
     'auto': AutoSitemap,
 }
 
+from .admin import custom_admin_site
 urlpatterns = [
     path('login/', auth_views.LoginView.as_view(), name='login'),  # pro Swagger
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
+    path("admin/", custom_admin_site.urls),  # override default admin
 
     path('account/', include('account.urls')),
     path('booking/', include('booking.urls')),

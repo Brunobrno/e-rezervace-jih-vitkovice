@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser, OneTimeLoginToken
+from trznice.admin import custom_admin_site
 
-@admin.register(CustomUser)
+# @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
 
@@ -29,11 +30,19 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.is_active = True
+        super().save_model(request, obj, form, change) 
+
+custom_admin_site.register(CustomUser, CustomUserAdmin)
 
 
-@admin.register(OneTimeLoginToken)
+# @admin.register(OneTimeLoginToken)
 class OneTimeLoginTokenAdmin(admin.ModelAdmin):
     list_display = ("user", "token", "created_at", "expires_at", "used")
     list_filter = ("used", "created_at", "expires_at")
     search_fields = ("user__username", "user__email", "token")
     ordering = ("-created_at",)
+
+custom_admin_site.register(OneTimeLoginToken, OneTimeLoginTokenAdmin)
