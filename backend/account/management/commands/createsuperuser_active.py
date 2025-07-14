@@ -18,8 +18,6 @@ class Command(BaseCommand):
             password2 = getpass("Confirm password: ")
             if password != password2:
                 self.stdout.write(self.style.ERROR("❌ Hesla se neshodují. Zkus to znovu."))
-            elif len(password) < 6:
-                self.stdout.write(self.style.ERROR("❌ Heslo musí mít alespoň 6 znaků."))
             else:
                 break
 

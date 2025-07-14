@@ -420,3 +420,10 @@ CORS_ALLOWS_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
      'http://localhost:3000'
 ]
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': True,
+    'DOC_EXPANSION': 'list',  # or 'none', 'full'
+    'DEFAULT_MODEL_RENDERING': 'example',
+    'SHOW_REQUEST_HEADERS': True,
+}
