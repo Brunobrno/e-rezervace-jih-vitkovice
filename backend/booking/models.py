@@ -49,6 +49,9 @@ class Event(models.Model):
         overlapping = Event.objects.exclude(id=self.id).filter(
             start__lt=self.end,
             end__gt=self.start,
+        overlapping = Event.objects.exclude(id=self.id).filter(
+            start__lt=self.end,
+            end__gt=self.start,
             x__lt=self.x + self.w,
             x__gte=self.x - models.F("w"),
             y__lt=self.y + self.h,
@@ -128,6 +131,7 @@ class Cell(models.Model):
     y = models.IntegerField()
     w = models.IntegerField()
     h = models.IntegerField()
+
 
 
     created_at = models.DateTimeField(auto_now_add=True)

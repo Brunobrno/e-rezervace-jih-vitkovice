@@ -9,7 +9,11 @@ class CellSerializer(serializers.ModelSerializer):
     def get_i(self, obj):
         return str(obj.id)
     
+    
     i = serializers.SerializerMethodField(help_text="String ID pro react-grid-layout")
+
+    def get_i(self, obj):
+        return str(obj.id)
 
     def get_i(self, obj):
         return str(obj.id)
@@ -36,6 +40,21 @@ class ReservationSerializer(serializers.ModelSerializer):
             "status", "note", "created_at", "cells"
         ]
         read_only_fields = ["id", "created_at"]
+
+    def validate(self, data):
+        cells = data.get("cells", [])
+        event = data.get("event")
+
+        for cell in cells:
+            if cell.event != event:
+                raise serializers.ValidationError(
+                    f"Cell ID {cell.id} nepatří do eventu {event.name}."
+                )
+            if cell.reservation is not None:
+                raise serializers.ValidationError(
+                    f"Cell ID {cell.id} je už rezervován."
+                )
+        return data
 
     def validate(self, data):
         cells = data.get("cells", [])
