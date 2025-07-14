@@ -29,3 +29,5 @@ class CellAdmin(admin.ModelAdmin):
     search_fields = ("event__name", "reservation__user__username")
     readonly_fields = ("created_at",)
     ordering = ("event", "y", "x")
+
+custom_admin_site.register(Cell, CellAdmin)

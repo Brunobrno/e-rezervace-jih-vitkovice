@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from booking.models import Event, Area, Reservation, Space
+from booking.models import Event, Reservation, Cell
 from product.models import Product, EventProduct
 from django.contrib.auth import get_user_model
 
@@ -14,15 +14,15 @@ def assign_permissions_based_on_role(user):
             # "delete": [Reservation],
         },
         "squareManager": {
-            "view": [Event, Area, Space, Product, EventProduct],
-            "add": [Event, Area, Space, Product, EventProduct],
-            "change": [Event, Area, Space, Product, EventProduct],
+            "view": [Event,  Cell, Product, EventProduct],
+            "add": [Event,  Cell, Product, EventProduct],
+            "change": [Event,  Cell, Product, EventProduct],
         },
         # "admin": {
-        #     "view": [Event, Area, Reservation, Space, get_user_model()],
-        #     "add": [Event, Area, Reservation, Space],
-        #     "change": [Event, Area, Reservation, Space],
-        #     "delete": [Event, Area, Reservation, Space],
+        #     "view": [Event,  Reservation, Cell, get_user_model()],
+        #     "add": [Event,  Reservation, Cell],
+        #     "change": [Event,  Reservation, Cell],
+        #     "delete": [Event,  Reservation, Cell],
         # },
         # etc.
             "admin": "all",  # Mark this role specially

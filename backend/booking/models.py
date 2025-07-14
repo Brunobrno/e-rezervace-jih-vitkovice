@@ -49,6 +49,7 @@ class Event(models.Model):
         overlapping = Event.objects.exclude(id=self.id).filter(
             start__lt=self.end,
             end__gt=self.start,
+        )
         overlapping = Event.objects.exclude(id=self.id).filter(
             start__lt=self.end,
             end__gt=self.start,
