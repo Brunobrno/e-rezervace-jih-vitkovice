@@ -69,27 +69,28 @@ class CustomUser(AbstractUser):
     
     
     def save(self, *args, **kwargs):
+        is_new = self.pk is None  # check BEFORE saving
 
-        # If creating a new user (no PK yet)
-        # Assign staff status automatically based on role
-        if not self.pk:
+        if is_new:
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
                 self.is_staff = True
+                self.is_active = True
             else:
                 self.is_staff = False
-  
-        super().save(*args, **kwargs)
-
-        if not self.pk and not self.username:
-            self.username = self.generate_username()
 
         if self.email_verified:
             self.is_active = True
 
 
-        if not self.pk and self.role:
+        # Now assign permissions after user exists
+        # if is_new and self.role:
+        if self.role:
             from account.utils import assign_permissions_based_on_role
+            print(f"Assigning permissions to: {self.email} with role {self.role}")
             assign_permissions_based_on_role(self)
+        
+        super().save(*args, **kwargs)  # save once, after prep
+
 
 
 class OneTimeLoginToken(models.Model):

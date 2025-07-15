@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 def assign_permissions_based_on_role(user):
     role_perms = {
         "cityClerk": {
-            "view": [Event, Reservation, get_user_model(), Product, EventProduct],
+            "view": [Event, Reservation, get_user_model(), Product, EventProduct, Cell],
             "add": [Reservation, get_user_model()],
             "change": [Reservation, get_user_model()],
             # "delete": [Reservation],
@@ -29,22 +29,23 @@ def assign_permissions_based_on_role(user):
     }
 
     if not user.role:
+        print("User has no role set")
         return
 
     if user.role == "admin":
         user.is_staff = True
         user.is_superuser = True
-        user.save()
+        # user.save()
         return
 
     # Reset in case role changed away from admin
     user.is_superuser = False
-
-
-    if not user.role:
-        return
-
+    
+    print(f"Assigning role-based permissions for: {user.email}, role: {user.role}")
+    
     perms_for_role = role_perms.get(user.role, {})
+
+    print(perms_for_role)
 
     for action, models in perms_for_role.items():
         for model in models:
@@ -56,3 +57,4 @@ def assign_permissions_based_on_role(user):
             except Permission.DoesNotExist:
                 # You may log this
                 pass
+    # user.save()   
