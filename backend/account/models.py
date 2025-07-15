@@ -20,12 +20,17 @@ class CustomUser(AbstractUser):
     )
     role = models.CharField(max_length=32, choices=ROLE_CHOICES, null=True, blank=True)
 
+    ACCOUNT_TYPES = (
+        ('company', 'Firma'),
+        ('individual', 'Fyzická osoba')
+    )
+    account_type = models.CharField(max_length=32, choices=ACCOUNT_TYPES, null=True, blank=True)
+
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
         max_length=15,
         blank=True,
-        unique=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]
     )
     
@@ -37,9 +42,9 @@ class CustomUser(AbstractUser):
     bank_acc = models.IntegerField(null=True, blank=True)
     ICO = models.IntegerField(null=True, blank=True)
 
-    city = models.TextField(null=True, blank=True)
-    street = models.TextField(null=True, blank=True)
-    PSC = models.TextField(null=True, blank=True)
+    city = models.CharField(null=True, blank=True)
+    street = models.CharField(null=True, blank=True)
+    PSC = models.IntegerField(null=True, blank=True)
 
     is_active = models.BooleanField(default=False)
 
@@ -64,10 +69,27 @@ class CustomUser(AbstractUser):
     
     
     def save(self, *args, **kwargs):
-        if not self.pk and not self.username:  # nový uživatel a ještě není username
-            self.username = self.generate_username()
+
+        # If creating a new user (no PK yet)
+        # Assign staff status automatically based on role
+        if not self.pk:
+            if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
+                self.is_staff = True
+            else:
+                self.is_staff = False
+  
         super().save(*args, **kwargs)
-    
+
+        if not self.pk and not self.username:
+            self.username = self.generate_username()
+
+        if self.email_verified:
+            self.is_active = True
+
+
+        if not self.pk and self.role:
+            from account.utils import assign_permissions_based_on_role
+            assign_permissions_based_on_role(self)
 
 
 class OneTimeLoginToken(models.Model):
