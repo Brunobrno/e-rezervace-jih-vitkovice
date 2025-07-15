@@ -37,9 +37,18 @@
 </head>
 
 <body>
+	{% if user.is_authenticated  %}
+		<h1>Logged as: {{user.username}} | Role: {{user.role}}</h1>
+	{% endif %}
+	
 	<nav>
 		<ol>
-			<li style="background-color: greenyellow; width: max-content; "><a href="/admin/">Login</a></li>
+			{% if user.is_authenticated  %}
+				<li style="background-color: greenyellow; width: max-content; "><a href="/logout/">Logout</a></li>
+			{% else %}
+				<li style="background-color: greenyellow; width: max-content; "><a href="/admin/">Login</a></li>
+			{% endif %}
+
 			<li style="background-color: red; width: max-content; "><a href="/admin/">Admin</a></li>
 			<h2>API (Rest UI)</h2>
 			<li style="background-color: antiquewhite; width: max-content; "><a href="/account/">Account</a></li>

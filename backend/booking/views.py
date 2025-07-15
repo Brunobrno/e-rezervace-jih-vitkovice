@@ -4,40 +4,34 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Event, Reservation, Cell
 from .serializers import EventSerializer, ReservationSerializer, CellSerializer
 from account.permissions import *
-from .permissions import RoleBasedPermissionAdminSqManager, RoleBasedPermissionReservationView
 
 from django.contrib.auth import get_user_model
 
+from drf_spectacular.utils import extend_schema
+
+@extend_schema(
+    tags=["Event - basic"]
+)
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all().order_by('start')
     serializer_class = EventSerializer
-    permission_classes = [IsAuthenticated, RoleBasedPermissionAdminSqManager]
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
 
-
+@extend_schema(
+    tags=["Cell - basic"]
+)
 class CellViewSet(viewsets.ModelViewSet):
-    queryset = Cell.objects.all().select_related("reservation", "area")
+    queryset = Cell.objects.all().select_related("reservation", "event")
     serializer_class = CellSerializer
-    permission_classes = [IsAuthenticated, RoleBasedPermissionAdminSqManager]
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
 
-
+@extend_schema(
+    tags=["Reservation - basic"]
+)
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all().select_related("event", "user")
     serializer_class = ReservationSerializer
-    permission_classes = [IsAuthenticated, RoleBasedPermissionReservationView]
-
-    # def get_queryset(self):
-    #     if getattr(self, 'swagger_fake_view', False):
-    #         return Reservation.objects.none()
-
-    #     user = self.request.user
-
-    #     # ⚠️ AnonymousUser fallback při nedefinované roli
-    #     if not hasattr(user, "role"):
-    #         return Reservation.objects.none()
-
-    #     if user.role in ["cityClerk", "admin", "squareManager"]:
-    #         return self.queryset
-    #     return self.queryset.filter(user=user)
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "seller", "cityClerk")]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

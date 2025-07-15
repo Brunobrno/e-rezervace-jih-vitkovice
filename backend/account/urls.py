@@ -8,7 +8,7 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
-router.register(r'', UserView, basename='user')
+router.register(r'user', UserView, basename='user')
 
 urlpatterns = [
     path('', include(router.urls)),  # automaticky přidá všechny cesty z viewsetu
