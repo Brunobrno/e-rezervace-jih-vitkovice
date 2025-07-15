@@ -69,27 +69,25 @@ class CustomUser(AbstractUser):
     
     
     def save(self, *args, **kwargs):
+
+        # If creating a new user (no PK yet)
         # Assign staff status automatically based on role
-        if self.role in ['admin', 'squareManager', 'cityClerk']:
-            self.is_staff = True
-        else:
-            self.is_staff = False
+        if not self.pk:
+            if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
+                self.is_staff = True
+            else:
+                self.is_staff = False
+  
+        super().save(*args, **kwargs)
 
         if not self.pk and not self.username:
             self.username = self.generate_username()
 
         if self.email_verified:
             self.is_active = True
-        else:
-            self.is_active = False 
 
-        is_new = self.pk is None
-        if is_new and not self.username:
-            self.username = self.generate_username()
 
-        super().save(*args, **kwargs)
-
-        if is_new and self.role:
+        if not self.pk and self.role:
             from account.utils import assign_permissions_based_on_role
             assign_permissions_based_on_role(self)
 

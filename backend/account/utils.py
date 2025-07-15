@@ -14,9 +14,9 @@ def assign_permissions_based_on_role(user):
             # "delete": [Reservation],
         },
         "squareManager": {
-            "view": [Event,  Cell, Product, EventProduct],
-            "add": [Event,  Cell, Product, EventProduct],
-            "change": [Event,  Cell, Product, EventProduct],
+            "view": [Event, Cell, Product, EventProduct],
+            "add": [Event, Cell, Product, EventProduct],
+            "change": [Event, Cell, Product, EventProduct],
         },
         # "admin": {
         #     "view": [Event,  Reservation, Cell, get_user_model()],
