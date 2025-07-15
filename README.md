@@ -47,7 +47,7 @@ Feel free to use or modify this table for your project!
 
 ## docker compose
  spuštění dockeru pro lokální hosting, s instantníma změnami během editace ve vscodu.
- ```docker-compose up --build```
+ ```docker compose up --build```
 
 ## dns reset windows
 ```ipconfig /flushdns```

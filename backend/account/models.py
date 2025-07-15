@@ -42,13 +42,15 @@ class CustomUser(AbstractUser):
     bank_acc = models.IntegerField(null=True, blank=True)
     ICO = models.IntegerField(null=True, blank=True)
 
-    city = models.CharField(null=True, blank=True)
-    street = models.CharField(null=True, blank=True)
+    city = models.CharField(null=True, blank=True, max_length=100)
+    street = models.CharField(null=True, blank=True, max_length=200)
     PSC = models.IntegerField(null=True, blank=True)
 
     is_active = models.BooleanField(default=False)
 
     REQUIRED_FIELDS = ['email']
+
+
 
     def __str__(self):
         return f"{self.email} at {self.create_time.strftime('%d-%m-%Y %H:%M:%S')}"

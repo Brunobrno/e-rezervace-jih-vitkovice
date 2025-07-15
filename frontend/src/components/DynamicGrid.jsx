@@ -1,3 +1,4 @@
+// DynamicGrid.js
 import React, {
   useState,
   useRef,
@@ -5,6 +6,16 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
+
+import {
+  Container,
+  Row,
+  Col,
+  Badge,
+  Button,
+  Stack,
+  Form,
+} from "react-bootstrap";
 
 const DEFAULT_CONFIG = {
   rows: 14,
@@ -17,61 +28,49 @@ const DEFAULT_CONFIG = {
   },
 };
 
-const STORAGE_KEY = "reservationData";
-
-const ReservationEditor = ({
+const DynamicGrid = ({
   config = DEFAULT_CONFIG,
+  reservations,
   onReservationsChange,
+  selectedIndex,
+  onSelectedIndexChange,
 }) => {
   // Destructure config with defaults
   const {
-    ROWS = DEFAULT_CONFIG.rows,
-    COLS = DEFAULT_CONFIG.cols,
-    CELL_SIZE = DEFAULT_CONFIG.cellSize,
-    STATUS_COLORS = DEFAULT_CONFIG.statusColors,
+    rows = DEFAULT_CONFIG.rows,
+    cols = DEFAULT_CONFIG.cols,
+    cellSize = DEFAULT_CONFIG.cellSize,
+    statusColors = DEFAULT_CONFIG.statusColors,
   } = config;
 
   // Generate unique storage key based on grid dimensions
   const STORAGE_KEY = useMemo(
-    () => `reservationData_${ROWS}x${COLS}`,
-    [ROWS, COLS]
+    () => `reservationData_${rows}x${cols}`,
+    [rows, cols]
   );
-
-  // State initialization with localStorage
-  const [reservations, setReservations] = useState(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    return savedData ? JSON.parse(savedData) : [];
-  });
 
   const [startCell, setStartCell] = useState(null);
   const [hoverCell, setHoverCell] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [resizingIndex, setResizingIndex] = useState(null);
-  const [selectedIndex, setSelectedIndex] = useState(null);
   const gridRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const lastCoordsRef = useRef(null);
 
-  useEffect(() => {
-    if (onReservationsChange) {
-      onReservationsChange(reservations);
-    }
-  }, [reservations, onReservationsChange]);
-
   // Save to localStorage whenever reservations change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-  }, [reservations]);
+  }, [reservations, STORAGE_KEY]);
 
   // Clear all reservations and storage
   const handleClearAll = useCallback(() => {
     if (window.confirm("Opravdu chcete smazat všechny rezervace?")) {
-      setReservations([]);
-      setSelectedIndex(null);
+      onReservationsChange([]);
+      onSelectedIndexChange(null);
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, []);
+  }, [onReservationsChange, onSelectedIndexChange, STORAGE_KEY]);
 
   // Clamp a value to the valid grid range
   const clamp = useCallback(
@@ -84,18 +83,18 @@ const ReservationEditor = ({
     (e) => {
       const rect = gridRef.current.getBoundingClientRect();
       const x = clamp(
-        Math.floor((e.clientX - rect.left) / CELL_SIZE),
+        Math.floor((e.clientX - rect.left) / cellSize),
         0,
-        COLS - 1
+        cols - 1
       );
       const y = clamp(
-        Math.floor((e.clientY - rect.top) / CELL_SIZE),
+        Math.floor((e.clientY - rect.top) / cellSize),
         0,
-        ROWS - 1
+        rows - 1
       );
       return { x, y };
     },
-    [clamp]
+    [clamp, cellSize, rows, cols]
   );
 
   // Check if two rectangles overlap
@@ -129,7 +128,7 @@ const ReservationEditor = ({
           10
         );
         setResizingIndex(index);
-        setSelectedIndex(index);
+        onSelectedIndexChange(index);
         return;
       }
 
@@ -149,14 +148,14 @@ const ReservationEditor = ({
           y: coords.y - res.y,
         };
         setDraggedIndex(resIndex);
-        setSelectedIndex(resIndex);
+        onSelectedIndexChange(resIndex);
       } else {
         setStartCell(coords);
         setIsDragging(true);
-        setSelectedIndex(null);
+        onSelectedIndexChange(null);
       }
     },
-    [getCellCoords, reservations]
+    [getCellCoords, reservations, onSelectedIndexChange]
   );
 
   // Mouse move handler
@@ -177,7 +176,7 @@ const ReservationEditor = ({
       if (isDragging) {
         setHoverCell(coords);
       } else if (draggedIndex !== null) {
-        setReservations((prev) => {
+        onReservationsChange((prev) => {
           const updated = [...prev];
           const res = updated[draggedIndex];
 
@@ -186,8 +185,8 @@ const ReservationEditor = ({
 
           const nextRect = {
             ...res,
-            x: clamp(newX, 0, COLS - res.w),
-            y: clamp(newY, 0, ROWS - res.h),
+            x: clamp(newX, 0, cols - res.w),
+            y: clamp(newY, 0, rows - res.h),
           };
 
           if (!hasCollision(nextRect, draggedIndex)) {
@@ -196,7 +195,7 @@ const ReservationEditor = ({
           return updated;
         });
       } else if (resizingIndex !== null) {
-        setReservations((prev) => {
+        onReservationsChange((prev) => {
           const updated = [...prev];
           const res = updated[resizingIndex];
 
@@ -205,8 +204,8 @@ const ReservationEditor = ({
 
           const nextRect = {
             ...res,
-            w: clamp(newW, 1, COLS - res.x),
-            h: clamp(newH, 1, ROWS - res.y),
+            w: clamp(newW, 1, cols - res.x),
+            h: clamp(newH, 1, rows - res.y),
           };
 
           if (!hasCollision(nextRect, resizingIndex)) {
@@ -223,6 +222,9 @@ const ReservationEditor = ({
       resizingIndex,
       clamp,
       hasCollision,
+      onReservationsChange,
+      rows,
+      cols,
     ]
   );
 
@@ -250,10 +252,12 @@ const ReservationEditor = ({
         !hasCollision(newRect) &&
         minX >= 0 &&
         minY >= 0 &&
-        minX + w <= COLS &&
-        minY + h <= ROWS
+        minX + w <= cols &&
+        minY + h <= rows
       ) {
-        setReservations((prev) => [...prev, newRect]);
+        const newIndex = reservations.length;
+        onReservationsChange((prev) => [...prev, newRect]);
+        onSelectedIndexChange(newIndex);
       }
     }
 
@@ -264,37 +268,56 @@ const ReservationEditor = ({
     setDraggedIndex(null);
     setResizingIndex(null);
     lastCoordsRef.current = null;
-  }, [isDragging, startCell, hoverCell, reservations, hasCollision]);
+  }, [
+    isDragging,
+    startCell,
+    hoverCell,
+    reservations,
+    hasCollision,
+    onReservationsChange,
+    onSelectedIndexChange,
+    rows,
+    cols,
+  ]);
 
   // Delete reservation
   const handleDeleteReservation = useCallback(
     (index) => {
-      setReservations((prev) => prev.filter((_, i) => i !== index));
-      if (selectedIndex === index) setSelectedIndex(null);
+      onReservationsChange((prev) => prev.filter((_, i) => i !== index));
+      if (selectedIndex === index) {
+        onSelectedIndexChange(null);
+      } else if (selectedIndex > index) {
+        onSelectedIndexChange(selectedIndex - 1);
+      }
     },
-    [selectedIndex]
+    [onReservationsChange, onSelectedIndexChange, selectedIndex]
   );
 
   // Change reservation status
-  const handleStatusChange = useCallback((index, newStatus) => {
-    setReservations((prev) =>
-      prev.map((res, i) => (i === index ? { ...res, status: newStatus } : res))
-    );
-  }, []);
+  const handleStatusChange = useCallback(
+    (index, newStatus) => {
+      onReservationsChange((prev) =>
+        prev.map((res, i) =>
+          i === index ? { ...res, status: newStatus } : res
+        )
+      );
+    },
+    [onReservationsChange]
+  );
 
   // Generate grid cells (memoized for performance)
   const gridCells = useMemo(
     () =>
-      [...Array(ROWS * COLS)].map((_, index) => {
-        const x = index % COLS;
-        const y = Math.floor(index / COLS);
+      [...Array(rows * cols)].map((_, index) => {
+        const x = index % cols;
+        const y = Math.floor(index / cols);
         return (
           <div
             key={`${x}-${y}`}
             className="cell"
             style={{
-              width: CELL_SIZE,
-              height: CELL_SIZE,
+              width: cellSize,
+              height: cellSize,
               border: "1px solid #eee",
               gridColumn: x + 1,
               gridRow: y + 1,
@@ -302,17 +325,17 @@ const ReservationEditor = ({
           />
         );
       }),
-    [ROWS, COLS]
+    [rows, cols, cellSize]
   );
 
   const generateReservationJson = useCallback(() => {
     const reservationsJson = reservations.map((res) => {
-      // Generate cell IDs using the formula: (y * COLS + x) + 1
+      // Generate cell IDs using the formula: (y * cols + x) + 1
       const cells = [];
       for (let row = res.y; row < res.y + res.h; row++) {
         for (let col = res.x; col < res.x + res.w; col++) {
           // Cell ID: row * columns + column + 1 (1-indexed)
-          const cellId = row * COLS + col + 1;
+          const cellId = row * cols + col + 1;
           cells.push(cellId);
         }
       }
@@ -335,38 +358,33 @@ const ReservationEditor = ({
     // Also copy to clipboard for convenience
     navigator.clipboard.writeText(dataStr);
     alert("Reservation JSON copied to clipboard and logged to console");
-  }, [reservations]);
+  }, [reservations, cols]);
 
   // Function to convert JSON reservations to internal format
+  const convertJsonToReservations = useCallback(
+    (jsonData) => {
+      return jsonData.map((res, index) => {
+        // Find min and max coordinates from cell IDs
+        const minCellId = Math.min(...res.cells);
+        const maxCellId = Math.max(...res.cells);
 
-  const convertJsonToReservations = useCallback((jsonData) => {
-    return jsonData.map((res, index) => {
-      // Find min and max coordinates from cell IDs
-      const minCellId = Math.min(...res.cells);
-      const maxCellId = Math.max(...res.cells);
+        const minX = (minCellId - 1) % cols;
+        const minY = Math.floor((minCellId - 1) / cols);
+        const maxX = (maxCellId - 1) % cols;
+        const maxY = Math.floor((maxCellId - 1) / cols);
 
-      const minX = (minCellId - 1) % COLS;
-      const minY = Math.floor((minCellId - 1) / COLS);
-      const maxX = (maxCellId - 1) % COLS;
-      const maxY = Math.floor((maxCellId - 1) / COLS);
-
-      return {
-        x: minX,
-        y: minY,
-        w: maxX - minX + 1,
-        h: maxY - minY + 1,
-        name: res.note || `Reservation ${index + 1}`,
-        status: res.status || "active",
-      };
-    });
-  }, []);
-
-  // Save to localStorage whenever reservations change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-  }, [reservations]);
-
-  // ... (previous functions: handleClearAll, clamp, getCellCoords, etc.)
+        return {
+          x: minX,
+          y: minY,
+          w: maxX - minX + 1,
+          h: maxY - minY + 1,
+          name: res.note || `Reservation ${index + 1}`,
+          status: res.status || "active",
+        };
+      });
+    },
+    [cols]
+  );
 
   // File upload handler
   const handleFileUpload = useCallback(
@@ -379,14 +397,14 @@ const ReservationEditor = ({
             // Try to detect if it's the new JSON format
             if (data[0]?.cells) {
               const convertedReservations = convertJsonToReservations(data);
-              setReservations(convertedReservations);
-              setSelectedIndex(null);
+              onReservationsChange(convertedReservations);
+              onSelectedIndexChange(null);
               alert(`Načteno ${convertedReservations.length} rezervací`);
             }
             // Support older format too
             else if (data[0]?.x !== undefined) {
-              setReservations(data);
-              setSelectedIndex(null);
+              onReservationsChange(data);
+              onSelectedIndexChange(null);
               alert(`Načteno ${data.length} rezervací`);
             } else {
               alert("Neplatný formát souboru");
@@ -400,178 +418,107 @@ const ReservationEditor = ({
       };
       reader.readAsText(file);
     },
-    [convertJsonToReservations]
+    [convertJsonToReservations, onReservationsChange, onSelectedIndexChange]
   );
 
   return (
-    <div className="container-fluid py-3">
-      <div className="row">
-        <div className="col-md-8">
-          {/* Legend */}
-          <div className="d-flex gap-2 mb-3">
-            <span
-              className="badge"
-              style={{ backgroundColor: STATUS_COLORS.active }}
+    <div
+      ref={gridRef}
+      className="position-relative border"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onContextMenu={(e) => e.preventDefault()}
+      style={{
+        width: cols * cellSize,
+        height: rows * cellSize,
+        display: "grid",
+        gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+      }}
+    >
+      {/* Grid cells */}
+      {gridCells}
+
+      {/* Reservation boxes */}
+      {reservations.map((res, i) => (
+        <div
+          key={i}
+          data-index={i}
+          className={`reservation ${res.status} ${
+            draggedIndex === i ? "dragging" : ""
+          }`}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            handleDeleteReservation(i);
+          }}
+          style={{
+            position: "absolute",
+            left: res.x * cellSize,
+            top: res.y * cellSize,
+            width: res.w * cellSize,
+            height: res.h * cellSize,
+            backgroundColor: statusColors[res.status],
+            border: i === selectedIndex ? "2px solid black" : "none",
+            fontSize: 12,
+            textAlign: "center",
+            transition:
+              draggedIndex === i || resizingIndex === i
+                ? "none"
+                : "all 0.2s ease",
+            zIndex: 2,
+          }}
+        >
+          <div className="d-flex flex-column h-100 p-1">
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center">
+              <strong>{i + 1}</strong>
+            </div>
+            <Form.Select
+              size="sm"
+              value={res.status}
+              onChange={(e) => handleStatusChange(i, e.target.value)}
+              onClick={(e) => e.stopPropagation()}
             >
-              Aktivní
-            </span>
-            <span
-              className="badge"
-              style={{ backgroundColor: STATUS_COLORS.reserved }}
-            >
-              Rezervováno
-            </span>
-            <span
-              className="badge"
-              style={{ backgroundColor: STATUS_COLORS.blocked }}
-            >
-              Blokováno
-            </span>
+              <option value="active">Aktivní</option>
+              <option value="reserved">Rezervováno</option>
+              <option value="blocked">Blokováno</option>
+            </Form.Select>
           </div>
-
-          {/* Action Buttons */}
-          <div className="d-flex gap-2 mb-3">
-            <button
-              className="btn btn-danger btn-sm"
-              onClick={() => handleDeleteReservation(selectedIndex)}
-              disabled={selectedIndex === null}
-            >
-              <i className="bi bi-trash me-1"></i> Smazat vybranou
-            </button>
-
-            <button
-              className="btn btn-warning btn-sm"
-              onClick={handleClearAll}
-              disabled={reservations.length === 0}
-            >
-              <i className="bi bi-x-circle me-1"></i> Smazat vše
-            </button>
-
-            <button
-              className="btn btn-success btn-sm"
-              onClick={generateReservationJson}
-              disabled={reservations.length === 0}
-            >
-              <i className="bi bi-download me-1"></i> Uložit jako JSON
-            </button>
-          </div>
-
-          {/* Grid Container */}
           <div
-            ref={gridRef}
-            className="grid position-relative border"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onContextMenu={(e) => e.preventDefault()}
+            className="resize-handle"
             style={{
-              width: COLS * CELL_SIZE,
-              height: ROWS * CELL_SIZE,
-              display: "grid",
-              gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`,
-              gridTemplateRows: `repeat(${ROWS}, ${CELL_SIZE}px)`,
+              position: "absolute",
+              right: 0,
+              bottom: 0,
+              width: 10,
+              height: 10,
+              backgroundColor: "white",
+              border: "1px solid black",
+              cursor: "nwse-resize",
             }}
-          >
-            {gridCells}
-
-            {/* Reservation Boxes */}
-            {reservations.map((res, i) => (
-              <div
-                key={i}
-                data-index={i}
-                className={`reservation ${res.status} ${
-                  draggedIndex === i ? "dragging" : ""
-                }`}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  handleDeleteReservation(i);
-                }}
-                style={{
-                  position: "absolute",
-                  left: res.x * CELL_SIZE,
-                  top: res.y * CELL_SIZE,
-                  width: res.w * CELL_SIZE,
-                  height: res.h * CELL_SIZE,
-                  backgroundColor: STATUS_COLORS[res.status],
-                  border: i === selectedIndex ? "2px solid black" : "none",
-                  fontSize: 12,
-                  textAlign: "center",
-                  transition:
-                    draggedIndex === i || resizingIndex === i
-                      ? "none"
-                      : "all 0.2s ease",
-                  zIndex: 2,
-                }}
-              >
-                <div className="d-flex flex-column h-100 p-1">
-                  <div className="flex-grow-1 d-flex align-items-center justify-content-center">
-                    <strong>{i + 1}</strong>
-                  </div>
-                  <select
-                    className="form-select form-select-sm status-select"
-                    value={res.status}
-                    onChange={(e) => handleStatusChange(i, e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <option value="active">Aktivní</option>
-                    <option value="reserved">Rezervováno</option>
-                    <option value="blocked">Blokováno</option>
-                  </select>
-                </div>
-                <div
-                  className="resize-handle"
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    bottom: 0,
-                    width: 10,
-                    height: 10,
-                    backgroundColor: "white",
-                    border: "1px solid black",
-                    cursor: "nwse-resize",
-                  }}
-                />
-              </div>
-            ))}
-
-            {/* Draft preview box */}
-            {isDragging && startCell && hoverCell && (
-              <div
-                className="reservation-draft"
-                style={{
-                  position: "absolute",
-                  left: Math.min(startCell.x, hoverCell.x) * CELL_SIZE,
-                  top: Math.min(startCell.y, hoverCell.y) * CELL_SIZE,
-                  width: (Math.abs(startCell.x - hoverCell.x) + 1) * CELL_SIZE,
-                  height: (Math.abs(startCell.y - hoverCell.y) + 1) * CELL_SIZE,
-                  backgroundColor: "rgba(0, 128, 0, 0.3)",
-                  pointerEvents: "none",
-                  zIndex: 1,
-                }}
-              />
-            )}
-          </div>
-
-          {/* File Upload */}
-          <div className="mt-3">
-            <label className="form-label">Nahrát rezervace ze souboru:</label>
-            <input
-              type="file"
-              className="form-control form-control-sm"
-              accept=".json"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                handleFileUpload(file);
-                e.target.value = ""; // Reset input
-              }}
-            />
-          </div>
+          />
         </div>
-      </div>
+      ))}
+
+      {/* Draft preview box */}
+      {isDragging && startCell && hoverCell && (
+        <div
+          className="reservation-draft"
+          style={{
+            position: "absolute",
+            left: Math.min(startCell.x, hoverCell.x) * cellSize,
+            top: Math.min(startCell.y, hoverCell.y) * cellSize,
+            width: (Math.abs(startCell.x - hoverCell.x) + 1) * cellSize,
+            height: (Math.abs(startCell.y - hoverCell.y) + 1) * cellSize,
+            backgroundColor: "rgba(0, 128, 0, 0.3)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
     </div>
   );
 };
 
-export default ReservationEditor;
+export default DynamicGrid;

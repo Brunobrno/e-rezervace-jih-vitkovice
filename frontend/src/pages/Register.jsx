@@ -1,13 +1,7 @@
-import Col from "react-bootstrap/esm/Col";
+
 import RegisterCard from "../components/RegisterCard";
-import Container from "react-bootstrap/esm/Container";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import Card from "react-bootstrap/Card";
-import Row from "react-bootstrap/Row";
-import ToggleButton from "react-bootstrap/ToggleButton";
-import InputGroup from "react-bootstrap/InputGroup";
-import Modal from "react-bootstrap/Modal";
+
+import { Modal, Col, Container, Button, Form, Card, ToggleButton, InputGroup } from "react-bootstrap";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faMobileAlt } from "@fortawesome/free-solid-svg-icons";
