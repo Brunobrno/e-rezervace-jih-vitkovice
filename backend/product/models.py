@@ -8,5 +8,5 @@ class Product(models.Model):
 class EventProduct(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="product")
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event")
-    start_selling_date = models.DateTimeField(auto_now=True, auto_created=True)
+    start_selling_date = models.DateTimeField(auto_created=True)
     end_selling_date = models.DateTimeField(auto_created=True)
