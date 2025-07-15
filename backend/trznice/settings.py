@@ -257,7 +257,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -320,7 +320,7 @@ SESSION_COOKIE_AGE = 86400  # one day
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-LOGIN_URL = 'login'
+LOGIN_URL = '/admin' #nastavení Login adresy
 
 
 #---------------------MEDIA + STATIC, AWS--------------------------

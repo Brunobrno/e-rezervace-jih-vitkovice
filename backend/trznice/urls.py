@@ -24,18 +24,15 @@ from drf_yasg import openapi
 
 from . import views
 
-
-schema_view = get_schema_view(
-   openapi.Info(
-      title="Your Project API",
-      default_version='v1',
-      description="API documentation",
-   ),
-   public=True,
-   permission_classes=(permissions.AllowAny,),
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
 )
 
 from .admin import custom_admin_site
+
+
 urlpatterns = [
 
     path('login/', auth_views.LoginView.as_view(), name='login'),  # pro Swagger
@@ -44,13 +41,14 @@ urlpatterns = [
     # path('admin/', admin.site.urls),
     path("admin/", custom_admin_site.urls),  # override default admin
 
-    path('account/', include('account.urls')),
-    path('booking/', include('booking.urls')),
+    path('api/account/', include('account.urls')),
+    path('api/booking/', include('booking.urls')),
+    path('api/product/', include('product.urls')),
 
     #rest framework, map of api
-    path('swagger<format>.json|.yaml', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 
-    #path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('', views.index, name='index')
 ]

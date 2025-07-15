@@ -94,7 +94,7 @@ class EventSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "description", "start", "end", "grid_resolution", "price_per_m2",
             "x", "y", "square_size", "w", "h",
-            "street", "city", "psc", "image",
+            "street", "city", "psc", #"image",
         ]
         read_only_fields = ["id", "w", "h"]
 

@@ -1,45 +1,27 @@
 from rest_framework.permissions import BasePermission
+from rest_framework_api_key.permissions import HasAPIKey
 
 
-
-
-class IsAdmin(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'admin' and request.user.is_superuser
-
-class IsOfficer(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'cityClerk'
-
-class IsReservationManager(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'squareManager'
-
-class IsOfficerOrReservationManager(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['cityClerk', 'checker']
-
-class IsSeller(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['seller']
-
-class IsPublic(BasePermission):
-    """Pouze pro nepřihlášené uživatele."""
-    def has_permission(self, request, view):
-        return not request.user.is_authenticated
-
-
-#Podle svého uvážení
+#Podle svého uvážení (NEPOUŽÍVAT!!!)
 class RolePermission(BasePermission):
     allowed_roles = []
 
     def has_permission(self, request, view):
-        return (
+        # Je uživatel přihlášený a má roli z povolených?
+        user_has_role = (
+            request.user and
             request.user.is_authenticated and
             getattr(request.user, "role", None) in self.allowed_roles
         )
 
-#Prostě stačí vložit RoleAllowed('seller','cityClerk')
+        # Má API klíč?
+        has_api_key = HasAPIKey().has_permission(request, view)
+
+
+        return user_has_role or has_api_key
+
+#TOHLE POUŽÍT!!!
+#Prostě stačí vložit: RoleAllowed('seller','cityClerk')
 def RoleAllowed(*roles):
     class CustomRolePermission(RolePermission):
         allowed_roles = roles

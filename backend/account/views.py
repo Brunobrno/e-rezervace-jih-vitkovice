@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 
-
+from drf_spectacular.utils import extend_schema
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -24,32 +24,41 @@ from drf_yasg import openapi
 User = get_user_model()
 
 #general user view API
+@extend_schema(
+    tags=["user - basic"]
+)
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
     # Require authentication and role permission
-    permission_classes = [IsAuthenticated, IsOfficer | IsAdmin]
+    permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
     
 
 
 #1. registration API
+@extend_schema(
+    tags=["User Login/Registration/passwd reset"]
+)
 class UserRegistrationViewSet(ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserRegistrationSerializer
     http_method_names = ['post']
 
     @swagger_auto_schema(
-        operation_description="Registrace nového uživatele(firmy). Uživateli přijde email s odkazem na ověření.",
+        operation_description="1. Registrace nového uživatele(firmy). Uživateli přijde email s odkazem na ověření.",
         responses={201: UserRegistrationSerializer}
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
     
 #2. confirming email
+@extend_schema(
+    tags=["User Login/Registration/passwd reset"]
+)
 class EmailVerificationView(APIView):
     @swagger_auto_schema(
-        operation_description="Ověření emailu pomocí odkazu s uid a tokenem.",
+        operation_description="2. Ověření emailu pomocí odkazu s uid a tokenem.",
         responses={
             200: openapi.Response(description="Email úspěšně ověřen."),
             400: openapi.Response(description="Chybný nebo expirovaný token.")
@@ -70,14 +79,17 @@ class EmailVerificationView(APIView):
             return Response({"error": "Token je neplatný nebo expirovaný."}, status=400)
 
 #3. seller activation API (var_symbol)
+@extend_schema(
+    tags=["User Login/Registration/passwd reset"]
+)
 class UserActivationViewSet(ModelViewSet):
     queryset = CustomUser.objects.filter(is_active=False)
     serializer_class = UserActivationSerializer
-    permission_classes = [IsAuthenticated, IsAdmin | IsOfficer]
+    permission_classes = [IsAuthenticated, RoleAllowed('cityClerk', 'admin')]
     http_method_names = ['patch']
 
     @swagger_auto_schema(
-        operation_description="Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
+        operation_description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
         request_body=UserActivationSerializer,
         responses={200: UserActivationSerializer}
     )
@@ -87,9 +99,12 @@ class UserActivationViewSet(ModelViewSet):
 #--------------------------------------------------------------------------------------------------------------
 
 #1. PasswordReset + send Email
+@extend_schema(
+    tags=["User Login/Registration/passwd reset"]
+)
 class PasswordResetRequestView(APIView):
     @swagger_auto_schema(
-        operation_description="Požadavek na reset hesla - uživatel zadá svůj email.",
+        operation_description="1(a). Požadavek na reset hesla - uživatel zadá svůj email.",
         request_body=PasswordResetRequestSerializer,
         responses={200: "Odeslán email s instrukcemi.", 400: "Neplatný email."}
     )
@@ -103,9 +118,12 @@ class PasswordResetRequestView(APIView):
         return Response(serializer.errors, status=400)
     
 #2. Confirming reset
+@extend_schema(
+    tags=["User Login/Registration/passwd reset"]
+)
 class PasswordResetConfirmView(APIView):
     @swagger_auto_schema(
-        operation_description="Potvrzení resetu hesla pomocí tokenu z emailu.",
+        operation_description="1(a). Potvrzení resetu hesla pomocí tokenu z emailu.",
         request_body=PasswordResetConfirmSerializer,
         responses={200: "Heslo bylo změněno.", 400: "Chybný token nebo data."}
     )
@@ -125,6 +143,3 @@ class PasswordResetConfirmView(APIView):
             user.save()
             return Response({"detail": "Heslo bylo úspěšně změněno."})
         return Response(serializer.errors, status=400)
-    
-def index(request):
-    return rende
