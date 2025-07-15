@@ -1,0 +1,74 @@
+# -- BASE --
+requests
+
+pip
+python-dotenv # .env support
+virtualenv #venv
+
+Django
+
+numpy # NumPy je knihovna programovacího jazyka Python, která poskytuje infrastrukturu pro práci s vektory, maticemi a obecně vícerozměrnými poli.
+
+
+# -- DATABASE --
+sqlparse #non-validating SQL parser for Python. It provides support for parsing, splitting and formatting SQL statements.
+tzdata #timezone
+
+
+psycopg[binary] #PostgreSQL database adapter for the Python
+
+
+# -- OBJECT STORAGE -- 
+Pillow #adds image processing capabilities to your Python interpreter
+
+whitenoise #pomáha se spuštěním serveru a načítaní static files
+
+
+django-cleanup #odstraní zbytečné media soubory které nejsou v databázi/modelu
+django-storages # potřeba k S3 bucket storage
+boto3
+
+
+# -- PROTOCOLS (asgi, websockets) --
+channels_redis
+
+channels #django channels
+
+#channels requried package
+uvicorn[standard] 
+daphne
+
+gunicorn
+
+# -- REST API --
+djangorestframework #REST Framework
+
+djangorestframework-api-key #API key
+
+djangorestframework-simplejwt
+PyJWT
+asgiref
+pytz
+
+
+drf-yasg #documentation for frontend dev
+drf-spectacular
+
+# -- APPS --
+
+django-tinymce
+
+django-cors-headers #csfr
+
+#celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčistit cache atd.)
+
+
+# -- EDITING photos, gifs, videos --
+
+#aiofiles
+#opencv-python #moviepy use this better instead of pillow
+#moviepy
+
+#yt-dlp
+
+weasyprint #tvoření PDFek z html dokumentu + css styly
