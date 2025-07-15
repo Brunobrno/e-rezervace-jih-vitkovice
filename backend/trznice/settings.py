@@ -237,7 +237,7 @@ try:
     # Check if the default database connection is working
     connection = connections['default']
     
-    print("-------------------------\nDatabase host: " + os.getenv('DATABASE_HOST'))
+    print("-------------------------\nDatabase host: " + str(os.getenv('DATABASE_HOST')))
     print(connection)
     
     connection.ensure_connection()
