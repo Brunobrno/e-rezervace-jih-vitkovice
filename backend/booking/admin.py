@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Event, Reservation
+from .models import Event, Reservation, MarketSlot
 
 from trznice.admin import custom_admin_site
 
@@ -20,3 +20,12 @@ class ReservationAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
 
 custom_admin_site.register(Reservation, ReservationAdmin)
+
+
+class MarketSlotAdmin(admin.ModelAdmin):
+    list_display = ("event", "status", "avilabe_extension", "price", "first_x", "first_y", "second_x", "second_y")
+    list_filter = ("status", "event")
+    search_fields = ("event__name",)
+    ordering = ("event", "status")
+
+custom_admin_site.register(MarketSlot, MarketSlotAdmin)

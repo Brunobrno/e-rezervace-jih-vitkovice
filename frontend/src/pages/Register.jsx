@@ -1,7 +1,7 @@
 
 import RegisterCard from "../components/RegisterCard";
 
-import { Modal, Col, Container, Button, Form, Card, ToggleButton, InputGroup } from "react-bootstrap";
+import { Modal, Col, Row, Container, Button, Form, Card, ToggleButton, InputGroup } from "react-bootstrap";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faMobileAlt } from "@fortawesome/free-solid-svg-icons";

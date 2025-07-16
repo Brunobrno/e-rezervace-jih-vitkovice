@@ -37,15 +37,24 @@ export const getProtectedData = async () => {
   }
 };
 
-export const refreshToken = async () => {
-  try {
-    const refresh = localStorage.getItem("refresh");
-    const response = await axios.post(`${API_URL}/token/refresh/`, {
-      refresh,
-    });
-    localStorage.setItem("access", response.data.access);
-    axios.defaults.headers.common["Authorization"] = `Bearer ${response.data.access}`;
-  } catch (err) {
-    console.error("Token refresh failed", err);
+export async function refreshAccessToken() {
+  const refresh = localStorage.getItem("refresh_token");
+  if (!refresh) return;
+
+  const res = await fetch(`${API_URL}/account/token/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh }),
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    localStorage.setItem("access_token", data.access);
+    return data.access;
+  } else {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
   }
-};
+}
+
+export default API_URL;

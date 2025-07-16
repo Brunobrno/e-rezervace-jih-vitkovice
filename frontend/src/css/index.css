@@ -17981,3 +17981,8 @@ footer p {
 .resize-handle {
   border-radius: 2px 0 0 0;
 }
+
+.input-group-city-psc{
+  flex-wrap: nowrap;
+  
+}

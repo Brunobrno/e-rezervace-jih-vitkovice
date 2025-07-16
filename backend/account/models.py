@@ -82,7 +82,8 @@ class CustomUser(AbstractUser):
 
         if self.email_verified:
             self.is_active = True
-
+        
+        super().save(*args, **kwargs)
 
         # Now assign permissions after user exists
         # if is_new and self.role:
@@ -91,7 +92,7 @@ class CustomUser(AbstractUser):
             print(f"Assigning permissions to: {self.email} with role {self.role}")
             assign_permissions_based_on_role(self)
         
-        super().save(*args, **kwargs)  # save once, after prep
+        # super().save(*args, **kwargs)  # save once, after prep
 
 
 
