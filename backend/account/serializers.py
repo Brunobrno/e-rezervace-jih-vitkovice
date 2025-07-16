@@ -67,9 +67,28 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'first_name', 'last_name', 'email', 'phone_number',
-            'password', 'role', 'city', 'street', 'PSC'
+            'first_name', 'last_name', 'email', 'phone_number', 'account_type',
+            'password','city', 'street', 'PSC', 'bank_account', 'RC', 'ICO', 'GDPR'
         ]
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
+            phone_number=validated_data.get('phone_number'),
+            role='seller',  # automaticky nastavíme roli seller
+            city=validated_data.get('city'),
+            street=validated_data.get('street'),
+            PSC=validated_data.get('PSC'),
+            bank_account=validated_data.get('bank_account')
+            RC=validated_data.get('RC')
+            ICO=validated_data.get('ICO')
+            GDPR=validated_data.get('GDPR')
+            account_type=validated_data.get('account_type')
+        )
+        return user
 
     def validate_password(self, value):
         if len(value) < 8:
