@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from booking.models import Event, Reservation, Cell
+from booking.models import Event, Reservation
 from product.models import Product, EventProduct
 from django.contrib.auth import get_user_model
 
@@ -14,37 +14,38 @@ def assign_permissions_based_on_role(user):
             # "delete": [Reservation],
         },
         "squareManager": {
-            "view": [Event, Cell, Product, EventProduct],
-            "add": [Event, Cell, Product, EventProduct],
-            "change": [Event, Cell, Product, EventProduct],
+            "view": [Event,  Product, EventProduct],
+            "add": [Event,  Product, EventProduct],
+            "change": [Event,  Product, EventProduct],
         },
         # "admin": {
-        #     "view": [Event,  Reservation, Cell, get_user_model()],
-        #     "add": [Event,  Reservation, Cell],
-        #     "change": [Event,  Reservation, Cell],
-        #     "delete": [Event,  Reservation, Cell],
+        #     "view": [Event,  Reservation,  get_user_model()],
+        #     "add": [Event,  Reservation],
+        #     "change": [Event,  Reservation],
+        #     "delete": [Event,  Reservation],
         # },
         # etc.
             "admin": "all",  # Mark this role specially
     }
 
     if not user.role:
+        print("User has no role set")
         return
 
     if user.role == "admin":
         user.is_staff = True
         user.is_superuser = True
-        user.save()
+        # user.save()
         return
 
     # Reset in case role changed away from admin
     user.is_superuser = False
-
-
-    if not user.role:
-        return
-
+    
+    print(f"Assigning role-based permissions for: {user.email}, role: {user.role}")
+    
     perms_for_role = role_perms.get(user.role, {})
+
+    print(perms_for_role)
 
     for action, models in perms_for_role.items():
         for model in models:
@@ -56,3 +57,4 @@ def assign_permissions_based_on_role(user):
             except Permission.DoesNotExist:
                 # You may log this
                 pass
+    # user.save()   

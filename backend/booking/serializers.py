@@ -1,74 +1,23 @@
 from django.db import transaction
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from .models import Event, Reservation, Cell, CHOICE_SQUARES
-
-
-class CellSerializer(serializers.ModelSerializer):
-    @extend_schema_field(str)
-    def get_i(self, obj):
-        return str(obj.id)
-    
-    
-    i = serializers.SerializerMethodField(help_text="String ID pro react-grid-layout")
-
-    def get_i(self, obj):
-        return str(obj.id)
-
-    def get_i(self, obj):
-        return str(obj.id)
-
-    class Meta:
-        model = Cell
-        fields = ["id", "x", "y", "w", "h", "i", "reservation"]
-        extra_kwargs = {
-            "reservation": {"help_text": "ID rezervace pokud je místo zabrané, jinak null"}
-        }
+from .models import Event, Reservation, CHOICE_SQUARES
 
 
 class ReservationSerializer(serializers.ModelSerializer):
-    cells = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Cell.objects.filter(reservation__isnull=True),
-        help_text="Seznam ID políček (Cells), které chce obchodník zabrat"
-    )
 
     class Meta:
         model = Reservation
         fields = [
             "id", "user", "event", "reserved_from", "reserved_to",
-            "status", "note", "created_at", "cells"
+            "status", "note", "created_at"
         ]
         read_only_fields = ["id", "created_at"]
 
     def validate(self, data):
-        cells = data.get("cells", [])
-        event = data.get("event")
-
-        for cell in cells:
-            if cell.event != event:
-                raise serializers.ValidationError(
-                    f"Cell ID {cell.id} nepatří do eventu {event.name}."
-                )
-            if cell.reservation is not None:
-                raise serializers.ValidationError(
-                    f"Cell ID {cell.id} je už rezervován."
-                )
         return data
 
     def validate(self, data):
-        cells = data.get("cells", [])
-        event = data.get("event")
-
-        for cell in cells:
-            if cell.event != event:
-                raise serializers.ValidationError(
-                    f"Cell ID {cell.id} nepatří do eventu {event.name}."
-                )
-            if cell.reservation is not None:
-                raise serializers.ValidationError(
-                    f"Cell ID {cell.id} je už rezervován."
-                )
         return data
 
     def create(self, validated_data):

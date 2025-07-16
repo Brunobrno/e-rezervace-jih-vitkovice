@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Event, Reservation, Cell
+from .models import Event, Reservation
 
 from trznice.admin import custom_admin_site
 
@@ -20,14 +20,3 @@ class ReservationAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
 
 custom_admin_site.register(Reservation, ReservationAdmin)
-
-
-# @admin.register(Cell)
-class CellAdmin(admin.ModelAdmin):
-    list_display = ("id", "x", "y", "w", "h", "event", "reservation", "created_at")
-    list_filter = ("event", "reservation")
-    search_fields = ("event__name", "reservation__user__username")
-    readonly_fields = ("created_at",)
-    ordering = ("event", "y", "x")
-
-custom_admin_site.register(Cell, CellAdmin)
