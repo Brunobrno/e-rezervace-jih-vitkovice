@@ -24,9 +24,9 @@ class Event(models.Model):
     h = models.IntegerField(editable=False, default=0)
 
     square_size = models.CharField(
-        default=CHOICE_SQUARES[2],
+        default="0x0",  # Oprava z předchozí chyby
         max_length=20,
-        choices=[(str(dim[0]) + "x" + str(dim[1]), label) for dim, label in CHOICE_SQUARES],
+        choices=[(f"{dim[0]}x{dim[1]}", label) for dim, label in CHOICE_SQUARES],
         help_text="Vyberte rozměry náměstí"
     )
 
@@ -46,16 +46,17 @@ class Event(models.Model):
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
     def clean(self):
+        # Kontrola překrývání jiných Eventů ve stejný čas a prostor
         overlapping = Event.objects.exclude(id=self.id).filter(
             start__lt=self.end,
             end__gt=self.start,
             x__lt=self.x + self.w,
-            x__gte=self.x - models.F("w"),
+            x__gte=self.x - self.w,
             y__lt=self.y + self.h,
-            y__gte=self.y - models.F("h")
+            y__gte=self.y - self.h,
         )
         if overlapping.exists():
-            raise ValidationError("Tato plocha se překrývá s jinou Event během souběžné akce.")
+            raise ValidationError("Tato plocha se překrývá s jinou akcí ve stejném čase.")
 
     def save(self, *args, **kwargs):
         if self.square_size:
@@ -82,7 +83,7 @@ class MarketSlot(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="empty")
 
-    avilabe_extension = models.FloatField(default=0 ,help_text="Možnost rozšíření (m2)")
+    available_extension = models.FloatField(default=0 ,help_text="Možnost rozšíření (m2)")
 
     first_x = models.SmallIntegerField(default=0, blank=False)
     first_y = models.SmallIntegerField(default=0, blank=False)
@@ -113,13 +114,33 @@ class Reservation(models.Model):
     final_price = models.DecimalField(blank=True, null=True, default=0, max_digits=8, decimal_places=2)
 
     def clean(self):
-        overlapping = Reservation.objects.exclude(id=self.id).filter(
-            event=self.event,
-            reserved_from__lt=self.reserved_to,
-            reserved_to__gt=self.reserved_from
-        )
+        if self.marketSlot:
+            overlapping = Reservation.objects.exclude(id=self.id).filter(
+                event=self.event,
+                marketSlot=self.marketSlot,
+                reserved_from__lt=self.reserved_to,
+                reserved_to__gt=self.reserved_from,
+                status="reserved"
+            )
+        else:
+            # Pokud není definovaný konkrétní MarketSlot – kontrola všech bez slotu
+            overlapping = Reservation.objects.exclude(id=self.id).filter(
+                event=self.event,
+                marketSlot__isnull=True,
+                reserved_from__lt=self.reserved_to,
+                reserved_to__gt=self.reserved_from,
+                status="reserved"
+            )
+
         if overlapping.exists():
-            raise ValidationError("Rezervace se časově překrývá s jinou rezervací ve stejném eventu.")
+            raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
+
+        if self.reserved_from < self.event.start or self.reserved_to > self.event.end:
+            raise ValidationError("Rezervace musí být v rámci trvání akce.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Rezervace {self.user} na event {self.event.name}"

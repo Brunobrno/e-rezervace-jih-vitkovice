@@ -23,7 +23,7 @@ class CustomUserAdmin(UserAdmin):
 
     fieldsets = (
         (None, {"fields": ("username", "email", "password")}),
-        ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_acc", "ICO", "city", "street", "PSC")}),
+        ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_account", "ICO", "city", "street", "PSC")}),
         ("Práva a stav", {"fields": ("is_active", "is_staff", "is_superuser", "email_verified", "groups", "user_permissions")}),
         ("Důležité časy", {"fields": ("last_login",)}),  # create_time vyjmuto odsud
     )
@@ -80,7 +80,7 @@ class CustomUserAdmin(UserAdmin):
         if request.user.role == "cityClerk":
             return (
                 (None, {"fields": ("email", "username", "password")}),
-                ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_acc", "ICO", "city", "street", "PSC")}),
+                ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_account", "ICO", "city", "street", "PSC")}),
             )
         
         # Default for other users

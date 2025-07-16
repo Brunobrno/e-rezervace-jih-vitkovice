@@ -17,6 +17,8 @@ tzdata #timezone
 
 psycopg[binary] #PostgreSQL database adapter for the Python
 
+django-filter
+
 
 # -- OBJECT STORAGE -- 
 Pillow #adds image processing capabilities to your Python interpreter
