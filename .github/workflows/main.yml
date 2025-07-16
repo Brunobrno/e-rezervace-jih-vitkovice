@@ -1,0 +1,19 @@
+name: Discord Notification
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  notify:
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord message
+        uses: appleboy/discord-action@master
+        with:
+          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
+          message: "@here 🎉 Pull request merged! Check it out: ${{ github.event.pull_request.html_url }}"
