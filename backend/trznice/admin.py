@@ -18,8 +18,8 @@ class RoleBasedAdminSite(AdminSite):
 
         # define allowed models per role
         role_model_access = {
-            "squareManager": ["Event", "Product", "EventProduct"],
-            "cityClerk": ["CustomUser", "Event", "Reservation", "Product", "EventProduct"],
+            "squareManager": ["Event", "MarketSlot", "Product", "EventProduct"],
+            "cityClerk": ["CustomUser", "Event", "MarketSlot", "Reservation", "Product", "EventProduct"],
             # admin will see everything
         }
 
