@@ -66,7 +66,11 @@ class UserRegistrationViewSet(ModelViewSet):
         200: OpenApiResponse(description="Email úspěšně ověřen."),
         400: OpenApiResponse(description="Chybný nebo expirovaný token.")
     },
-    description="2. Ověření emailu pomocí odkazu s uid a tokenem.",
+    parameters=[
+        OpenApiParameter(name='uidb64', type=str, location='path', description="Token z E-mailu"),
+        OpenApiParameter(name='token', type=str, location='path', description="Token uživatele"),
+    ],
+    description="2. Ověření emailu pomocí odkazu s uid a tokenem. (stačí jenom převzít a poslat)",
 )
 class EmailVerificationView(APIView):
     def get(self, request, uidb64, token):

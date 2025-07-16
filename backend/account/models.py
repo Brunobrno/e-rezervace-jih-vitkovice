@@ -40,12 +40,12 @@ class CustomUser(AbstractUser):
 
     var_symbol = models.IntegerField(null=True, blank=True)
     bank_account = models.CharField(null=True, blank=True)
-    ICO = models.IntegerField(null=True, blank=True)
+    ICO = models.CharField(null=True, blank=True)
     RC = models.CharField(max_length=11, blank=True, null=True)
 
     city = models.CharField(null=True, blank=True, max_length=100)
     street = models.CharField(null=True, blank=True, max_length=200)
-    PSC = models.IntegerField(null=True, blank=True)
+    PSC = models.CharField(null=True, blank=True, max_length=5)
 
     GDPR = models.BooleanField(default=False)
 

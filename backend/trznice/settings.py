@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     #'authentication',
 
     'storages',# Adds support for external storage services like Amazon S3 via django-storages
+    'django_filters',
 
     'channels' ,# django channels
 
@@ -260,6 +261,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 
