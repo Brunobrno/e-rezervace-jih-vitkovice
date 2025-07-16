@@ -68,7 +68,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'phone_number',
-            'password','city', 'street', 'PSC'
+            'password','city', 'street', 'PSC', 'bank_account'
         ]
 
     def create(self, validated_data):
@@ -82,6 +82,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             city=validated_data.get('city'),
             street=validated_data.get('street'),
             PSC=validated_data.get('PSC'),
+            bank_account=validated_data.get('bank_account')
         )
         return user
 
