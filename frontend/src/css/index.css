@@ -17984,5 +17984,8 @@ footer p {
 
 .input-group-city-psc{
   flex-wrap: nowrap;
-  
+}
+
+#isize-psc{
+  width: 80px;
 }

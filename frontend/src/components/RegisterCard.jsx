@@ -21,10 +21,10 @@ import {
   faAddressCard,
   faBriefcase,
   faRoad,
-  faEnvelopeSquare
+  faEnvelopeSquare,
 } from "@fortawesome/free-solid-svg-icons";
 
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 
 function RegisterCard() {
   const [isFirm, setIsFirm] = useState(false); // false = Citizen, true = Firm
@@ -38,6 +38,15 @@ function RegisterCard() {
   const [first_name, setFirstName] = useState("");
   const [last_name, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone_number, setPhoneNumber] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [PSC, setPSC] = useState("");
+  const [bank_account, setBankAccount] = useState("");
+  const [ICO, setICO] = useState("");
+  const [RC, setRC] = useState("");
+  const [GDPR, setGDPR] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -238,42 +247,40 @@ function RegisterCard() {
               </InputGroup>
             </Form.Group>
 
-            <Form.Group className="input-group-city-psc input-group form-group">
-              <Form.Label hidden>Město</Form.Label>
-              <InputGroup className="mr-2">
-                <div className="input-group-prepend">
+            <Form.Group className="form-group row">
+              <Col xs={12} md={7}>
+                <Form.Label hidden>Město</Form.Label>
+                <InputGroup>
                   <InputGroup.Text className="isize">
                     <FontAwesomeIcon icon={faBuilding} />
                     &nbsp; Město
                   </InputGroup.Text>
-                </div>
+                  <Form.Control
+                    type="text"
+                    placeholder=""
+                    aria-label="city"
+                    name="city"
+                    required
+                  />
+                </InputGroup>
+              </Col>
 
-                <Form.Control
-                  type="text"
-                  placeholder=""
-                  aria-label="city"
-                  name="city"
-                  required
-                />
-              </InputGroup>
-
-              <Form.Label hidden>PSČ</Form.Label>
-              <InputGroup>
-                <div className="input-group-prepend">
-                  <InputGroup.Text className="isize">
+              <Col xs={12} md={5}>
+                <Form.Label hidden>PSČ</Form.Label>
+                <InputGroup>
+                  <InputGroup.Text id="isize-psc" className="isize">
                     <FontAwesomeIcon icon={faEnvelopeSquare} />
                     &nbsp; PSČ
                   </InputGroup.Text>
-                </div>
-
-                <Form.Control
-                  type="text"
-                  placeholder=""
-                  aria-label="PSC"
-                  name="PSC"
-                  required
-                />
-              </InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder=""
+                    aria-label="PSC"
+                    name="PSC"
+                    required
+                  />
+                </InputGroup>
+              </Col>
             </Form.Group>
 
             <Form.Group className="input-group form-group">
@@ -315,12 +322,12 @@ function RegisterCard() {
                 <Form.Control
                   type="text"
                   placeholder=""
-                  aria-label="registerRC/IC"
-                  name="registerRC/IC"
+                  aria-label={isFirm ? "ICO" : "RC"}
+                  name={isFirm ? "ICO" : "RC"}
                   required
                   inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength="10"
+                  pattern={isFirm ? "[0-9]*" : "^[0-9/]*$"}
+                  maxLength={isFirm ? "8" : "11"}
                 />
               </InputGroup>
             </Form.Group>
@@ -330,11 +337,10 @@ function RegisterCard() {
                 <Form.Control
                   className="custom-control-input"
                   type="checkbox"
-                  name="gdpr"
-                  id="gdpr"
+                  name="GDPR"
                   required
                 />
-                <Form.Label className="custom-control-label" htmlFor="gdpr">
+                <Form.Label className="custom-control-label" htmlFor="GDPR">
                   Souhlasím se zpracováním osobních údajů
                 </Form.Label>
               </div>
