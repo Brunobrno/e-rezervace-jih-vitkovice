@@ -289,8 +289,8 @@ function RegisterCard() {
                 <Form.Control
                   type="text"
                   placeholder=""
-                  aria-label="registerBankAccountNumber"
-                  name="registerBankAccountNumber"
+                  aria-label="bank_account"
+                  name="bank_account"
                   required
                   inputMode="numeric"
                   pattern="^[0-9/]*$"
