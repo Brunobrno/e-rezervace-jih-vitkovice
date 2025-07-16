@@ -96,22 +96,5 @@ class CustomUser(AbstractUser):
             assign_permissions_based_on_role(self)
         
         # super().save(*args, **kwargs)  # save once, after prep
-
-
-
-class OneTimeLoginToken(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    used = models.BooleanField(default=False)
-    expires_at = models.DateTimeField()
-
-    def save(self, *args, **kwargs):
-        if not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(hours=24)  # link valid 24h
-        super().save(*args, **kwargs)
-
-    def is_valid(self):
-        return (not self.used) and (timezone.now() < self.expires_at)
     
 

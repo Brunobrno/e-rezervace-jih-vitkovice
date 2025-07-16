@@ -7,6 +7,7 @@ from .permissions import *
 from .email import send_password_reset_email, send_email_verification
 from .models import CustomUser
 from .tokens import *
+from .filters import UserFilter
 
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
@@ -15,6 +16,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
 
 
@@ -22,11 +25,13 @@ User = get_user_model()
 
 #general user view API
 @extend_schema(
-    tags=["user - basic"]
+    tags=["User - basic"]
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = UserFilter
 
     # Require authentication and role permission
     permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]

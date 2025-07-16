@@ -13,7 +13,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 User = get_user_model()
 
 
-from .models import OneTimeLoginToken
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
