@@ -67,8 +67,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'first_name', 'last_name', 'email', 'phone_number',
-            'password','city', 'street', 'PSC', 'bank_account'
+            'first_name', 'last_name', 'email', 'phone_number', 'account_type',
+            'password','city', 'street', 'PSC', 'bank_account', 'RC', 'ICO', 'GDPR'
         ]
 
     def create(self, validated_data):
@@ -83,6 +83,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             street=validated_data.get('street'),
             PSC=validated_data.get('PSC'),
             bank_account=validated_data.get('bank_account')
+            RC=validated_data.get('RC')
+            ICO=validated_data.get('ICO')
+            GDPR=validated_data.get('GDPR')
+            account_type=validated_data.get('account_type')
         )
         return user
 

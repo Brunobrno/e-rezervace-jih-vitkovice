@@ -47,6 +47,8 @@ class CustomUser(AbstractUser):
     street = models.CharField(null=True, blank=True, max_length=200)
     PSC = models.IntegerField(null=True, blank=True)
 
+    GDPR = models.BooleanField(default=False)
+
     is_active = models.BooleanField(default=False)
 
     REQUIRED_FIELDS = ['email']
