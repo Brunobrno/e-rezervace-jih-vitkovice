@@ -68,8 +68,22 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'phone_number',
-            'password', 'role', 'city', 'street', 'PSC'
+            'password','city', 'street', 'PSC'
         ]
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
+            phone_number=validated_data.get('phone_number'),
+            role='seller',  # automaticky nastavíme roli seller
+            city=validated_data.get('city'),
+            street=validated_data.get('street'),
+            PSC=validated_data.get('PSC'),
+        )
+        return user
 
     def validate_password(self, value):
         if len(value) < 8:
