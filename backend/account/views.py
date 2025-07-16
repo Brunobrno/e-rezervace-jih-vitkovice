@@ -15,10 +15,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 
-from drf_spectacular.utils import extend_schema
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
 
 
 User = get_user_model()
@@ -34,36 +31,44 @@ class UserView(viewsets.ModelViewSet):
     # Require authentication and role permission
     permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
     
+from rest_framework_simplejwt.views import TokenObtainPairView
 
+# Custom Token obtaining view
+@extend_schema(
+    tags=["api"],
+    request=CustomTokenObtainPairSerializer,
+    description="Authentication - získaš Access a Refresh token... lze do <username> vložit E-mail nebo username"
+)
+class EmailOrUsernameTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+#--------------------------------------------------------------------------------------------------------------
 
 #1. registration API
 @extend_schema(
-    tags=["User Login/Registration/passwd reset"]
+    tags=["User Registration"],
+    request=UserRegistrationSerializer,
+    responses={201: UserRegistrationSerializer},
+    description="1. Registrace nového uživatele(firmy). Uživateli přijde email s odkazem na ověření.",
 )
 class UserRegistrationViewSet(ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserRegistrationSerializer
     http_method_names = ['post']
 
-    @swagger_auto_schema(
-        operation_description="1. Registrace nového uživatele(firmy). Uživateli přijde email s odkazem na ověření.",
-        responses={201: UserRegistrationSerializer}
-    )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
     
 #2. confirming email
 @extend_schema(
-    tags=["User Login/Registration/passwd reset"]
+    tags=["User Registration"],
+    responses={
+        200: OpenApiResponse(description="Email úspěšně ověřen."),
+        400: OpenApiResponse(description="Chybný nebo expirovaný token.")
+    },
+    description="2. Ověření emailu pomocí odkazu s uid a tokenem.",
 )
 class EmailVerificationView(APIView):
-    @swagger_auto_schema(
-        operation_description="2. Ověření emailu pomocí odkazu s uid a tokenem.",
-        responses={
-            200: openapi.Response(description="Email úspěšně ověřen."),
-            400: openapi.Response(description="Chybný nebo expirovaný token.")
-        }
-    )
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -80,7 +85,10 @@ class EmailVerificationView(APIView):
 
 #3. seller activation API (var_symbol)
 @extend_schema(
-    tags=["User Login/Registration/passwd reset"]
+    tags=["User Registration"],
+    request=UserActivationSerializer,
+    responses={200: UserActivationSerializer},
+    description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
 )
 class UserActivationViewSet(ModelViewSet):
     queryset = CustomUser.objects.filter(is_active=False)
@@ -88,11 +96,6 @@ class UserActivationViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, RoleAllowed('cityClerk', 'admin')]
     http_method_names = ['patch']
 
-    @swagger_auto_schema(
-        operation_description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
-        request_body=UserActivationSerializer,
-        responses={200: UserActivationSerializer}
-    )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
 
@@ -100,14 +103,15 @@ class UserActivationViewSet(ModelViewSet):
 
 #1. PasswordReset + send Email
 @extend_schema(
-    tags=["User Login/Registration/passwd reset"]
+    tags=["User passwd reset"],
+    request=PasswordResetRequestSerializer,
+    responses={
+        200: OpenApiResponse(description="Odeslán email s instrukcemi."),
+        400: OpenApiResponse(description="Neplatný email.")
+    },
+    description="1(a). Požadavek na reset hesla - uživatel zadá svůj email."
 )
 class PasswordResetRequestView(APIView):
-    @swagger_auto_schema(
-        operation_description="1(a). Požadavek na reset hesla - uživatel zadá svůj email.",
-        request_body=PasswordResetRequestSerializer,
-        responses={200: "Odeslán email s instrukcemi.", 400: "Neplatný email."}
-    )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
@@ -119,14 +123,19 @@ class PasswordResetRequestView(APIView):
     
 #2. Confirming reset
 @extend_schema(
-    tags=["User Login/Registration/passwd reset"]
+    tags=["User passwd reset"],
+    request=PasswordResetConfirmSerializer,
+    parameters=[
+        OpenApiParameter(name='uidb64', type=str, location=OpenApiParameter.PATH),
+        OpenApiParameter(name='token', type=str, location=OpenApiParameter.PATH),
+    ],
+    responses={
+        200: OpenApiResponse(description="Heslo bylo změněno."),
+        400: OpenApiResponse(description="Chybný token nebo data.")
+    },
+    description="1(a). Potvrzení resetu hesla pomocí tokenu z emailu."
 )
 class PasswordResetConfirmView(APIView):
-    @swagger_auto_schema(
-        operation_description="1(a). Potvrzení resetu hesla pomocí tokenu z emailu.",
-        request_body=PasswordResetConfirmSerializer,
-        responses={200: "Heslo bylo změněno.", 400: "Chybný token nebo data."}
-    )
     def post(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))

@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import *
 
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
+    #TokenObtainPairView,
     TokenRefreshView,
 )
 
@@ -13,12 +13,13 @@ router.register(r'user', UserView, basename='user')
 urlpatterns = [
     path('', include(router.urls)),  # automaticky přidá všechny cesty z viewsetu
 
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), #přihlášení
+    path('token/', EmailOrUsernameTokenObtainPairView.as_view(), name='token_obtain_pair'), #přihlášení
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     #potom co access token vyprší tak se pomocí refresh tokenu získa další
     
     path('registration/', UserRegistrationViewSet.as_view({'post': 'create'}), name='create_seller'),
-    path('activation-varsymbol', UserActivationViewSet.as_view({'patch': 'partial_update'}), name='activate_user_and_input_var_symbol'),
+    path("registration/verify-email/<uidb64>/<token>/", EmailVerificationView.as_view()),
+    path('registration/activation-varsymbol', UserActivationViewSet.as_view({'patch': 'partial_update'}), name='activate_user_and_input_var_symbol'),
 
     path("reset-password/", PasswordResetRequestView.as_view(), name="reset-password-request"),
     path("reset-password/<uidb64>/<token>/", PasswordResetConfirmView.as_view(), name="reset-password-confirm"),
