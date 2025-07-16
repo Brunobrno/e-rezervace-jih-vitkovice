@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import API_URL from "../api/auth"
 
 function LoginCard() {
-  const [email, setEmail] = useState("");
+  const [username, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ function LoginCard() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (!response.ok) {
@@ -71,8 +71,7 @@ function LoginCard() {
               autoComplete="email"
               autoFocus
               name="email"
-              id="email"
-              value={email}
+              value={username}
               onChange={(e) => setEmail(e.target.value)}
             />
           </Form.Group>
@@ -94,7 +93,6 @@ function LoginCard() {
               autoComplete="current-password"
               autoFocus
               name="password"
-              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />

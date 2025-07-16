@@ -20,6 +20,8 @@ import {
   faBook,
   faAddressCard,
   faBriefcase,
+  faRoad,
+  faEnvelopeSquare
 } from "@fortawesome/free-solid-svg-icons";
 
 import React, { useState } from "react";
@@ -33,6 +35,38 @@ function RegisterCard() {
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+  const [first_name, setFirstName] = useState("");
+  const [last_name, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const response = await fetch(`${API_URL}/account/token/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Neplatné přihlašovací údaje");
+      }
+
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+      console.log(localStorage.getItem("access_token"));
+
+      // přesměruj na dashboard nebo domovskou stránku
+      navigate("/reservation");
+    } catch (err) {
+      setError(err.message || "Přihlášení selhalo");
+    }
+  };
 
   return (
     <>
@@ -72,9 +106,8 @@ function RegisterCard() {
                     <Form.Control
                       type="text"
                       placeholder=""
-                      aria-label="registerFirmName"
-                      name="registerFirmName"
-                      id="registerFirmName"
+                      aria-label="first_name"
+                      name="first_name"
                       required
                     />
                   </InputGroup>
@@ -95,9 +128,8 @@ function RegisterCard() {
                     <Form.Control
                       type="text"
                       placeholder=""
-                      aria-label="registerFirstName"
-                      name="registerFirstName"
-                      id="registerFirstName"
+                      aria-label="first_name"
+                      name="first_name"
                     />
                   </InputGroup>
                 </Form.Group>
@@ -115,10 +147,8 @@ function RegisterCard() {
                     <Form.Control
                       type="text"
                       placeholder=""
-                      aria-label="registerLastName"
-                      aria-describedby="registerLastName"
-                      name="registerLastName"
-                      id="registerLastName"
+                      aria-label="last_name"
+                      name="last_name"
                     />
                   </InputGroup>
                 </Form.Group>
@@ -138,11 +168,9 @@ function RegisterCard() {
                 <Form.Control
                   type="email"
                   placeholder=""
-                  aria-label="registerEmail"
-                  aria-describedby="registerEmail"
+                  aria-label="email"
                   defaultValue="@"
-                  name="registerEmail"
-                  id="registerEmail"
+                  name="email"
                   required
                 />
               </InputGroup>
@@ -161,10 +189,8 @@ function RegisterCard() {
                 <Form.Control
                   type="password"
                   placeholder=""
-                  aria-label="registerPassword"
-                  aria-describedby="registerPassword"
-                  name="registerPassword"
-                  id="registerPassword"
+                  aria-label="password"
+                  name="password"
                   pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
                   required
                 />
@@ -172,7 +198,7 @@ function RegisterCard() {
             </Form.Group>
 
             <Form.Group className="input-group form-group">
-              <Form.Label hidden>Phone</Form.Label>
+              <Form.Label hidden>Telefon</Form.Label>
               <InputGroup>
                 <div className="input-group-prepend">
                   <InputGroup.Text className="isize">
@@ -184,34 +210,67 @@ function RegisterCard() {
                 <Form.Control
                   type="text"
                   placeholder=""
-                  aria-label="registerPhone"
-                  aria-describedby="registerPhone"
+                  aria-label="phone_number"
                   defaultValue="+420"
-                  name="rregisterPhone"
-                  id="registerPhone"
+                  name="phone_number"
                   required
                 />
               </InputGroup>
             </Form.Group>
 
             <Form.Group className="input-group form-group">
-              <Form.Label hidden>
-                {isFirm ? "Main Office" : "Address"}
-              </Form.Label>
+              <Form.Label hidden>Ulice</Form.Label>
               <InputGroup>
                 <div className="input-group-prepend">
                   <InputGroup.Text className="isize">
-                    <FontAwesomeIcon icon={faBuilding} />
-                    &nbsp; {isFirm ? "Sídlo" : "Adresa"}
+                    <FontAwesomeIcon icon={faRoad} />
+                    &nbsp; Ulice
                   </InputGroup.Text>
                 </div>
 
                 <Form.Control
                   type="text"
                   placeholder=""
-                  aria-label={`register${isFirm ? "MainOffice" : "Address"}`}
-                  name={`register${isFirm ? "MainOffice" : "Address"}`}
-                  id={`register${isFirm ? "MainOffice" : "Address"}`}
+                  aria-label="street"
+                  name="street"
+                  required
+                />
+              </InputGroup>
+            </Form.Group>
+
+            <Form.Group className="input-group-city-psc input-group form-group">
+              <Form.Label hidden>Město</Form.Label>
+              <InputGroup className="mr-2">
+                <div className="input-group-prepend">
+                  <InputGroup.Text className="isize">
+                    <FontAwesomeIcon icon={faBuilding} />
+                    &nbsp; Město
+                  </InputGroup.Text>
+                </div>
+
+                <Form.Control
+                  type="text"
+                  placeholder=""
+                  aria-label="city"
+                  name="city"
+                  required
+                />
+              </InputGroup>
+
+              <Form.Label hidden>PSČ</Form.Label>
+              <InputGroup>
+                <div className="input-group-prepend">
+                  <InputGroup.Text className="isize">
+                    <FontAwesomeIcon icon={faEnvelopeSquare} />
+                    &nbsp; PSČ
+                  </InputGroup.Text>
+                </div>
+
+                <Form.Control
+                  type="text"
+                  placeholder=""
+                  aria-label="PSC"
+                  name="PSC"
                   required
                 />
               </InputGroup>
@@ -232,7 +291,6 @@ function RegisterCard() {
                   placeholder=""
                   aria-label="registerBankAccountNumber"
                   name="registerBankAccountNumber"
-                  id="registerBankAccountNumber"
                   required
                   inputMode="numeric"
                   pattern="^[0-9/]*$"
@@ -259,7 +317,6 @@ function RegisterCard() {
                   placeholder=""
                   aria-label="registerRC/IC"
                   name="registerRC/IC"
-                  id="registerRC/IC"
                   required
                   inputMode="numeric"
                   pattern="[0-9]*"
