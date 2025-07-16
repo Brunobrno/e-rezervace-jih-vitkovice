@@ -27,9 +27,10 @@ import {
 import React, { use, useState } from "react";
 
 function RegisterCard() {
-  const [isFirm, setIsFirm] = useState(false); // false = Citizen, true = Firm
-  const handleSwitchChange = () => {
+  const [isFirm, setIsFirm] = useState(false); // false = Individual, true = Company
+  const handleSwitchChange = (e) => {
     setIsFirm(!isFirm);
+    setAccountType(!isFirm ? "Company" : "Individual");
   };
 
   const [show, setShow] = useState(false);
@@ -37,38 +38,61 @@ function RegisterCard() {
   const handleShow = () => setShow(true);
   const [first_name, setFirstName] = useState("");
   const [last_name, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("@");
   const [password, setPassword] = useState("");
-  const [phone_number, setPhoneNumber] = useState("");
+  const [phone_number, setPhoneNumber] = useState("+420");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [PSC, setPSC] = useState("");
   const [bank_account, setBankAccount] = useState("");
   const [ICO, setICO] = useState("");
   const [RC, setRC] = useState("");
-  const [GDPR, setGDPR] = useState(false);
+  const [GDPR, setGDPR] = useState(true);
+  const [account_type, setAccountType] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/account/token/`, {
+      const response = await fetch(`${API_URL}/account/registration/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          street,
+          city,
+          PSC,
+          bank_account,
+          RC,
+          ICO,
+          GDPR,
+          account_type
+        }),
       });
 
       if (!response.ok) {
+        console.log(first_name,
+          last_name,
+          email,
+          phone_number,
+          street,
+          city,
+          PSC,
+          bank_account,
+          RC,
+          ICO,
+          GDPR,
+          account_type)
         throw new Error("Neplatné přihlašovací údaje");
       }
-
-      const data = await response.json();
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
-      console.log(localStorage.getItem("access_token"));
+    
+      ;
 
       // přesměruj na dashboard nebo domovskou stránku
       navigate("/reservation");
@@ -103,7 +127,7 @@ function RegisterCard() {
             {isFirm ? (
               <>
                 <Form.Group className="input-group form-group">
-                  <Form.Label hidden>Firm name</Form.Label>
+                  <Form.Label hidden>Název</Form.Label>
                   <InputGroup>
                     <div className="input-group-prepend">
                       <InputGroup.Text className="isize">
@@ -118,6 +142,8 @@ function RegisterCard() {
                       aria-label="first_name"
                       name="first_name"
                       required
+                      value={first_name}
+                      onChange={(e) => setFirstName(e.target.value)}
                     />
                   </InputGroup>
                 </Form.Group>
@@ -139,6 +165,8 @@ function RegisterCard() {
                       placeholder=""
                       aria-label="first_name"
                       name="first_name"
+                      value={first_name}
+                      onChange={(e) => setFirstName(e.target.value)}
                     />
                   </InputGroup>
                 </Form.Group>
@@ -158,6 +186,8 @@ function RegisterCard() {
                       placeholder=""
                       aria-label="last_name"
                       name="last_name"
+                      value={last_name}
+                      onChange={(e) => setLastName(e.target.value)}
                     />
                   </InputGroup>
                 </Form.Group>
@@ -178,9 +208,10 @@ function RegisterCard() {
                   type="email"
                   placeholder=""
                   aria-label="email"
-                  defaultValue="@"
                   name="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </InputGroup>
             </Form.Group>
@@ -202,6 +233,8 @@ function RegisterCard() {
                   name="password"
                   pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </InputGroup>
             </Form.Group>
@@ -220,9 +253,10 @@ function RegisterCard() {
                   type="text"
                   placeholder=""
                   aria-label="phone_number"
-                  defaultValue="+420"
                   name="phone_number"
                   required
+                  value={phone_number}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </InputGroup>
             </Form.Group>
@@ -247,10 +281,10 @@ function RegisterCard() {
               </InputGroup>
             </Form.Group>
 
-            <Form.Group className="form-group row">
-              <Col xs={12} md={7}>
+            <Form.Group className="row">
+              <Col xs={12} md={6} className="mb-3">
                 <Form.Label hidden>Město</Form.Label>
-                <InputGroup>
+                <InputGroup className="flex-nowrap">
                   <InputGroup.Text className="isize">
                     <FontAwesomeIcon icon={faBuilding} />
                     &nbsp; Město
@@ -261,14 +295,17 @@ function RegisterCard() {
                     aria-label="city"
                     name="city"
                     required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    style={{ minWidth: 0 }} // klíčové pro rozbití šířky
                   />
                 </InputGroup>
               </Col>
 
-              <Col xs={12} md={5}>
+              <Col xs={12} md={6} className="mb-3">
                 <Form.Label hidden>PSČ</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text id="isize-psc" className="isize">
+                <InputGroup className="flex-nowrap">
+                  <InputGroup.Text className="isize">
                     <FontAwesomeIcon icon={faEnvelopeSquare} />
                     &nbsp; PSČ
                   </InputGroup.Text>
@@ -278,6 +315,9 @@ function RegisterCard() {
                     aria-label="PSC"
                     name="PSC"
                     required
+                    value={PSC}
+                    onChange={(e) => setPSC(e.target.value)}
+                    style={{ minWidth: 0 }}
                   />
                 </InputGroup>
               </Col>
@@ -300,7 +340,9 @@ function RegisterCard() {
                   name="bank_account"
                   required
                   inputMode="numeric"
-                  pattern="^[0-9/]*$"
+                  pattern="^(\d{0,6}-)?\d{1,10}/\d{4}$"
+                  value={bank_account}
+                  onChange={(e) => setBankAccount(e.target.value)}
                 />
               </InputGroup>
             </Form.Group>
@@ -326,8 +368,14 @@ function RegisterCard() {
                   name={isFirm ? "ICO" : "RC"}
                   required
                   inputMode="numeric"
-                  pattern={isFirm ? "[0-9]*" : "^[0-9/]*$"}
+                  pattern={isFirm ? "^\\d{8}$" : "^\\d{6}/\\d{3,4}$"}
                   maxLength={isFirm ? "8" : "11"}
+                  value={isFirm ? ICO : RC}
+                  onChange={
+                    isFirm
+                      ? (e) => setICO(e.target.value)
+                      : (e) => setRC(e.target.value)
+                  }
                 />
               </InputGroup>
             </Form.Group>
@@ -338,6 +386,7 @@ function RegisterCard() {
                   className="custom-control-input"
                   type="checkbox"
                   name="GDPR"
+                  id="GDPR"
                   required
                 />
                 <Form.Label className="custom-control-label" htmlFor="GDPR">
@@ -347,9 +396,9 @@ function RegisterCard() {
             </Form.Group>
             <Form.Group>
               <div>
-                <div class="links">
+                <div className="links">
                   <a
-                    class="gdpr"
+                    className="gdpr"
                     data-toggle="modal"
                     data-target="#gdprModal"
                     onClick={handleShow}
