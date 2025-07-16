@@ -82,10 +82,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             city=validated_data.get('city'),
             street=validated_data.get('street'),
             PSC=validated_data.get('PSC'),
-            bank_account=validated_data.get('bank_account')
-            RC=validated_data.get('RC')
-            ICO=validated_data.get('ICO')
-            GDPR=validated_data.get('GDPR')
+            bank_account=validated_data.get('bank_account'),
+            RC=validated_data.get('RC'),
+            ICO=validated_data.get('ICO'),
+            GDPR=validated_data.get('GDPR'),
             account_type=validated_data.get('account_type')
         )
         return user
