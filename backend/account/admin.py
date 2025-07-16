@@ -4,6 +4,7 @@ from .models import CustomUser, OneTimeLoginToken
 from trznice.admin import custom_admin_site
 from django.core.exceptions import PermissionDenied
 from .forms import CustomUserCreationForm
+from django.db.models import Q
 
 
 # @admin.register(CustomUser)
@@ -35,18 +36,20 @@ class CustomUserAdmin(UserAdmin):
                 "password1", "password2",  # ✅ REQUIRED!
             ),
         }),
-    )
-
-    def add_view(self, request, form_url='', extra_context=None):
-        self.form = None
-        if request.user.role == "cityClerk":
-            self.form = self.add_form
-        return super().add_view(request, form_url, extra_context)
-    
+    )    
 
     def get_form(self, request, obj=None, **kwargs):
-        if obj is None and request.user.role == "cityClerk":
-            kwargs["form"] = self.add_form  # ✅ Use the add_form
+        if not obj and getattr(request.user, "role", None) == "cityClerk":
+            form = CustomUserCreationForm
+
+            # Modify choices of the role field in the form class itself
+            form.base_fields["role"].choices = [
+                ("", "---------"),
+                ("seller", "Prodejce"),
+            ]
+
+            return form
+
         return super().get_form(request, obj, **kwargs)
 
     def formfield_for_choice_field(self, db_field, request, **kwargs):
@@ -86,9 +89,10 @@ class CustomUserAdmin(UserAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.role == "cityClerk":
-            # City clerk only sees users with no role or seller role
-            return qs.filter(role__in=["", None, "seller"])
+            return qs.filter(
+                Q(role__in=["seller", ""]) |  (Q(role__isnull=True)) & Q(is_superuser=False))
         return qs
+    
 
     def save_model(self, request, obj, form, change):
         if request.user.role == "cityClerk":
