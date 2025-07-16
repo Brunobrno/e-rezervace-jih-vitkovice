@@ -1,17 +1,43 @@
 // Reservation.js
 import DynamicGrid from "../components/DynamicGrid";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
 
 function Reservation() {
+  const gridRef = useRef();
   const [reservations, setReservations] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
+
+  const getReservations = () => {
+    if (gridRef.current) {
+      const internalReservations = gridRef.current.getInternalReservations();
+      console.log("Internal reservations:", internalReservations);
+
+      // Save to file
+      const dataStr = JSON.stringify(internalReservations, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reservations.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
+  const clearAll = () => {
+    if (gridRef.current) {
+      gridRef.current.clearAllReservations();
+    }
+  };
 
   return (
     <Container>
       <Row>
         <Col sm={6} md={8} className="d-flex">
           <DynamicGrid
+            ref={gridRef}
             reservations={reservations}
             onReservationsChange={setReservations}
             selectedIndex={selectedIndex}
@@ -51,6 +77,18 @@ function Reservation() {
           </Card>
         </Col>
       </Row>
+       <div className="mt-3">
+        <button onClick={getReservations} className="btn btn-primary me-2">
+          Export Reservations
+        </button>
+        <button onClick={clearAll} className="btn btn-danger">
+          Clear All
+        </button>
+      </div>
+      
+      <div className="mt-3">
+        <pre>{JSON.stringify(reservations, null, 2)}</pre>
+      </div>
     </Container>
   );
 }
