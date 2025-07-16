@@ -62,7 +62,16 @@ class UserRegistrationViewSet(ModelViewSet):
     http_method_names = ['post']
 
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        #vytvoření uživatele
+        response = super().create(request, *args, **kwargs)
+
+        if response.status_code == status.HTTP_201_CREATED:
+            user_id = response.data.get('id')  # ID nového uživatele
+            try:
+                send_email_verification(user_id) # posílaní emailu pro potvrzení registrace
+            except Exception as e:
+                return Response({"error": "E-mail se neodeslal"}, status=500)
+        return response
     
 #2. confirming email
 @extend_schema(

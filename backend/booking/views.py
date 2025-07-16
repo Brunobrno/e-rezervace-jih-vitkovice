@@ -6,6 +6,9 @@ from .models import Event, Reservation, MarketSlot
 from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer
 from .filters import EventFilter, ReservationFilter
 
+from rest_framework.permissions import IsAuthenticated
+from account.permissions import *
+
 
 @extend_schema(
     tags=["Event – správa"],
@@ -19,6 +22,8 @@ class EventViewSet(viewsets.ModelViewSet):
     ordering_fields = ["start", "end", "price_per_m2"]
     search_fields = ["name", "description", "city"]
 
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
+
 
 @extend_schema(
     tags=["MarketSlot – prodejní místa"],
@@ -30,6 +35,8 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["event", "status"]
     ordering_fields = ["price_per_m2", "first_x", "first_y"]
+
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager", "seller")]
 
 
 @extend_schema(

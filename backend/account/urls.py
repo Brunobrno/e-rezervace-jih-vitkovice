@@ -18,7 +18,10 @@ urlpatterns = [
     #potom co access token vyprší tak se pomocí refresh tokenu získa další
     
     path('registration/', UserRegistrationViewSet.as_view({'post': 'create'}), name='create_seller'),
-    path("registration/verify-email/<uidb64>/<token>/", EmailVerificationView.as_view()),
+
+    #slouží čistě pro email 
+    path("registration/verify-email/<uidb64>/<token>/", EmailVerificationView.as_view(), name="verify-email"),
+    
     path('registration/activation-varsymbol', UserActivationViewSet.as_view({'patch': 'partial_update'}), name='activate_user_and_input_var_symbol'),
 
     path("reset-password/", PasswordResetRequestView.as_view(), name="reset-password-request"),
