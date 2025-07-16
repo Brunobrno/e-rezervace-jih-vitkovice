@@ -29,7 +29,7 @@ class CustomUser(AbstractUser):
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
-        max_length=15,
+        max_length=16,
         blank=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]
     )
