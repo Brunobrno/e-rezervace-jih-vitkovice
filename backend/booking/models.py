@@ -14,14 +14,14 @@ class Event(models.Model):
     description = models.TextField(blank=True, null=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
-    grid_resolution = models.FloatField(help_text="Rozlišení mřížky v metrech (např. 1.0 nebo 2.0)")
+    grid_resolution = models.FloatField(help_text="Rozlišení mřížky v metrech (např. 1.0 nebo 2.0)", validators=[MinValueValidator(0.0)])
     price_per_m2 = models.DecimalField(max_digits=8, decimal_places=2, help_text="Cena za m² pro rezervaci", validators=[MinValueValidator(0)])
 
-    x = models.IntegerField(default=0)
-    y = models.IntegerField(default=0)
+    x = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    y = models.IntegerField(default=0, validators=[MinValueValidator(0)])
 
-    w = models.IntegerField(editable=False, default=0)
-    h = models.IntegerField(editable=False, default=0)
+    w = models.IntegerField(editable=False, default=0, validators=[MinValueValidator(0)])
+    h = models.IntegerField(editable=False, default=0, validators=[MinValueValidator(0)])
 
     square_size = models.CharField(
         default="0x0",  # Oprava z předchozí chyby
@@ -74,7 +74,7 @@ class Event(models.Model):
         return self.name
 
 class MarketSlot(models.Model):
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="market_slot")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="marketSlot-event")
 
     STATUS_CHOICES = [
         ("empty", "Nezakoupeno"),
@@ -83,15 +83,16 @@ class MarketSlot(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="empty")
 
-    available_extension = models.FloatField(default=0 ,help_text="Možnost rozšíření (m2)")
+    base_size = models.FloatField(default=0 ,help_text="Základní velikost (m2)", validators=[MinValueValidator(0.0)])
+    available_extension = models.FloatField(default=0 ,help_text="Možnost rozšíření (m2)", validators=[MinValueValidator(0.0)])
 
-    first_x = models.SmallIntegerField(default=0, blank=False)
-    first_y = models.SmallIntegerField(default=0, blank=False)
+    first_x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    first_y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
 
-    second_x = models.SmallIntegerField(default=0, blank=False)
-    second_y = models.SmallIntegerField(default=0, blank=False)
+    second_x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    second_y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
 
-    price = models.DecimalField(default=0, blank=False, validators=[MinValueValidator(0)], max_digits=8, decimal_places=2,)
+    price_per_m2 = models.DecimalField(default=0, blank=False, validators=[MinValueValidator(0)], help_text="Cena za m² pro toto prodejn místo", max_digits=8, decimal_places=2)
 
 
 class Reservation(models.Model):
@@ -100,10 +101,12 @@ class Reservation(models.Model):
         ("cancelled", "Zrušeno"),
     ]
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservations")
-    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="reservations", null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reservations")
-
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservation-event")
+    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="reservations-marketSlot", null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reservations-user")
+    
+    used_extension = models.FloatField(default=0 ,help_text="Použité rozšíření (m2)", validators=[MinValueValidator(0.0)])
+    
     reserved_from = models.DateTimeField()
     reserved_to = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -111,7 +114,7 @@ class Reservation(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="reserved")
     note = models.TextField(blank=True, null=True)
 
-    final_price = models.DecimalField(blank=True, null=True, default=0, max_digits=8, decimal_places=2)
+    final_price = models.DecimalField(blank=True, null=True, default=0, max_digits=8, decimal_places=2, validators=[MinValueValidator(0)])
 
     def clean(self):
         if self.marketSlot:
@@ -137,9 +140,13 @@ class Reservation(models.Model):
 
         if self.reserved_from < self.event.start or self.reserved_to > self.event.end:
             raise ValidationError("Rezervace musí být v rámci trvání akce.")
+        
+        if (self.used_extension > self.marketSlot.available_extension):
+            raise ValidationError("Požadované rozšíření je větší než možné rožšíření daného prodejního místa.")
 
     def save(self, *args, **kwargs):
         self.clean()
+        self.final_price = self.marketSlot.price_per_m2 * (self.marketSlot.base_size + self.used_extension) 
         super().save(*args, **kwargs)
 
     def __str__(self):
