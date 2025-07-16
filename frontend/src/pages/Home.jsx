@@ -9,11 +9,11 @@ import LoginCard from "../components/LoginCard";
 function Home() {
   return (
     <Container fluid className="flex-grow-1 login-bg py-5">
-      <div class="d-flex flex-column justify-content-center h-100">
+      <div className="d-flex flex-column justify-content-center h-100">
         <LoginCard />
       </div>
-      <div class="m-auto ">
-        <h2 class="text-center my-5 text-white fw-semibold">eTržnice</h2>
+      <div className="m-auto ">
+        <h2 className="text-center my-5 text-white fw-semibold">eTržnice</h2>
       </div>
     </Container>
   );
