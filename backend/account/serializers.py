@@ -1,13 +1,14 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
+from django.utils.translation import gettext_lazy as _
 
 from .permissions import *
 from .email import *
 
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -31,6 +32,31 @@ import re
 
 User = get_user_model()
 
+# Token obtaining Default Serializer
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = User.USERNAME_FIELD
+
+    def validate(self, attrs):
+        login = attrs.get("username")
+        password = attrs.get("password")
+
+        # Allow login by username or email
+        user = User.objects.filter(email__iexact=login).first() or \
+               User.objects.filter(username__iexact=login).first()
+
+        if user is None or not user.check_password(password):
+            raise serializers.ValidationError(_("No active account found with the given credentials"))
+
+        # Call the parent validation to create token
+        data = super().validate({
+            self.username_field: user.username,
+            "password": password
+        })
+
+        data["user_id"] = user.id
+        data["username"] = user.username
+        data["email"] = user.email
+        return data
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
