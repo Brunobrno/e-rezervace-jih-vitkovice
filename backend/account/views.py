@@ -36,8 +36,8 @@ class UserView(viewsets.ModelViewSet):
     # Require authentication and role permission
     permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
     
+    
 from rest_framework_simplejwt.views import TokenObtainPairView
-
 # Custom Token obtaining view
 @extend_schema(
     tags=["api"],

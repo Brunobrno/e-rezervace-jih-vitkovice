@@ -15,7 +15,7 @@ def send_password_reset_email(user, request):
     send_mail(
         subject="Obnova hesla",
         message=f"Pro obnovu hesla klikni na následující odkaz:\n{reset_url}",
-        from_email="noreply@tvujweb.cz",
+        from_email=None,
         recipient_list=[user.email],
         fail_silently=False,
     )
@@ -29,7 +29,7 @@ def send_email_verification(user, request):
     send_mail(
         subject="Ověření e-mailu",
         message=f"Ověřte svůj e-mail kliknutím na odkaz:\n{url}",
-        from_email="noreply@example.com",
+        from_email=None,
         recipient_list=[user.email],
         fail_silently=False,
     )

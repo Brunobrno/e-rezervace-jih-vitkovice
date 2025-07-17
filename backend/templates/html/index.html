@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -59,8 +60,15 @@
 			<li style="background-color: limegreen; width: max-content; "><a href="/swagger/">Swagger UI</a></li>
 			<h2>Other UI</h2>
 			<li style="background-color: thistle; width: max-content; "><a href="/redoc/">Redoc</a></li>
+
+			<h2>Test E-mail</h2>
+			<label for="recipient">Recipient</label>
+			<input type="text" name="recipient" id="email-recipient">
+			<button id="sendEmailBtn">Send!</button>
 		</ol>
 	</nav>
+
+	<script src="{% static 'js/index.js' %}"></script>
 </body>
 
 </html>
