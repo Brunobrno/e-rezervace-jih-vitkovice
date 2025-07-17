@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.conf import settings
 
 from .serializers import *
 from .permissions import *
@@ -26,7 +25,7 @@ User = get_user_model()
 
 #general user view API
 @extend_schema(
-    tags=["User - basic"]
+    tags=["User"]
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -84,19 +83,14 @@ class UserRegistrationViewSet(ModelViewSet):
     http_method_names = ['post']
 
     def create(self, request, *args, **kwargs):
-        #vytvoření uživatele
-        response = super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
 
-        if response.status_code == status.HTTP_201_CREATED:
-            user_id = response.data.get('id')  # ID nového uživatele
-            try:
-                send_email_verification(user_id) # posílaní emailu pro potvrzení registrace
-            except Exception as e:
-                if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-                    pass
-                else:
-                    return Response({"error": f"E-mail se neodeslal, důvod: {e}"}, status=500)
-        return response
+        send_email_verification(user) # posílaní emailu pro potvrzení registrace
+            
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
 #2. confirming email
 @extend_schema(
@@ -140,13 +134,30 @@ class UserActivationViewSet(ModelViewSet):
     http_method_names = ['patch']
 
     def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        # Aktivuj účet
+        instance.is_active = True
+
+        # Ulož var_symbol, pokud je ve validovaných datech
+        for attr, value in serializer.validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        # Odeslání e-mailu s potvrzením
+        send_email_clerk_accepted(instance)
+        
+
+        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
 
 #--------------------------------------------------------------------------------------------------------------
 
 #1. PasswordReset + send Email
 @extend_schema(
-    tags=["User passwd reset"],
+    tags=["User password reset"],
     request=PasswordResetRequestSerializer,
     responses={
         200: OpenApiResponse(description="Odeslán email s instrukcemi."),
@@ -166,7 +177,7 @@ class PasswordResetRequestView(APIView):
     
 #2. Confirming reset
 @extend_schema(
-    tags=["User passwd reset"],
+    tags=["User password reset"],
     request=PasswordResetConfirmSerializer,
     parameters=[
         OpenApiParameter(name='uidb64', type=str, location=OpenApiParameter.PATH),

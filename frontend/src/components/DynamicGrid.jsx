@@ -10,9 +10,9 @@ import React, {
 } from "react";
 
 const DEFAULT_CONFIG = {
-  rows: 56, // Násobit
-  cols: 40, // Násobit
-  cellSize: 15, // Dělit
+  rows: 45, // Násobit
+  cols: 25, // Násobit
+  cellSize: 25, // Dělit
   statusColors: {
     active: "rgba(0, 128, 0, 0.6)",
     reserved: "rgba(255, 165, 0, 0.6)",

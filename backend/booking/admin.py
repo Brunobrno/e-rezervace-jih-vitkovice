@@ -14,7 +14,7 @@ custom_admin_site.register(Square, SquareAdmin)
 # @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     exclude = ("x", "y", "w", "h", "square_size")
-    list_display = ("name", "start", "end", "grid_resolution", "price_per_m2")
+    list_display = ("name", "start", "end", "price_per_m2")
     list_filter = ("start", "end")
     search_fields = ("name", "description")
     ordering = ("-start",)
