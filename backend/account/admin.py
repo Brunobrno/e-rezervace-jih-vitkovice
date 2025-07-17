@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, OneTimeLoginToken
+from .models import CustomUser
 from trznice.admin import custom_admin_site
 from django.core.exceptions import PermissionDenied
 from .forms import CustomUserCreationForm
@@ -23,7 +23,7 @@ class CustomUserAdmin(UserAdmin):
 
     fieldsets = (
         (None, {"fields": ("username", "email", "password")}),
-        ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_acc", "ICO", "city", "street", "PSC")}),
+        ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_account", "ICO", "city", "street", "PSC")}),
         ("Práva a stav", {"fields": ("is_active", "is_staff", "is_superuser", "email_verified", "groups", "user_permissions")}),
         ("Důležité časy", {"fields": ("last_login",)}),  # create_time vyjmuto odsud
     )
@@ -80,7 +80,7 @@ class CustomUserAdmin(UserAdmin):
         if request.user.role == "cityClerk":
             return (
                 (None, {"fields": ("email", "username", "password")}),
-                ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_acc", "ICO", "city", "street", "PSC")}),
+                ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_account", "ICO", "city", "street", "PSC")}),
             )
         
         # Default for other users
@@ -101,13 +101,3 @@ class CustomUserAdmin(UserAdmin):
         super().save_model(request, obj, form, change)
 
 custom_admin_site.register(CustomUser, CustomUserAdmin)
-
-
-# @admin.register(OneTimeLoginToken)
-class OneTimeLoginTokenAdmin(admin.ModelAdmin):
-    list_display = ("user", "token", "created_at", "expires_at", "used")
-    list_filter = ("used", "created_at", "expires_at")
-    search_fields = ("user__username", "user__email", "token")
-    ordering = ("-created_at",)
-
-custom_admin_site.register(OneTimeLoginToken, OneTimeLoginTokenAdmin)

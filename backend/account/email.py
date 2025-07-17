@@ -24,9 +24,7 @@ def send_email_verification(user, request):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
 
-    url = request.build_absolute_uri(
-        reverse('verify-email', kwargs={'uidb64': uid, 'token': token})
-    )
+    url = f"http://localhost:5173/email-verification/?uidb64={uid}&token={token}"
 
     send_mail(
         subject="Ověření e-mailu",

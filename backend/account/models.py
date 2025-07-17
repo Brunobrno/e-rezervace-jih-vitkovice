@@ -29,7 +29,7 @@ class CustomUser(AbstractUser):
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
-        max_length=15,
+        max_length=16,
         blank=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]
     )
@@ -39,12 +39,15 @@ class CustomUser(AbstractUser):
     create_time = models.DateTimeField(auto_now_add=True)
 
     var_symbol = models.IntegerField(null=True, blank=True)
-    bank_acc = models.IntegerField(null=True, blank=True)
-    ICO = models.IntegerField(null=True, blank=True)
+    bank_account = models.CharField(null=True, blank=True)
+    ICO = models.CharField(null=True, blank=True)
+    RC = models.CharField(max_length=11, blank=True, null=True)
 
     city = models.CharField(null=True, blank=True, max_length=100)
     street = models.CharField(null=True, blank=True, max_length=200)
-    PSC = models.IntegerField(null=True, blank=True)
+    PSC = models.CharField(null=True, blank=True, max_length=5)
+
+    GDPR = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=False)
 
@@ -77,6 +80,8 @@ class CustomUser(AbstractUser):
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
                 self.is_staff = True
                 self.is_active = True
+                if self.role == 'admin':
+                    self.is_superuser = True
             else:
                 self.is_staff = False
 
@@ -93,22 +98,5 @@ class CustomUser(AbstractUser):
             assign_permissions_based_on_role(self)
         
         # super().save(*args, **kwargs)  # save once, after prep
-
-
-
-class OneTimeLoginToken(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    used = models.BooleanField(default=False)
-    expires_at = models.DateTimeField()
-
-    def save(self, *args, **kwargs):
-        if not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(hours=24)  # link valid 24h
-        super().save(*args, **kwargs)
-
-    def is_valid(self):
-        return (not self.used) and (timezone.now() < self.expires_at)
     
 

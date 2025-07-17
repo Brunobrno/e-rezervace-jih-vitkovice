@@ -5,22 +5,14 @@ import React, {
   useCallback,
   useMemo,
   useEffect,
+  forwardRef,
+  useImperativeHandle
 } from "react";
 
-import {
-  Container,
-  Row,
-  Col,
-  Badge,
-  Button,
-  Stack,
-  Form,
-} from "react-bootstrap";
-
 const DEFAULT_CONFIG = {
-  rows: 14,
-  cols: 10,
-  cellSize: 60,
+  rows: 60,
+  cols: 45,
+  cellSize: 10,
   statusColors: {
     active: "rgba(0, 128, 0, 0.6)",
     reserved: "rgba(255, 165, 0, 0.6)",
@@ -28,13 +20,16 @@ const DEFAULT_CONFIG = {
   },
 };
 
-const DynamicGrid = ({
-  config = DEFAULT_CONFIG,
-  reservations,
-  onReservationsChange,
-  selectedIndex,
-  onSelectedIndexChange,
-}) => {
+const DynamicGrid = forwardRef((
+  {
+    config = DEFAULT_CONFIG,
+    reservations,
+    onReservationsChange,
+    selectedIndex,
+    onSelectedIndexChange
+  },
+  ref
+) => {
   // Destructure config with defaults
   const {
     rows = DEFAULT_CONFIG.rows,
@@ -63,14 +58,15 @@ const DynamicGrid = ({
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
   }, [reservations, STORAGE_KEY]);
 
-  // Clear all reservations and storage
-  const handleClearAll = useCallback(() => {
-    if (window.confirm("Opravdu chcete smazat všechny rezervace?")) {
+  // Expose functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    getInternalReservations: () => reservations,
+    clearAllReservations: () => {
       onReservationsChange([]);
       onSelectedIndexChange(null);
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, [onReservationsChange, onSelectedIndexChange, STORAGE_KEY]);
+  }));
 
   // Clamp a value to the valid grid range
   const clamp = useCallback(
@@ -328,99 +324,6 @@ const DynamicGrid = ({
     [rows, cols, cellSize]
   );
 
-  const generateReservationJson = useCallback(() => {
-    const reservationsJson = reservations.map((res) => {
-      // Generate cell IDs using the formula: (y * cols + x) + 1
-      const cells = [];
-      for (let row = res.y; row < res.y + res.h; row++) {
-        for (let col = res.x; col < res.x + res.w; col++) {
-          // Cell ID: row * columns + column + 1 (1-indexed)
-          const cellId = row * cols + col + 1;
-          cells.push(cellId);
-        }
-      }
-
-      return {
-        user: 1, // Static user ID
-        event: 2, // Static event ID
-        reserved_from: "2025-08-01T10:00:00Z", // Static start time
-        reserved_to: "2025-08-01T18:00:00Z", // Static end time
-        status: res.status, // From reservation
-        note: res.name, // Using reservation name as note
-        cells: cells.sort((a, b) => a - b), // Sorted cell IDs
-      };
-    });
-
-    // Create JSON string and log to console
-    const dataStr = JSON.stringify(reservationsJson, null, 2);
-    console.log(dataStr);
-
-    // Also copy to clipboard for convenience
-    navigator.clipboard.writeText(dataStr);
-    alert("Reservation JSON copied to clipboard and logged to console");
-  }, [reservations, cols]);
-
-  // Function to convert JSON reservations to internal format
-  const convertJsonToReservations = useCallback(
-    (jsonData) => {
-      return jsonData.map((res, index) => {
-        // Find min and max coordinates from cell IDs
-        const minCellId = Math.min(...res.cells);
-        const maxCellId = Math.max(...res.cells);
-
-        const minX = (minCellId - 1) % cols;
-        const minY = Math.floor((minCellId - 1) / cols);
-        const maxX = (maxCellId - 1) % cols;
-        const maxY = Math.floor((maxCellId - 1) / cols);
-
-        return {
-          x: minX,
-          y: minY,
-          w: maxX - minX + 1,
-          h: maxY - minY + 1,
-          name: res.note || `Reservation ${index + 1}`,
-          status: res.status || "active",
-        };
-      });
-    },
-    [cols]
-  );
-
-  // File upload handler
-  const handleFileUpload = useCallback(
-    (file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target.result);
-          if (Array.isArray(data)) {
-            // Try to detect if it's the new JSON format
-            if (data[0]?.cells) {
-              const convertedReservations = convertJsonToReservations(data);
-              onReservationsChange(convertedReservations);
-              onSelectedIndexChange(null);
-              alert(`Načteno ${convertedReservations.length} rezervací`);
-            }
-            // Support older format too
-            else if (data[0]?.x !== undefined) {
-              onReservationsChange(data);
-              onSelectedIndexChange(null);
-              alert(`Načteno ${data.length} rezervací`);
-            } else {
-              alert("Neplatný formát souboru");
-            }
-          } else {
-            alert("Neplatný formát souboru");
-          }
-        } catch (error) {
-          alert("Chyba při čtení souboru: " + error.message);
-        }
-      };
-      reader.readAsText(file);
-    },
-    [convertJsonToReservations, onReservationsChange, onSelectedIndexChange]
-  );
-
   return (
     <div
       ref={gridRef}
@@ -474,8 +377,8 @@ const DynamicGrid = ({
             <div className="flex-grow-1 d-flex align-items-center justify-content-center">
               <strong>{i + 1}</strong>
             </div>
-            <Form.Select
-              size="sm"
+            <select
+              className="form-select form-select-sm"
               value={res.status}
               onChange={(e) => handleStatusChange(i, e.target.value)}
               onClick={(e) => e.stopPropagation()}
@@ -483,7 +386,7 @@ const DynamicGrid = ({
               <option value="active">Aktivní</option>
               <option value="reserved">Rezervováno</option>
               <option value="blocked">Blokováno</option>
-            </Form.Select>
+            </select>
           </div>
           <div
             className="resize-handle"
@@ -519,6 +422,6 @@ const DynamicGrid = ({
       )}
     </div>
   );
-};
+});
 
 export default DynamicGrid;
