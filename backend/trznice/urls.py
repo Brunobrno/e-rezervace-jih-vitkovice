@@ -50,5 +50,6 @@ urlpatterns = [
     path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 
-    path('', views.index, name='index')
+    path('', views.index, name='index'),
+    path('test/email', views.test_mail, name='test-email')
 ]
