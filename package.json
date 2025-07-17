@@ -1,7 +1,8 @@
 {
   "devDependencies": {
-    "react-router-dom": "^7.6.3",
-    "sass": "^1.89.2"
+    "react-router-dom": "^7.7.0",
+    "sass": "^1.89.2",
+    "vite": "^7.0.5"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",

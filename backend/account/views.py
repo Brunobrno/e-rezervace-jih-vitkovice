@@ -35,8 +35,29 @@ class UserView(viewsets.ModelViewSet):
 
     # Require authentication and role permission
     permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
+
+    class Meta:
+        model = CustomUser
+        extra_kwargs = {
+            "email": {"help_text": "Unikátní e-mailová adresa uživatele."},
+            "phone_number": {"help_text": "Telefonní číslo ve formátu +420123456789."},
+            "role": {"help_text": "Role uživatele určující jeho oprávnění v systému."},
+            "account_type": {"help_text": "Typ účtu – firma nebo fyzická osoba."},
+            "email_verified": {"help_text": "Určuje, zda je e-mail ověřen."},
+            "otc": {"help_text": "Jednorázový token k ověření nebo přihlášení."},
+            "create_time": {"help_text": "Datum a čas registrace uživatele (pouze pro čtení).", "read_only": True},
+            "var_symbol": {"help_text": "Variabilní symbol pro platby, pokud je vyžadován."},
+            "bank_account": {"help_text": "Číslo bankovního účtu uživatele."},
+            "ICO": {"help_text": "IČO firmy, pokud se jedná o firemní účet."},
+            "RC": {"help_text": "Rodné číslo pro fyzické osoby."},
+            "city": {"help_text": "Město trvalého pobytu / sídla."},
+            "street": {"help_text": "Ulice a číslo popisné."},
+            "PSC": {"help_text": "PSČ místa pobytu / sídla."},
+            "GDPR": {"help_text": "Souhlas se zpracováním osobních údajů."},
+            "is_active": {"help_text": "Stav aktivace uživatele.", "read_only": True},
+        }
     
-    
+
 from rest_framework_simplejwt.views import TokenObtainPairView
 # Custom Token obtaining view
 @extend_schema(
