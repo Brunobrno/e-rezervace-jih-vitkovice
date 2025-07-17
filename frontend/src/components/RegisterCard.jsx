@@ -7,7 +7,6 @@ import ToggleButton from "react-bootstrap/ToggleButton";
 import Container from "react-bootstrap/Container";
 import InputGroup from "react-bootstrap/InputGroup";
 import Modal from "react-bootstrap/Modal";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -24,7 +23,13 @@ import {
   faEnvelopeSquare,
 } from "@fortawesome/free-solid-svg-icons";
 
+
 import React, { use, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import API_URL from "../api/auth"
+
+
+
 
 function RegisterCard() {
   const [isFirm, setIsFirm] = useState(false); // false = Individual, true = Company
@@ -32,7 +37,8 @@ function RegisterCard() {
     setIsFirm(!isFirm);
     setAccountType(!isFirm ? "Company" : "Individual");
   };
-
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -72,23 +78,13 @@ function RegisterCard() {
           RC,
           ICO,
           GDPR,
-          account_type
+          account_type,
+          password
         }),
       });
-
+      
       if (!response.ok) {
-        console.log(first_name,
-          last_name,
-          email,
-          phone_number,
-          street,
-          city,
-          PSC,
-          bank_account,
-          RC,
-          ICO,
-          GDPR,
-          account_type)
+        
         throw new Error("Neplatné přihlašovací údaje");
       }
     
@@ -98,6 +94,7 @@ function RegisterCard() {
       navigate("/reservation");
     } catch (err) {
       setError(err.message || "Přihlášení selhalo");
+      console.log(error)
     }
   };
 
@@ -116,7 +113,7 @@ function RegisterCard() {
         </Card.Header>
 
         <Card.Body className="form-bottom">
-          <Form>
+          <Form onSubmit={handleSubmit}>
             <Form.Check
               type="switch"
               label={isFirm ? "Firma" : "Občan"}
