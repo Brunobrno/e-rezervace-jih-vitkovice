@@ -266,7 +266,8 @@ REST_FRAMEWORK = {
 }
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # PRODUKČNÍ PROSTŘEDÍ (EMAILY SE BUDOU POSÍLAT DO KONZOLE!!!)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # EMAILY SE BUDOU POSÍLAT DO KONZOLE!!!
 EMAIL_HOST = os.getenv("EMAIL_HOST_DEV")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT_DEV", 465))
 EMAIL_USE_TLS = False
@@ -274,7 +275,7 @@ EMAIL_USE_SSL = False
 EMAIL_HOST_USER = os.getenv("EMAIL_USER_DEV")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_USER_PASSWORD_DEV")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 20
+EMAIL_TIMEOUT = 1
 
 
 
