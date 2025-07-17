@@ -10,9 +10,9 @@ import React, {
 } from "react";
 
 const DEFAULT_CONFIG = {
-  rows: 28,
-  cols: 20,
-  cellSize: 30,
+  rows: 60,
+  cols: 45,
+  cellSize: 10,
   statusColors: {
     active: "rgba(0, 128, 0, 0.6)",
     reserved: "rgba(255, 165, 0, 0.6)",

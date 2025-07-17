@@ -13,7 +13,7 @@ custom_admin_site.register(Product, ProductAdmin)
 
 class EventProductAdmin(admin.ModelAdmin):
     list_display = ("event", "product", "start_selling_date", "end_selling_date")
-    list_filter = ("start_selling_date", "end_selling_date", "event", "product")
+    list_filter = ("event", "product", "start_selling_date", "end_selling_date")
     search_fields = ("product__name", "event__name")
     ordering = ("-start_selling_date",)
 

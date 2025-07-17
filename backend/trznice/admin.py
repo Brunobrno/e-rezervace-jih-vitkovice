@@ -18,7 +18,7 @@ class RoleBasedAdminSite(AdminSite):
 
         # define allowed models per role
         role_model_access = {
-            "squareManager": ["Event", "MarketSlot", "Product", "EventProduct"],
+            "squareManager": ["Square", "Event", "MarketSlot", "Product", "EventProduct"],
             "cityClerk": ["CustomUser", "Event", "MarketSlot", "Reservation", "Product", "EventProduct"],
             # admin will see everything
         }
@@ -35,6 +35,37 @@ class RoleBasedAdminSite(AdminSite):
 
         return app_list
 
+    # def get_app_list(self, request):
+    #     app_dict = self._build_app_dict(request)
+
+    #     # Return custom ordered app/model list
+    #     return [
+    #         {
+    #             'name': 'Account',
+    #             'app_label': 'your_app_name',
+    #             'models': [
+    #                 app_dict['your_app_name']['models_dict']['User'],
+    #             ],
+    #         },
+    #         {
+    #             'name': 'Booking',
+    #             'app_label': 'your_app_name',
+    #             'models': [
+    #                 app_dict['your_app_name']['models_dict']['Event'],
+    #                 app_dict['your_app_name']['models_dict']['MarketSlot'],
+    #                 app_dict['your_app_name']['models_dict']['Reservation'],
+    #                 app_dict['your_app_name']['models_dict']['Square'],
+    #             ],
+    #         },
+    #         {
+    #             'name': 'Product',
+    #             'app_label': 'your_app_name',
+    #             'models': [
+    #                 app_dict['your_app_name']['models_dict']['EventProduct'],
+    #                 app_dict['your_app_name']['models_dict']['Product'],
+    #             ],
+    #         },
+    #     ]
 
 # Initialize the custom admin site
 custom_admin_site = RoleBasedAdminSite(name='custom_admin')

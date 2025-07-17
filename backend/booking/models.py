@@ -2,6 +2,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.conf import settings
+from decimal import Decimal
+from django.db.models import Max
 
 CHOICE_SQUARES = (
     ((20, 45), "SMP Ostrava-jih"),
@@ -10,16 +12,24 @@ CHOICE_SQUARES = (
 )
 
 class Square(models.Model):
-    name = models.CharField(),
+    name = models.CharField(max_length=255, default="", null=False)
 
     description = models.TextField(null=True, blank=True)
 
-    ulice = models.CharField(max_length=255)
-    city = models.CharField(max_length=100)
-    PSC = models.CharField(max_length=5)
+    street = models.CharField(max_length=255, default="")
+    city = models.CharField(max_length=100, default="")
+    PSC = models.CharField(max_length=5, default="")
 
     width = models.PositiveIntegerField(default=10)
     height = models.PositiveIntegerField(default=10)
+
+    #Grid Parameters
+    grid_rows = models.PositiveSmallIntegerField(default=60)
+    grid_cols = models.PositiveSmallIntegerField(default=45)
+    grid_collSize = models.PositiveSmallIntegerField(default=10)
+
+    def __str__(self):
+        return self.name
 
 
 class Event(models.Model):
@@ -126,21 +136,43 @@ class MarketSlot(models.Model):
 
     STATUS_CHOICES = [
         ("empty", "Nezakoupeno"),
-        ("blocked", "Zablokovano"),
+        ("blocked", "Zablokováno"),
         ("taken", "Plné")
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="empty")
+    number = models.PositiveSmallIntegerField(default=1, help_text="Pořadové číslo prodejního místa na svém Eventu")
 
-    base_size = models.FloatField(default=0 ,help_text="Základní velikost (m2)", validators=[MinValueValidator(0.0)])
-    available_extension = models.FloatField(default=0 ,help_text="Možnost rozšíření (m2)", validators=[MinValueValidator(0.0)])
+    base_size = models.FloatField(default=0, help_text="Základní velikost (m²)", validators=[MinValueValidator(0.0)])
+    available_extension = models.FloatField(default=0, help_text="Možnost rozšíření (m²)", validators=[MinValueValidator(0.0)])
 
-    first_x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
-    first_y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    first_x = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
+    first_y = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
+    second_x = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
+    second_y = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
 
-    second_x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
-    second_y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    price_per_m2 = models.DecimalField(
+        default=Decimal("0.00"),
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Cena za m² pro toto prodejní místo. Neuvádět, pokud chcete nechat výchozí cenu za m² na tomto Eventu."
+    )
 
-    price_per_m2 = models.DecimalField(default=0, blank=False, validators=[MinValueValidator(0)], help_text="Cena za m² pro toto prodejn místo", max_digits=8, decimal_places=2)
+    def save(self, *args, **kwargs):
+        # If price_per_m2 is 0, use the event default
+        if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
+            self.price_per_m2 = self.event.price_per_m2
+
+        # Automatically assign next available number within the same event
+        if self._state.adding:
+            max_number = MarketSlot.objects.filter(event=self.event).aggregate(Max('number'))['number__max'] or 0
+            self.number = max_number + 1
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Prodejní místo {self.number} na {self.event}"
+    
 
 
 class Reservation(models.Model):
@@ -193,7 +225,9 @@ class Reservation(models.Model):
 
     def save(self, *args, **kwargs):
         self.clean()
-        self.final_price = self.marketSlot.price_per_m2 * (self.marketSlot.base_size + self.used_extension) 
+        self.final_price = self.marketSlot.price_per_m2 * (
+        Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
+    )
         super().save(*args, **kwargs)
 
     def __str__(self):
