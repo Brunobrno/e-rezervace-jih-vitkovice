@@ -17985,3 +17985,12 @@ footer p {
 .input-group-city-psc{
   flex-wrap: nowrap;
 }
+
+.grid-bg{
+  height: 100%;
+  align-content: center;
+  background-image: url(../assets/img/namest-1.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
