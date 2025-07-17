@@ -150,10 +150,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
-        request = self.context.get("request")
-        if request:
-            send_email_verification(user, request)
-
         return user
     
 class UserActivationSerializer(serializers.Serializer):
