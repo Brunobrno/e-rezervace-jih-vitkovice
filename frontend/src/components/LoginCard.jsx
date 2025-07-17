@@ -41,7 +41,7 @@ function LoginCard() {
       console.log(localStorage.getItem("access_token"))
 
       // přesměruj na dashboard nebo domovskou stránku
-      navigate("/reservation");
+      navigate("/clerk/create/reservation");
     } catch (err) {
       setError(err.message || "Přihlášení selhalo");
     }
