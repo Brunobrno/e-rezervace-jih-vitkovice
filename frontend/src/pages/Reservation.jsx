@@ -1,35 +1,41 @@
-// Reservation.js
-import DynamicGrid from "../components/DynamicGrid";
-import React, { useState, useRef } from "react";
+// Reservation.jsx
+// This page displays a reservation system with a dynamic grid and a list of reservations.
+
+import DynamicGrid, { DEFAULT_CONFIG } from "../components/DynamicGrid";
+import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
 
 function Reservation() {
-  const gridRef = useRef();
-  const [reservations, setReservations] = useState([]);
+  const gridConfig = DEFAULT_CONFIG;
+  const storageKey = `reservationData_${gridConfig.rows}x${gridConfig.cols}`;
+
+  const [reservations, setReservations] = useState(() => {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [selectedIndex, setSelectedIndex] = useState(null);
 
-  const getReservations = () => {
-    if (gridRef.current) {
-      const internalReservations = gridRef.current.getInternalReservations();
-      console.log("Internal reservations:", internalReservations);
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(reservations));
+  }, [reservations, storageKey]);
 
-      // Save to file
-      const dataStr = JSON.stringify(internalReservations, null, 2);
-      const blob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "reservations.json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+  const getReservations = () => {
+    const dataStr = JSON.stringify(reservations, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "reservations.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const clearAll = () => {
-    if (gridRef.current) {
-      gridRef.current.clearAllReservations();
-    }
+    localStorage.removeItem(storageKey);
+    setReservations([]);
+    setSelectedIndex(null);
   };
 
   return (
@@ -37,14 +43,13 @@ function Reservation() {
       <Row>
         <Col sm={6} md={8} className="d-flex">
           <DynamicGrid
-            ref={gridRef}
+            config={gridConfig}
             reservations={reservations}
             onReservationsChange={setReservations}
             selectedIndex={selectedIndex}
             onSelectedIndexChange={setSelectedIndex}
           />
         </Col>
-        {/* Reservation List */}
         <Col sm={6} md={4}>
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
@@ -77,7 +82,7 @@ function Reservation() {
           </Card>
         </Col>
       </Row>
-       <div className="mt-3">
+      <div className="mt-3">
         <button onClick={getReservations} className="btn btn-primary me-2">
           Export Reservations
         </button>
@@ -85,7 +90,7 @@ function Reservation() {
           Clear All
         </button>
       </div>
-      
+
       <div className="mt-3">
         <pre>{JSON.stringify(reservations, null, 2)}</pre>
       </div>

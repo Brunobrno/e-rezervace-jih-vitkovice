@@ -23,13 +23,9 @@ import {
   faEnvelopeSquare,
 } from "@fortawesome/free-solid-svg-icons";
 
-
 import React, { use, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API_URL from "../api/auth"
-
-
-
+import API_URL from "../api/auth";
 
 function RegisterCard() {
   const [isFirm, setIsFirm] = useState(false); // false = Individual, true = Company
@@ -55,9 +51,14 @@ function RegisterCard() {
   const [RC, setRC] = useState("");
   const [GDPR, setGDPR] = useState(true);
   const [account_type, setAccountType] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // ⛔ Prevent multiple submits
+
+    setIsSubmitting(true);
     setError("");
 
     try {
@@ -79,22 +80,22 @@ function RegisterCard() {
           ICO,
           GDPR,
           account_type,
-          password
+          password,
         }),
       });
-      
+
       if (!response.ok) {
-        
         throw new Error("Neplatné přihlašovací údaje");
       }
-    
-      ;
 
       // přesměruj na dashboard nebo domovskou stránku
       navigate("/reservation");
     } catch (err) {
+      setIsSubmitting(false);
+      navigate("/register");
       setError(err.message || "Přihlášení selhalo");
-      console.log(error)
+      console.log(error);
+      
     }
   };
 
@@ -274,6 +275,8 @@ function RegisterCard() {
                   aria-label="street"
                   name="street"
                   required
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
                 />
               </InputGroup>
             </Form.Group>
@@ -404,11 +407,9 @@ function RegisterCard() {
                   </a>
                 </div>
                 <Form.Label hidden>Register</Form.Label>
-                <Form.Control
-                  className="btn btn-success"
-                  type="submit"
-                  value="Registrovat"
-                />
+                <Button variant="success" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Odesílání..." : "Registrovat"}
+                </Button>
               </div>
             </Form.Group>
           </Form>

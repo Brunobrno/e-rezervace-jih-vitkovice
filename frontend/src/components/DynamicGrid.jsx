@@ -1,15 +1,15 @@
-// DynamicGrid.js
+// DynamicGrid.jsx
+// This component renders a dynamic grid for managing reservations. 
+
 import React, {
   useState,
   useRef,
   useCallback,
   useMemo,
   useEffect,
-  forwardRef,
-  useImperativeHandle
 } from "react";
 
-const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG = {
   rows: 28,
   cols: 20,
   cellSize: 30,
@@ -20,29 +20,19 @@ const DEFAULT_CONFIG = {
   },
 };
 
-const DynamicGrid = forwardRef((
-  {
-    config = DEFAULT_CONFIG,
-    reservations,
-    onReservationsChange,
-    selectedIndex,
-    onSelectedIndexChange
-  },
-  ref
-) => {
-  // Destructure config with defaults
+const DynamicGrid = ({
+  config = DEFAULT_CONFIG,
+  reservations,
+  onReservationsChange,
+  selectedIndex,
+  onSelectedIndexChange,
+}) => {
   const {
     rows = DEFAULT_CONFIG.rows,
     cols = DEFAULT_CONFIG.cols,
     cellSize = DEFAULT_CONFIG.cellSize,
     statusColors = DEFAULT_CONFIG.statusColors,
   } = config;
-
-  // Generate unique storage key based on grid dimensions
-  const STORAGE_KEY = useMemo(
-    () => `reservationData_${rows}x${cols}`,
-    [rows, cols]
-  );
 
   const [startCell, setStartCell] = useState(null);
   const [hoverCell, setHoverCell] = useState(null);
@@ -53,28 +43,11 @@ const DynamicGrid = forwardRef((
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const lastCoordsRef = useRef(null);
 
-  // Save to localStorage whenever reservations change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-  }, [reservations, STORAGE_KEY]);
-
-  // Expose functions to parent via ref
-  useImperativeHandle(ref, () => ({
-    getInternalReservations: () => reservations,
-    clearAllReservations: () => {
-      onReservationsChange([]);
-      onSelectedIndexChange(null);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }));
-
-  // Clamp a value to the valid grid range
   const clamp = useCallback(
     (val, min, max) => Math.max(min, Math.min(max, val)),
     []
   );
 
-  // Convert mouse coordinates to grid cell coordinates (clamped)
   const getCellCoords = useCallback(
     (e) => {
       const rect = gridRef.current.getBoundingClientRect();
@@ -93,14 +66,15 @@ const DynamicGrid = forwardRef((
     [clamp, cellSize, rows, cols]
   );
 
-  // Check if two rectangles overlap
   const rectanglesOverlap = useCallback(
     (a, b) =>
-      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y,
+      a.x < b.x + b.w &&
+      a.x + a.w > b.x &&
+      a.y < b.y + b.h &&
+      a.y + a.h > b.y,
     []
   );
 
-  // Check for collisions with other reservations
   const hasCollision = useCallback(
     (newRect, ignoreIndex = -1) =>
       reservations.some(
@@ -109,7 +83,6 @@ const DynamicGrid = forwardRef((
     [reservations, rectanglesOverlap]
   );
 
-  // Mouse down handler
   const handleMouseDown = useCallback(
     (e) => {
       if (e.button !== 0) return;
@@ -117,7 +90,6 @@ const DynamicGrid = forwardRef((
 
       const coords = getCellCoords(e);
 
-      // Check for resize handle click
       if (e.target.classList.contains("resize-handle")) {
         const index = parseInt(
           e.target.closest(".reservation").dataset.index,
@@ -128,7 +100,6 @@ const DynamicGrid = forwardRef((
         return;
       }
 
-      // Check for reservation click
       const resIndex = reservations.findIndex(
         (r) =>
           coords.x >= r.x &&
@@ -154,12 +125,10 @@ const DynamicGrid = forwardRef((
     [getCellCoords, reservations, onSelectedIndexChange]
   );
 
-  // Mouse move handler
   const handleMouseMove = useCallback(
     (e) => {
       const coords = getCellCoords(e);
 
-      // Skip if coordinates haven't changed
       if (
         lastCoordsRef.current &&
         lastCoordsRef.current.x === coords.x &&
@@ -175,10 +144,8 @@ const DynamicGrid = forwardRef((
         onReservationsChange((prev) => {
           const updated = [...prev];
           const res = updated[draggedIndex];
-
           const newX = coords.x - dragOffsetRef.current.x;
           const newY = coords.y - dragOffsetRef.current.y;
-
           const nextRect = {
             ...res,
             x: clamp(newX, 0, cols - res.w),
@@ -194,10 +161,8 @@ const DynamicGrid = forwardRef((
         onReservationsChange((prev) => {
           const updated = [...prev];
           const res = updated[resizingIndex];
-
           const newW = Math.max(1, coords.x - res.x + 1);
           const newH = Math.max(1, coords.y - res.y + 1);
-
           const nextRect = {
             ...res,
             w: clamp(newW, 1, cols - res.x),
@@ -224,7 +189,6 @@ const DynamicGrid = forwardRef((
     ]
   );
 
-  // Mouse up handler
   const handleMouseUp = useCallback(() => {
     if (isDragging && startCell && hoverCell) {
       const minX = Math.min(startCell.x, hoverCell.x);
@@ -251,13 +215,10 @@ const DynamicGrid = forwardRef((
         minX + w <= cols &&
         minY + h <= rows
       ) {
-        const newIndex = reservations.length;
         onReservationsChange((prev) => [...prev, newRect]);
-        onSelectedIndexChange(newIndex);
       }
     }
 
-    // Reset all drag states
     setStartCell(null);
     setHoverCell(null);
     setIsDragging(false);
@@ -271,12 +232,10 @@ const DynamicGrid = forwardRef((
     reservations,
     hasCollision,
     onReservationsChange,
-    onSelectedIndexChange,
     rows,
     cols,
   ]);
 
-  // Delete reservation
   const handleDeleteReservation = useCallback(
     (index) => {
       onReservationsChange((prev) => prev.filter((_, i) => i !== index));
@@ -289,7 +248,6 @@ const DynamicGrid = forwardRef((
     [onReservationsChange, onSelectedIndexChange, selectedIndex]
   );
 
-  // Change reservation status
   const handleStatusChange = useCallback(
     (index, newStatus) => {
       onReservationsChange((prev) =>
@@ -301,7 +259,6 @@ const DynamicGrid = forwardRef((
     [onReservationsChange]
   );
 
-  // Generate grid cells (memoized for performance)
   const gridCells = useMemo(
     () =>
       [...Array(rows * cols)].map((_, index) => {
@@ -341,10 +298,8 @@ const DynamicGrid = forwardRef((
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
       }}
     >
-      {/* Grid cells */}
       {gridCells}
 
-      {/* Reservation boxes */}
       {reservations.map((res, i) => (
         <div
           key={i}
@@ -404,7 +359,6 @@ const DynamicGrid = forwardRef((
         </div>
       ))}
 
-      {/* Draft preview box */}
       {isDragging && startCell && hoverCell && (
         <div
           className="reservation-draft"
@@ -422,6 +376,6 @@ const DynamicGrid = forwardRef((
       )}
     </div>
   );
-});
+};
 
 export default DynamicGrid;
