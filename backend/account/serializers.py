@@ -13,7 +13,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 User = get_user_model()
 
 
-from .models import OneTimeLoginToken
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,6 +57,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data["email"] = user.email
         return data
 
+
+# user creating section start ------------------------------------------
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
@@ -70,6 +71,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'email', 'phone_number', 'account_type',
             'password','city', 'street', 'PSC', 'bank_account', 'RC', 'ICO', 'GDPR'
         ]
+        extra_kwargs = {
+            'first_name': {'required': True, 'help_text': 'Křestní jméno uživatele'},
+            'last_name': {'required': True, 'help_text': 'Příjmení uživatele'},
+            'email': {'required': True, 'help_text': 'Emailová adresa uživatele'},
+            'phone_number': {'required': True, 'help_text': 'Telefonní číslo uživatele'},
+            'account_type': {'required': True, 'help_text': 'Typ účtu'},
+            'city': {'required': True, 'help_text': 'Město uživatele'},
+            'street': {'required': True, 'help_text': 'Ulice uživatele'},
+            'PSC': {'required': True, 'help_text': 'Poštovní směrovací číslo'},
+            'bank_account': {'required': True, 'help_text': 'Číslo bankovního účtu'},
+            'RC': {'required': True, 'help_text': 'Rodné číslo'},
+            'ICO': {'required': True, 'help_text': 'Identifikační číslo organizace'},
+            'GDPR': {'required': True, 'help_text': 'Souhlas se zpracováním osobních údajů'},
+        }
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -141,20 +156,36 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         return user
     
-class UserActivationSerializer(serializers.ModelSerializer):
-    var_symbol = serializers.IntegerField(
-        help_text="Variabilní symbol, který musí být doplněn úředníkem pro aktivaci účtu."
-    )
+class UserActivationSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(help_text="ID uživatele, kterému se aktivuje účet.")
+    var_symbol = serializers.IntegerField(help_text="Variabilní symbol, který musí být doplněn úředníkem pro aktivaci účtu.")
 
+    def validate_user_id(self, value):
+        try:
+            user = User.objects.get(pk=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Uživatel s tímto ID neexistuje.")
+        return value
+
+    def save(self, **kwargs):
+        user_id = self.validated_data['user_id']
+        var_symbol = self.validated_data['var_symbol']
+
+        user = User.objects.get(pk=user_id)
+        user.var_symbol = var_symbol
+        user.is_active = True
+        user.save()
+        return user
+    
     class Meta:
         model = User
-        fields = ['var_symbol']
-
-    def update(self, instance, validated_data):
-        instance.var_symbol = validated_data['var_symbol']
-        instance.is_active = True
-        instance.save()
-        return instance
+        fields = [
+            'user_id', 'var_symbol'
+        ]
+        extra_kwargs = {
+            'first_name': {'required': True, 'help_text': 'ID uživatele'},
+            'last_name': {'required': True, 'help_text': 'Variablní symbol, zadán úředníkem'},
+        }
 # user creating section end --------------------------------------------
 
 

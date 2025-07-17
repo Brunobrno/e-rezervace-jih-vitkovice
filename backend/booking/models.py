@@ -9,13 +9,42 @@ CHOICE_SQUARES = (
     ((0, 0), "Nedefinováno")
 )
 
+class Square(models.Model):
+    name = models.CharField(),
+
+    description = models.TextField(null=True, blank=True)
+
+    ulice = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    PSC = models.CharField(max_length=5)
+
+    width = models.PositiveIntegerField(default=10)
+    height = models.PositiveIntegerField(default=10)
+
+
 class Event(models.Model):
+    """Celé náměstí
+
+    Args:
+        models (args): w,h skutečné rozměry náměstí | x,y souřadnice levého horního rohu
+
+    Raises:
+        ValidationError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+
+    square = models.ForeignKey(Square, on_delete=models.CASCADE, related_name="event_on_sqare", null=True)
+
     start = models.DateTimeField()
     end = models.DateTimeField()
     grid_resolution = models.FloatField(help_text="Rozlišení mřížky v metrech (např. 1.0 nebo 2.0)", validators=[MinValueValidator(0.0)])
     price_per_m2 = models.DecimalField(max_digits=8, decimal_places=2, help_text="Cena za m² pro rezervaci", validators=[MinValueValidator(0)])
+
+
 
     x = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     y = models.IntegerField(default=0, validators=[MinValueValidator(0)])
@@ -27,7 +56,8 @@ class Event(models.Model):
         default="0x0",  # Oprava z předchozí chyby
         max_length=20,
         choices=[(f"{dim[0]}x{dim[1]}", label) for dim, label in CHOICE_SQUARES],
-        help_text="Vyberte rozměry náměstí"
+        help_text="Vyberte rozměry náměstí",
+        null=False
     )
 
     #layout_data = models.JSONField(default=list, help_text="2D layout polí mapy ve formátu React Grid Layout")
@@ -46,7 +76,6 @@ class Event(models.Model):
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
     def clean(self):
-        # Kontrola překrývání jiných Eventů ve stejný čas a prostor
         overlapping = Event.objects.exclude(id=self.id).filter(
             start__lt=self.end,
             end__gt=self.start,
@@ -59,10 +88,29 @@ class Event(models.Model):
             raise ValidationError("Tato plocha se překrývá s jinou akcí ve stejném čase.")
 
     def save(self, *args, **kwargs):
+        '''
+        TOHLE JE SPRÁVNÝ KÓD/NAHRAZEN JINÝM KTERÝ NEBUDE ŘEŠIT ZATÍM ROZMĚRY EVENTU(DEFAULTNĚ BUDUE NASTAVENÝ PŘES CELÉ NÁMĚSTÍ)
         if self.square_size:
             dim_str = self.square_size.split("x")
             self.w = int(dim_str[0])
             self.h = int(dim_str[1])
+        else:
+            self.w = 0
+            self.h = 0
+
+        '''
+        self.x = 0
+        self.y = 0
+
+        # Nastav šířku a výšku podle square_size
+        if self.square_size:
+            try:
+                dim_str = self.square_size.split("x")
+                self.w = int(dim_str[0])
+                self.h = int(dim_str[1])
+            except (ValueError, IndexError):
+                self.w = 0
+                self.h = 0
         else:
             self.w = 0
             self.h = 0
@@ -74,7 +122,7 @@ class Event(models.Model):
         return self.name
 
 class MarketSlot(models.Model):
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="marketSlot-event")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="marketSlot_event")
 
     STATUS_CHOICES = [
         ("empty", "Nezakoupeno"),
@@ -101,9 +149,9 @@ class Reservation(models.Model):
         ("cancelled", "Zrušeno"),
     ]
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservation-event")
-    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="reservations-marketSlot", null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reservations-user")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservation_event")
+    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="reservations_marketSlot", null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reservations_user")
     
     used_extension = models.FloatField(default=0 ,help_text="Použité rozšíření (m2)", validators=[MinValueValidator(0.0)])
     
@@ -126,7 +174,6 @@ class Reservation(models.Model):
                 status="reserved"
             )
         else:
-            # Pokud není definovaný konkrétní MarketSlot – kontrola všech bez slotu
             overlapping = Reservation.objects.exclude(id=self.id).filter(
                 event=self.event,
                 marketSlot__isnull=True,
@@ -150,4 +197,4 @@ class Reservation(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Rezervace {self.user} na event {self.event.name}"
+        return f"Rezervace {self.user} na event {self.event.name}" 

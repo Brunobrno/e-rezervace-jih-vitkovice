@@ -30,18 +30,18 @@ function Register() {
               </strong>. <br />
               Nezřetelný obraz mizel v jemném odlesku nedořečeného rána.
             </p>
-            <h3 class="text-white pt-3 pb-2">
+            <h3 className="text-white pt-3 pb-2">
               Neumíte se přihlásit? Kontaktujte nás:
             </h3>
             <h3>
-              <ul class="list-unstyled">
-                <li class="pb-2">
+              <ul className="list-unstyled">
+                <li className="pb-2">
                   <FontAwesomeIcon icon={faMobileAlt} />
-                  <span class="pr-2">
+                  <span className="pr-2">
                     <a href="tel:+420599430331"> 599 430 331</a>
                   </span>
                   <br />
-                  <div class="d-sm-block d-md-inline">
+                  <div className="d-sm-block d-md-inline">
                     {" "}
                     <FontAwesomeIcon icon={faEnvelope} />
                     <a href="mailto:jana.molnari@ovajih.cz">
@@ -53,11 +53,11 @@ function Register() {
 
                 <li>
                   <FontAwesomeIcon icon={faMobileAlt} />
-                  <span class="pr-2">
+                  <span className="pr-2">
                     <a href="tel:+420702003539"> 702 003 539</a>
                   </span>
                   <br />
-                  <div class="d-sm-block d-md-inline">
+                  <div className="d-sm-block d-md-inline">
                     <FontAwesomeIcon icon={faEnvelope} />
                     <a href="mailto:tereza.masarovicova@ovajih.cz">
                       {" "}

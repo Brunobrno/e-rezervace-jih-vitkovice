@@ -2,14 +2,17 @@ from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 
-from .models import Event, Reservation
-from .serializers import EventSerializer, ReservationSerializer
-from .filters import EventFilter
+from .models import Event, Reservation, MarketSlot
+from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer
+from .filters import EventFilter, ReservationFilter
+
+from rest_framework.permissions import IsAuthenticated
+from account.permissions import *
 
 
 @extend_schema(
-    tags=["Event - základní"],
-    description="Základní operace pro správu eventů (událostí)."
+    tags=["Event – správa"],
+    description="Základní operace pro správu událostí (Event). Lze filtrovat podle času, města a velikosti náměstí."
 )
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all().order_by("start")
@@ -19,16 +22,31 @@ class EventViewSet(viewsets.ModelViewSet):
     ordering_fields = ["start", "end", "price_per_m2"]
     search_fields = ["name", "description", "city"]
 
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
+
 
 @extend_schema(
-    tags=["Reservation - basic"],
-    description="Basic Reservation requesty – vytvoření, výpis, mazání a úprava rezervací."
+    tags=["MarketSlot – prodejní místa"],
+    description="Vytváření, aktualizace a mazání konkrétních prodejních míst pro události."
+)
+class MarketSlotViewSet(viewsets.ModelViewSet):
+    queryset = MarketSlot.objects.select_related("event").all().order_by("event")
+    serializer_class = MarketSlotSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ["event", "status"]
+    ordering_fields = ["price_per_m2", "first_x", "first_y"]
+
+    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager", "seller")]
+
+
+@extend_schema(
+    tags=["Reservation – rezervace"],
+    description="Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd."
 )
 class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.all().select_related("event", "marketSlot", "user").order_by("-created_at")
+    queryset = Reservation.objects.select_related("event", "marketSlot", "user").all().order_by("-created_at")
     serializer_class = ReservationSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ["event", "status", "user"]
+    filterset_class = ReservationFilter
     ordering_fields = ["reserved_from", "reserved_to", "created_at"]
-
 

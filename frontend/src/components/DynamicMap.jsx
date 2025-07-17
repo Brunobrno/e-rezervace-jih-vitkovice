@@ -7,7 +7,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const MyResponsiveGrid = () => {
 
-  const maxGridHeight = 700; // Your fixed height
+const maxGridHeight = 700; // Your fixed height
 const rowHeight = 30; // Should match your rowHeight prop
 const maxRows = Math.floor(maxGridHeight / rowHeight) - 6;
 
