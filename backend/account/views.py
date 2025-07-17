@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from django.conf import settings
 
 from .serializers import *
 from .permissions import *
@@ -91,7 +92,10 @@ class UserRegistrationViewSet(ModelViewSet):
             try:
                 send_email_verification(user_id) # posílaní emailu pro potvrzení registrace
             except Exception as e:
-                return Response({"error": "E-mail se neodeslal"}, status=500)
+                if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+                    pass
+                else:
+                    return Response({"error": f"E-mail se neodeslal, důvod: {e}"}, status=500)
         return response
     
 #2. confirming email

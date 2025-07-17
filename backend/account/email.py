@@ -26,9 +26,12 @@ def send_email_verification(user, request):
 
     url = f"http://localhost:5173/email-verification/?uidb64={uid}&token={token}"
 
+    message = f"Ověřte svůj e-mail kliknutím na odkaz:\n{url}"
+    print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+
     send_mail(
         subject="Ověření e-mailu",
-        message=f"Ověřte svůj e-mail kliknutím na odkaz:\n{url}",
+        message=message,
         from_email=None,
         recipient_list=[user.email],
         fail_silently=False,
