@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from booking.models import Event, Reservation, MarketSlot
+from booking.models import Event, Reservation, MarketSlot, Square
 from product.models import Product, EventProduct
 from django.contrib.auth import get_user_model
 
@@ -14,9 +14,9 @@ def assign_permissions_based_on_role(user):
             # "delete": [Reservation],
         },
         "squareManager": {
-            "view": [Event, MarketSlot, Product, EventProduct],
-            "add": [Event, MarketSlot, Product, EventProduct],
-            "change": [Event, MarketSlot, Product, EventProduct],
+            "view": [Event, MarketSlot, Square, Product, EventProduct],
+            "add": [Event, MarketSlot, Square, Product, EventProduct],
+            "change": [Event, MarketSlot, Square, Product, EventProduct],
         },
         # "admin": {
         #     "view": [Event,  Reservation,  get_user_model()],
@@ -41,11 +41,11 @@ def assign_permissions_based_on_role(user):
     # Reset in case role changed away from admin
     user.is_superuser = False
     
-    print(f"Assigning role-based permissions for: {user.email}, role: {user.role}")
+    # print(f"Assigning role-based permissions for: {user.email}, role: {user.role}")
     
     perms_for_role = role_perms.get(user.role, {})
 
-    print(perms_for_role)
+    # print(perms_for_role)
 
     for action, models in perms_for_role.items():
         for model in models:

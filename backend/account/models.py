@@ -80,6 +80,8 @@ class CustomUser(AbstractUser):
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
                 self.is_staff = True
                 self.is_active = True
+                if self.role == 'admin':
+                    self.is_superuser = True
             else:
                 self.is_staff = False
 
