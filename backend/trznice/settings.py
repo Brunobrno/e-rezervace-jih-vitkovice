@@ -266,17 +266,23 @@ REST_FRAMEWORK = {
 }
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' #SMTP
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = 587 # Pavel
-# EMAIL_PORT = 465
-EMAIL_USE_TLS = True
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # PRODUKČNÍ PROSTŘEDÍ (EMAILY SE BUDOU POSÍLAT DO KONZOLE!!!)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # EMAILY SE BUDOU POSÍLAT DO KONZOLE!!!
+EMAIL_HOST = os.getenv("EMAIL_HOST_DEV")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT_DEV", 465))
+EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.getenv("EMAIL_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_USER_PASSWORD")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Optional, if you want a default sender
-EMAIL_TIMEOUT = 20
+EMAIL_HOST_USER = os.getenv("EMAIL_USER_DEV")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_USER_PASSWORD_DEV")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_TIMEOUT = 1
 
+
+
+print("---------EMAIL----------\nEMAIL_HOST =", os.getenv("EMAIL_HOST_DEV"))
+print("EMAIL_PORT =", os.getenv("EMAIL_PORT_DEV"))
+print("EMAIL_USER =", os.getenv("EMAIL_USER_DEV"))
+print("EMAIL_USER_PASSWORD =", os.getenv("EMAIL_USER_PASSWORD_DEV"), "\n------------------------")
 
 AUTH_USER_MODEL = 'account.CustomUser'
 

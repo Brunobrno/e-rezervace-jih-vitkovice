@@ -25,7 +25,7 @@ User = get_user_model()
 
 #general user view API
 @extend_schema(
-    tags=["User - basic"]
+    tags=["User"]
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -35,9 +35,30 @@ class UserView(viewsets.ModelViewSet):
 
     # Require authentication and role permission
     permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
-    
-from rest_framework_simplejwt.views import TokenObtainPairView
 
+    class Meta:
+        model = CustomUser
+        extra_kwargs = {
+            "email": {"help_text": "Unikátní e-mailová adresa uživatele."},
+            "phone_number": {"help_text": "Telefonní číslo ve formátu +420123456789."},
+            "role": {"help_text": "Role uživatele určující jeho oprávnění v systému."},
+            "account_type": {"help_text": "Typ účtu – firma nebo fyzická osoba."},
+            "email_verified": {"help_text": "Určuje, zda je e-mail ověřen."},
+            "otc": {"help_text": "Jednorázový token k ověření nebo přihlášení."},
+            "create_time": {"help_text": "Datum a čas registrace uživatele (pouze pro čtení).", "read_only": True},
+            "var_symbol": {"help_text": "Variabilní symbol pro platby, pokud je vyžadován."},
+            "bank_account": {"help_text": "Číslo bankovního účtu uživatele."},
+            "ICO": {"help_text": "IČO firmy, pokud se jedná o firemní účet."},
+            "RC": {"help_text": "Rodné číslo pro fyzické osoby."},
+            "city": {"help_text": "Město trvalého pobytu / sídla."},
+            "street": {"help_text": "Ulice a číslo popisné."},
+            "PSC": {"help_text": "PSČ místa pobytu / sídla."},
+            "GDPR": {"help_text": "Souhlas se zpracováním osobních údajů."},
+            "is_active": {"help_text": "Stav aktivace uživatele.", "read_only": True},
+        }
+    
+
+from rest_framework_simplejwt.views import TokenObtainPairView
 # Custom Token obtaining view
 @extend_schema(
     tags=["api"],
@@ -62,16 +83,14 @@ class UserRegistrationViewSet(ModelViewSet):
     http_method_names = ['post']
 
     def create(self, request, *args, **kwargs):
-        #vytvoření uživatele
-        response = super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
 
-        if response.status_code == status.HTTP_201_CREATED:
-            user_id = response.data.get('id')  # ID nového uživatele
-            try:
-                send_email_verification(user_id) # posílaní emailu pro potvrzení registrace
-            except Exception as e:
-                return Response({"error": "E-mail se neodeslal"}, status=500)
-        return response
+        send_email_verification(user) # posílaní emailu pro potvrzení registrace
+            
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
 #2. confirming email
 @extend_schema(
@@ -115,13 +134,30 @@ class UserActivationViewSet(ModelViewSet):
     http_method_names = ['patch']
 
     def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        # Aktivuj účet
+        instance.is_active = True
+
+        # Ulož var_symbol, pokud je ve validovaných datech
+        for attr, value in serializer.validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        # Odeslání e-mailu s potvrzením
+        send_email_clerk_accepted(instance)
+        
+
+        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
 
 #--------------------------------------------------------------------------------------------------------------
 
 #1. PasswordReset + send Email
 @extend_schema(
-    tags=["User passwd reset"],
+    tags=["User password reset"],
     request=PasswordResetRequestSerializer,
     responses={
         200: OpenApiResponse(description="Odeslán email s instrukcemi."),
@@ -141,7 +177,7 @@ class PasswordResetRequestView(APIView):
     
 #2. Confirming reset
 @extend_schema(
-    tags=["User passwd reset"],
+    tags=["User password reset"],
     request=PasswordResetConfirmSerializer,
     parameters=[
         OpenApiParameter(name='uidb64', type=str, location=OpenApiParameter.PATH),

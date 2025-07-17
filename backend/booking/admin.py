@@ -14,7 +14,7 @@ custom_admin_site.register(Square, SquareAdmin)
 # @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     exclude = ("x", "y", "w", "h", "square_size")
-    list_display = ("name", "start", "end", "grid_resolution", "price_per_m2")
+    list_display = ("name", "start", "end", "price_per_m2")
     list_filter = ("start", "end")
     search_fields = ("name", "description")
     ordering = ("-start",)
@@ -32,9 +32,7 @@ custom_admin_site.register(Reservation, ReservationAdmin)
 
 
 class MarketSlotAdmin(admin.ModelAdmin):
-    exclude = ("number",)
-    # readonly_fields = ('number',)
-    list_display = ("event", "number", "status", "base_size", "available_extension", "price_per_m2", "first_x", "first_y", "second_x", "second_y")
+    list_display = ("event", "number", "status", "base_size", "available_extension", "price_per_m2", "x", "y", "width", "height")
     list_filter = ("status", "event")
     search_fields = ("event__name",)
     ordering = ("event", "status")

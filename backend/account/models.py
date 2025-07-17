@@ -84,9 +84,6 @@ class CustomUser(AbstractUser):
                     self.is_superuser = True
             else:
                 self.is_staff = False
-
-        if self.email_verified:
-            self.is_active = True
         
         super().save(*args, **kwargs)
 

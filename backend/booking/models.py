@@ -5,72 +5,21 @@ from django.conf import settings
 from decimal import Decimal
 from django.db.models import Max
 
-CHOICE_SQUARES = (
-    ((20, 45), "SMP Ostrava-jih"),
-    ((45, 55), "Ostrava Jih"),
-    ((0, 0), "Nedefinováno")
-)
+CHOICE_SQUARES = [
+    {
+        "name": "SMP Ostrava-jih",
+        "dimensions": [25, 45, 25],  # (x, y, cellSize)
+    },
+    {        "name": "Ostrava Jih",
+        "dimensions": [45, 55, 15],  # (x, y, cellSize)
+    }
+]
 
+#náměstí
 class Square(models.Model):
     name = models.CharField(max_length=255, default="", null=False)
 
     description = models.TextField(null=True, blank=True)
-
-    street = models.CharField(max_length=255, default="")
-    city = models.CharField(max_length=100, default="")
-    PSC = models.CharField(max_length=5, default="")
-
-    width = models.PositiveIntegerField(default=10)
-    height = models.PositiveIntegerField(default=10)
-
-    #Grid Parameters
-    grid_rows = models.PositiveSmallIntegerField(default=60)
-    grid_cols = models.PositiveSmallIntegerField(default=45)
-    grid_collSize = models.PositiveSmallIntegerField(default=10)
-
-    def __str__(self):
-        return self.name
-
-
-class Event(models.Model):
-    """Celé náměstí
-
-    Args:
-        models (args): w,h skutečné rozměry náměstí | x,y souřadnice levého horního rohu
-
-    Raises:
-        ValidationError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-
-    square = models.ForeignKey(Square, on_delete=models.CASCADE, related_name="event_on_sqare", null=True)
-
-    start = models.DateTimeField()
-    end = models.DateTimeField()
-    grid_resolution = models.FloatField(help_text="Rozlišení mřížky v metrech (např. 1.0 nebo 2.0)", validators=[MinValueValidator(0.0)])
-    price_per_m2 = models.DecimalField(max_digits=8, decimal_places=2, help_text="Cena za m² pro rezervaci", validators=[MinValueValidator(0)])
-
-
-
-    x = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    y = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-
-    w = models.IntegerField(editable=False, default=0, validators=[MinValueValidator(0)])
-    h = models.IntegerField(editable=False, default=0, validators=[MinValueValidator(0)])
-
-    square_size = models.CharField(
-        default="0x0",  # Oprava z předchozí chyby
-        max_length=20,
-        choices=[(f"{dim[0]}x{dim[1]}", label) for dim, label in CHOICE_SQUARES],
-        help_text="Vyberte rozměry náměstí",
-        null=False
-    )
-
-    #layout_data = models.JSONField(default=list, help_text="2D layout polí mapy ve formátu React Grid Layout")
 
     street = models.CharField(max_length=255, default="Ulice není zadaná")
     city = models.CharField(max_length=255, default="Město není zadané")
@@ -83,48 +32,58 @@ class Event(models.Model):
         help_text="Zadejte platné PSČ (5 číslic)"
     )
 
+    width = models.PositiveIntegerField(default=10)
+    height = models.PositiveIntegerField(default=10)
+
+    #Grid Parameters
+    grid_rows = models.PositiveSmallIntegerField(default=60)
+    grid_cols = models.PositiveSmallIntegerField(default=45)
+    cellsize = models.PositiveIntegerField(default=10)
+
+    image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Event(models.Model):
+    """Celé náměstí
+
+    Args:
+        models (args): w,h skutečné rozměry náměstí | x,y souřadnice levého horního rohu
+        
+    """
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+
+    square = models.ForeignKey(Square, on_delete=models.CASCADE, related_name="event_on_sqare", null=True)
+
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+
+    price_per_m2 = models.DecimalField(max_digits=8, decimal_places=2, help_text="Cena za m² pro rezervaci", validators=[MinValueValidator(0)])
+
+    
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
     def clean(self):
+        # Zkontroluj, že začátek je před koncem
+        if self.start >= self.end:
+            raise ValidationError("Datum začátku musí být před datem konce.")
+
+        # Zkontroluj, že se událost nepřekrývá s jinou na stejném náměstí
         overlapping = Event.objects.exclude(id=self.id).filter(
+            square=self.square,
             start__lt=self.end,
             end__gt=self.start,
-            x__lt=self.x + self.w,
-            x__gte=self.x - self.w,
-            y__lt=self.y + self.h,
-            y__gte=self.y - self.h,
         )
         if overlapping.exists():
-            raise ValidationError("Tato plocha se překrývá s jinou akcí ve stejném čase.")
+            raise ValidationError("V tomto termínu už na daném náměstí probíhá jiná událost.")
+
+        # Zavolej rodičovskou validaci (volitelné, pokud nepoužíváš dědičnost)
+        return super().clean()
 
     def save(self, *args, **kwargs):
-        '''
-        TOHLE JE SPRÁVNÝ KÓD/NAHRAZEN JINÝM KTERÝ NEBUDE ŘEŠIT ZATÍM ROZMĚRY EVENTU(DEFAULTNĚ BUDUE NASTAVENÝ PŘES CELÉ NÁMĚSTÍ)
-        if self.square_size:
-            dim_str = self.square_size.split("x")
-            self.w = int(dim_str[0])
-            self.h = int(dim_str[1])
-        else:
-            self.w = 0
-            self.h = 0
-
-        '''
-        self.x = 0
-        self.y = 0
-
-        # Nastav šířku a výšku podle square_size
-        if self.square_size:
-            try:
-                dim_str = self.square_size.split("x")
-                self.w = int(dim_str[0])
-                self.h = int(dim_str[1])
-            except (ValueError, IndexError):
-                self.w = 0
-                self.h = 0
-        else:
-            self.w = 0
-            self.h = 0
-
         self.clean()
         super().save(*args, **kwargs)
 
@@ -145,10 +104,11 @@ class MarketSlot(models.Model):
     base_size = models.FloatField(default=0, help_text="Základní velikost (m²)", validators=[MinValueValidator(0.0)])
     available_extension = models.FloatField(default=0, help_text="Možnost rozšíření (m²)", validators=[MinValueValidator(0.0)])
 
-    first_x = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
-    first_y = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
-    second_x = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
-    second_y = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)])
+    x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+
+    width = models.PositiveIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    height = models.PositiveIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
 
     price_per_m2 = models.DecimalField(
         default=Decimal("0.00"),
