@@ -1,5 +1,5 @@
 // DynamicGrid.jsx
-// This component renders a dynamic grid for managing reservations. 
+// This component renders a dynamic grid for managing reservations.
 
 import React, {
   useState,
@@ -32,6 +32,7 @@ const DynamicGrid = ({
   onReservationsChange,
   selectedIndex,
   onSelectedIndexChange,
+  static: isStatic = false,
 }) => {
   const {
     rows = DEFAULT_CONFIG.rows,
@@ -80,15 +81,12 @@ const DynamicGrid = ({
   // This function determines if two rectangles defined by their coordinates overlap.
   const rectanglesOverlap = useCallback(
     (a, b) =>
-      a.x < b.x + b.w &&
-      a.x + a.w > b.x &&
-      a.y < b.y + b.h &&
-      a.y + a.h > b.y,
+      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y,
     []
   );
 
-// Function to check if a new rectangle collides with existing reservations
-// This function checks if a new rectangle overlaps with any existing reservations,
+  // Function to check if a new rectangle collides with existing reservations
+  // This function checks if a new rectangle overlaps with any existing reservations,
   const hasCollision = useCallback(
     (newRect, ignoreIndex = -1) =>
       reservations.some(
@@ -105,17 +103,9 @@ const DynamicGrid = ({
       lastCoordsRef.current = null;
 
       const coords = getCellCoords(e);
+      let isReservationClicked = false;
 
-      if (e.target.classList.contains("resize-handle")) {
-        const index = parseInt(
-          e.target.closest(".reservation").dataset.index,
-          10
-        );
-        setResizingIndex(index);
-        onSelectedIndexChange(index);
-        return;
-      }
-
+      // Check if any reservation was clicked
       const resIndex = reservations.findIndex(
         (r) =>
           coords.x >= r.x &&
@@ -126,25 +116,45 @@ const DynamicGrid = ({
 
       if (resIndex !== -1) {
         const res = reservations[resIndex];
-        dragOffsetRef.current = {
-          x: coords.x - res.x,
-          y: coords.y - res.y,
-        };
-        setDraggedIndex(resIndex);
-        onSelectedIndexChange(resIndex);
-      } else {
+
+        // Only allow selection of "active" (green) reservations
+        if (res.status === "active") {
+          isReservationClicked = true;
+          onSelectedIndexChange(resIndex);
+
+          // Only allow dragging/resizing in non-static mode
+          if (!isStatic) {
+            dragOffsetRef.current = {
+              x: coords.x - res.x,
+              y: coords.y - res.y,
+            };
+            setDraggedIndex(resIndex);
+
+            // Check for resize handle
+            if (e.target.classList.contains("resize-handle")) {
+              setResizingIndex(resIndex);
+            }
+          }
+        }
+      } else if (!isStatic) {
+        // Only allow new selection creation in non-static mode
         setStartCell(coords);
         setIsDragging(true);
+      }
+
+      // Deselect if clicking outside any reservation or on non-active reservation
+      if (!isReservationClicked) {
         onSelectedIndexChange(null);
       }
     },
-    [getCellCoords, reservations, onSelectedIndexChange]
+    [getCellCoords, reservations, onSelectedIndexChange, isStatic]
   );
 
   // Function to handle mouse move events
   // This function updates the grid based on mouse movements, allowing for dragging and resizing of reservations
   const handleMouseMove = useCallback(
     (e) => {
+      if (isStatic) return; // Disable for static
       const coords = getCellCoords(e);
 
       if (
@@ -204,12 +214,14 @@ const DynamicGrid = ({
       onReservationsChange,
       rows,
       cols,
+      isStatic,
     ]
   );
 
   // Function to handle mouse up events
   // This function finalizes the reservation creation or updates based on mouse release.
   const handleMouseUp = useCallback(() => {
+    if (isStatic) return; // Disable for static
     if (isDragging && startCell && hoverCell) {
       const minX = Math.min(startCell.x, hoverCell.x);
       const minY = Math.min(startCell.y, hoverCell.y);
@@ -254,12 +266,14 @@ const DynamicGrid = ({
     onReservationsChange,
     rows,
     cols,
+    isStatic,
   ]);
 
   // Function to handle reservation deletion
   // This function removes a reservation from the grid based on its index.
   const handleDeleteReservation = useCallback(
     (index) => {
+      if (isStatic) return; // Disable for static
       onReservationsChange((prev) => prev.filter((_, i) => i !== index));
       if (selectedIndex === index) {
         onSelectedIndexChange(null);
@@ -267,20 +281,21 @@ const DynamicGrid = ({
         onSelectedIndexChange(selectedIndex - 1);
       }
     },
-    [onReservationsChange, onSelectedIndexChange, selectedIndex]
+    [onReservationsChange, onSelectedIndexChange, selectedIndex, isStatic]
   );
 
   // Function to handle status change of a reservation
   // This function updates the status of a reservation based on user selection.
   const handleStatusChange = useCallback(
     (index, newStatus) => {
+      if (isStatic) return; // Disable for static
       onReservationsChange((prev) =>
         prev.map((res, i) =>
           i === index ? { ...res, status: newStatus } : res
         )
       );
     },
-    [onReservationsChange]
+    [onReservationsChange, isStatic]
   );
 
   // Generate grid cells based on rows and columns
@@ -312,16 +327,17 @@ const DynamicGrid = ({
       ref={gridRef}
       className="position-relative border"
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onContextMenu={(e) => e.preventDefault()}
+      onMouseMove={isStatic ? undefined : handleMouseMove}
+      onMouseUp={isStatic ? undefined : handleMouseUp}
+      onMouseLeave={isStatic ? undefined : handleMouseUp}
+      onContextMenu={(e) => (isStatic ? undefined : e.preventDefault())}
       style={{
         width: cols * cellSize,
         height: rows * cellSize,
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+        cursor: isStatic ? "pointer" : "crosshair", // Use pointer cursor for static
       }}
     >
       {gridCells}
@@ -334,8 +350,10 @@ const DynamicGrid = ({
             draggedIndex === i ? "dragging" : ""
           }`}
           onContextMenu={(e) => {
-            e.preventDefault();
-            handleDeleteReservation(i);
+            if (!isStatic) {
+              e.preventDefault();
+              handleDeleteReservation(i);
+            }
           }}
           style={{
             position: "absolute",
@@ -352,6 +370,7 @@ const DynamicGrid = ({
                 ? "none"
                 : "all 0.2s ease",
             zIndex: 2,
+            cursor: isStatic ? "pointer" : "move",
           }}
         >
           <div className="d-flex flex-column h-100 p-1">
@@ -363,29 +382,32 @@ const DynamicGrid = ({
               value={res.status}
               onChange={(e) => handleStatusChange(i, e.target.value)}
               onClick={(e) => e.stopPropagation()}
+              disabled={isStatic}
             >
               <option value="active">Aktivní</option>
               <option value="reserved">Rezervováno</option>
               <option value="blocked">Blokováno</option>
             </select>
           </div>
-          <div
-            className="resize-handle"
-            style={{
-              position: "absolute",
-              right: 0,
-              bottom: 0,
-              width: 10,
-              height: 10,
-              backgroundColor: "white",
-              border: "1px solid black",
-              cursor: "nwse-resize",
-            }}
-          />
+          {!isStatic && (
+            <div
+              className="resize-handle"
+              style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: 10,
+                height: 10,
+                backgroundColor: "white",
+                border: "1px solid black",
+                cursor: "nwse-resize",
+              }}
+            />
+          )}
         </div>
       ))}
 
-      {isDragging && startCell && hoverCell && (
+      {!isStatic && isDragging && startCell && hoverCell && (
         <div
           className="reservation-draft"
           style={{

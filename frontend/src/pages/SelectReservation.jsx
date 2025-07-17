@@ -1,4 +1,4 @@
-// Reservation.jsx
+// SelectReservation.jsx
 // This page displays a reservation system with a dynamic grid and a list of reservations.
 
 import DynamicGrid, { DEFAULT_CONFIG } from "../components/DynamicGrid";
@@ -8,7 +8,7 @@ import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
 
 // Reservation component
 // This component manages the state of reservations and provides functionality to export and clear them.
-function Reservation() {
+function CreateReservation() {
   const gridConfig = DEFAULT_CONFIG;
   const storageKey = `reservationData_${gridConfig.rows}x${gridConfig.cols}`;
 
@@ -55,6 +55,7 @@ function Reservation() {
             onReservationsChange={setReservations}
             selectedIndex={selectedIndex}
             onSelectedIndexChange={setSelectedIndex}
+            static={true} // Set to true for static grid
           />
         </Col>
         <Col sm={6} md={4}>
@@ -105,4 +106,4 @@ function Reservation() {
   );
 }
 
-export default Reservation;
+export default CreateReservation;

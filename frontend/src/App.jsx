@@ -8,7 +8,9 @@ import { Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Home from './pages/Home';
 import Register from './pages/Register';
-import Reservation from './pages/Reservation';
+import CreateReservation from './pages/CreateReservation';
+import SelectReservation from './pages/SelectReservation';
+import Test from './pages/Test';
 
 function App() {
 
@@ -21,8 +23,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />}/>
         <Route path="/register" element={<Register />}/>
-        <Route path="/reservation" element={<Reservation />}/>
-        <Route path="/admin" element={<></>}/>  
+        <Route path="/clerk/create/reservation" element={<CreateReservation />}/>
+        <Route path="/seller/reservation" element={<SelectReservation />}/>
+        <Route path="/test" element={<Test />}/>  
       </Routes>
 
     <footer className="mt-auto">
@@ -30,7 +33,7 @@ function App() {
         eTržnice © 
         <a href="mailto:helpdesk@vitkovice.com"> VÍTKOVICE IT SOLUTIONS a.s. </a>
              | 
-        <a href="#"> Nápověda</a>
+        <a href="/test"> Nápověda</a>
         </p>
     </footer>
     </>
