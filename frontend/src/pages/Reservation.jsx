@@ -5,6 +5,9 @@ import DynamicGrid, { DEFAULT_CONFIG } from "../components/DynamicGrid";
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
 
+
+// Reservation component
+// This component manages the state of reservations and provides functionality to export and clear them.
 function Reservation() {
   const gridConfig = DEFAULT_CONFIG;
   const storageKey = `reservationData_${gridConfig.rows}x${gridConfig.cols}`;
@@ -20,6 +23,8 @@ function Reservation() {
     localStorage.setItem(storageKey, JSON.stringify(reservations));
   }, [reservations, storageKey]);
 
+  // Function to export reservations as a JSON file
+  // This function creates a JSON file from the reservations state and triggers a download.
   const getReservations = () => {
     const dataStr = JSON.stringify(reservations, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -32,6 +37,8 @@ function Reservation() {
     document.body.removeChild(a);
   };
 
+  // Function to clear all reservations
+  // This function removes all reservations from the state and local storage.
   const clearAll = () => {
     localStorage.removeItem(storageKey);
     setReservations([]);

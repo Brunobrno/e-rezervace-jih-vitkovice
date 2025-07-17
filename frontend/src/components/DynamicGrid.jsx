@@ -9,6 +9,8 @@ import React, {
   useEffect,
 } from "react";
 
+// Default configuration for the grid
+// This configuration defines the number of rows, columns, cell size, and status colors.
 export const DEFAULT_CONFIG = {
   rows: 28,
   cols: 20,
@@ -20,6 +22,10 @@ export const DEFAULT_CONFIG = {
   },
 };
 
+/** * DynamicGrid component
+ * This component renders a grid where users can create, move, resize,
+ * and delete reservations.
+ */
 const DynamicGrid = ({
   config = DEFAULT_CONFIG,
   reservations,
@@ -43,11 +49,15 @@ const DynamicGrid = ({
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const lastCoordsRef = useRef(null);
 
+  // Clamp function to ensure values stay within bounds
+  // This function restricts a value to be within a specified range.
   const clamp = useCallback(
     (val, min, max) => Math.max(min, Math.min(max, val)),
     []
   );
 
+  // Function to get cell coordinates based on mouse event
+  // This function calculates the grid cell coordinates based on the mouse position.
   const getCellCoords = useCallback(
     (e) => {
       const rect = gridRef.current.getBoundingClientRect();
@@ -66,6 +76,8 @@ const DynamicGrid = ({
     [clamp, cellSize, rows, cols]
   );
 
+  // Function to check if two rectangles overlap
+  // This function determines if two rectangles defined by their coordinates overlap.
   const rectanglesOverlap = useCallback(
     (a, b) =>
       a.x < b.x + b.w &&
@@ -75,6 +87,8 @@ const DynamicGrid = ({
     []
   );
 
+// Function to check if a new rectangle collides with existing reservations
+// This function checks if a new rectangle overlaps with any existing reservations,
   const hasCollision = useCallback(
     (newRect, ignoreIndex = -1) =>
       reservations.some(
@@ -83,6 +97,8 @@ const DynamicGrid = ({
     [reservations, rectanglesOverlap]
   );
 
+  // Function to handle mouse down events
+  // This function initiates dragging or resizing of reservations based on mouse events.
   const handleMouseDown = useCallback(
     (e) => {
       if (e.button !== 0) return;
@@ -125,6 +141,8 @@ const DynamicGrid = ({
     [getCellCoords, reservations, onSelectedIndexChange]
   );
 
+  // Function to handle mouse move events
+  // This function updates the grid based on mouse movements, allowing for dragging and resizing of reservations
   const handleMouseMove = useCallback(
     (e) => {
       const coords = getCellCoords(e);
@@ -189,6 +207,8 @@ const DynamicGrid = ({
     ]
   );
 
+  // Function to handle mouse up events
+  // This function finalizes the reservation creation or updates based on mouse release.
   const handleMouseUp = useCallback(() => {
     if (isDragging && startCell && hoverCell) {
       const minX = Math.min(startCell.x, hoverCell.x);
@@ -236,6 +256,8 @@ const DynamicGrid = ({
     cols,
   ]);
 
+  // Function to handle reservation deletion
+  // This function removes a reservation from the grid based on its index.
   const handleDeleteReservation = useCallback(
     (index) => {
       onReservationsChange((prev) => prev.filter((_, i) => i !== index));
@@ -248,6 +270,8 @@ const DynamicGrid = ({
     [onReservationsChange, onSelectedIndexChange, selectedIndex]
   );
 
+  // Function to handle status change of a reservation
+  // This function updates the status of a reservation based on user selection.
   const handleStatusChange = useCallback(
     (index, newStatus) => {
       onReservationsChange((prev) =>
@@ -259,6 +283,8 @@ const DynamicGrid = ({
     [onReservationsChange]
   );
 
+  // Generate grid cells based on rows and columns
+  // This function creates a grid of cells based on the specified number of rows and columns.
   const gridCells = useMemo(
     () =>
       [...Array(rows * cols)].map((_, index) => {
