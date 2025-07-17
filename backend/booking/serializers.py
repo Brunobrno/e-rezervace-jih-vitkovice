@@ -2,14 +2,44 @@ from rest_framework import serializers
 from .models import Event, MarketSlot, Reservation
 
 
+
+
+
+class MarketSlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketSlot
+        fields = [
+            "id", "event", "status",
+            "base_size", "available_extension",
+            "x", "y", "width", "height",
+            "price_per_m2"
+        ]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "event": {"help_text": "ID akce (Event), ke které toto místo patří", "required": True},
+            "status": {"help_text": "Stav prodejního místa", "required": False},
+            "base_size": {"help_text": "Základní velikost (m²)", "required": True},
+            "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": True},
+            "x": {"help_text": "X souřadnice levého horního rohu", "required": True},
+            "y": {"help_text": "Y souřadnice levého horního rohu", "required": True},
+            "width": {"help_text": "Šířka Slotu", "required": True},
+            "height": {"help_text": "Výška Slotu", "required": True},
+            "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": True},
+        }
+
 class EventSerializer(serializers.ModelSerializer):
+
+    market_slots = MarketSlotSerializer(many=True, read_only=True, source="marketSlot_event")
+
     class Meta:
         model = Event
         fields = [
             "id", "name", "description", "start", "end",
             "grid_resolution", "price_per_m2",
             "x", "y", "w", "h", "square_size",
-            "street", "city", "psc", "image"
+            "street", "city", "psc", "image",
+
+            "market_slots"
         ]
         read_only_fields = ["id", "x", "y", "w", "h"]
         extra_kwargs = {
@@ -24,31 +54,9 @@ class EventSerializer(serializers.ModelSerializer):
             "city": {"help_text": "Město konání události", "required": False},
             "psc": {"help_text": "PSČ (5 číslic)", "required": False},
             "image": {"help_text": "Obrázek nebo plán náměstí", "required": False},
+
+            "market_slots": {"help_text": "Seznam prodejních míst vytvořených v rámci této události", "required": False},
         }
-
-
-class MarketSlotSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MarketSlot
-        fields = [
-            "id", "event", "status",
-            "base_size", "available_extension",
-            "first_x", "first_y", "second_x", "second_y",
-            "price_per_m2"
-        ]
-        read_only_fields = ["id"]
-        extra_kwargs = {
-            "event": {"help_text": "ID akce (Event), ke které toto místo patří", "required": True},
-            "status": {"help_text": "Stav prodejního místa", "required": False},
-            "base_size": {"help_text": "Základní velikost (m²)", "required": True},
-            "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": True},
-            "first_x": {"help_text": "X souřadnice levého horního rohu", "required": True},
-            "first_y": {"help_text": "Y souřadnice levého horního rohu", "required": True},
-            "second_x": {"help_text": "X souřadnice pravého dolního rohu", "required": True},
-            "second_y": {"help_text": "Y souřadnice pravého dolního rohu", "required": True},
-            "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": True},
-        }
-
 
 class ReservationSerializer(serializers.ModelSerializer):
     class Meta:

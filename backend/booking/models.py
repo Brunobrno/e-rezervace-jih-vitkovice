@@ -9,6 +9,7 @@ CHOICE_SQUARES = (
     ((0, 0), "Nedefinováno")
 )
 
+#náměstí
 class Square(models.Model):
     name = models.CharField(),
 
@@ -27,12 +28,7 @@ class Event(models.Model):
 
     Args:
         models (args): w,h skutečné rozměry náměstí | x,y souřadnice levého horního rohu
-
-    Raises:
-        ValidationError: _description_
-
-    Returns:
-        _type_: _description_
+        
     """
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -134,11 +130,11 @@ class MarketSlot(models.Model):
     base_size = models.FloatField(default=0 ,help_text="Základní velikost (m2)", validators=[MinValueValidator(0.0)])
     available_extension = models.FloatField(default=0 ,help_text="Možnost rozšíření (m2)", validators=[MinValueValidator(0.0)])
 
-    first_x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
-    first_y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
 
-    second_x = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
-    second_y = models.SmallIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    width = models.PositiveIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
+    height = models.PositiveIntegerField(default=0, blank=False, validators=[MinValueValidator(0)])
 
     price_per_m2 = models.DecimalField(default=0, blank=False, validators=[MinValueValidator(0)], help_text="Cena za m² pro toto prodejn místo", max_digits=8, decimal_places=2)
 

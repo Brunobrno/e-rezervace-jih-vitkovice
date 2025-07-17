@@ -55,7 +55,6 @@ Feel free to use or modify this table for your project!
 # NPM
 
 ```
-npm create vite@latest frontend -- --template react
 cd frontend
 npm config set strict-ssl false
 npm install --progress=false --cache

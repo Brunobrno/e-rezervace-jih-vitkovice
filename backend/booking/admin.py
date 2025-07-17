@@ -23,7 +23,7 @@ custom_admin_site.register(Reservation, ReservationAdmin)
 
 
 class MarketSlotAdmin(admin.ModelAdmin):
-    list_display = ("event", "status", "available_extension", "price_per_m2", "first_x", "first_y", "second_x", "second_y")
+    list_display = ("event", "status", "available_extension", "price_per_m2", "x", "y", "width", "height")
     list_filter = ("status", "event")
     search_fields = ("event__name",)
     ordering = ("event", "status")

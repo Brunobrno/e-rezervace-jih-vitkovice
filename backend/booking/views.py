@@ -34,7 +34,7 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     serializer_class = MarketSlotSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["event", "status"]
-    ordering_fields = ["price_per_m2", "first_x", "first_y"]
+    ordering_fields = ["price_per_m2", "x", "y"]
 
     permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager", "seller")]
 
