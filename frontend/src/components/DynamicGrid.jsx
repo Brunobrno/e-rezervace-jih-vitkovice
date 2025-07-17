@@ -41,6 +41,12 @@ const DynamicGrid = ({
     statusColors = DEFAULT_CONFIG.statusColors,
   } = config;
 
+  const statusLabels = {
+    active: "Aktivní",
+    reserved: "Rezervováno",
+    blocked: "Blokováno",
+  };
+
   const [startCell, setStartCell] = useState(null);
   const [hoverCell, setHoverCell] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -116,24 +122,24 @@ const DynamicGrid = ({
 
       if (resIndex !== -1) {
         const res = reservations[resIndex];
+        isReservationClicked = true;
 
-        // Only allow selection of "active" (green) reservations
-        if (res.status === "active") {
-          isReservationClicked = true;
+        // Only allow selection of active reservations in static mode
+        if (!isStatic || res.status === "active") {
           onSelectedIndexChange(resIndex);
+        }
 
-          // Only allow dragging/resizing in non-static mode
-          if (!isStatic) {
-            dragOffsetRef.current = {
-              x: coords.x - res.x,
-              y: coords.y - res.y,
-            };
-            setDraggedIndex(resIndex);
+        // Only allow dragging/resizing in non-static mode
+        if (!isStatic) {
+          dragOffsetRef.current = {
+            x: coords.x - res.x,
+            y: coords.y - res.y,
+          };
+          setDraggedIndex(resIndex);
 
-            // Check for resize handle
-            if (e.target.classList.contains("resize-handle")) {
-              setResizingIndex(resIndex);
-            }
+          // Check for resize handle
+          if (e.target.classList.contains("resize-handle")) {
+            setResizingIndex(resIndex);
           }
         }
       } else if (!isStatic) {
@@ -142,8 +148,13 @@ const DynamicGrid = ({
         setIsDragging(true);
       }
 
-      // Deselect if clicking outside any reservation or on non-active reservation
-      if (!isReservationClicked) {
+      // Deselect if clicking outside any reservation or on non-active in static mode
+      if (
+        !isReservationClicked ||
+        (isStatic &&
+          resIndex !== -1 &&
+          reservations[resIndex].status !== "active")
+      ) {
         onSelectedIndexChange(null);
       }
     },
@@ -337,12 +348,12 @@ const DynamicGrid = ({
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-        cursor: isStatic ? "pointer" : "crosshair", // Use pointer cursor for static
+        cursor: isStatic ? "default" : "crosshair", // Changed to default
       }}
     >
       {gridCells}
 
-      {reservations.map((res, i) => (
+{reservations.map((res, i) => (
         <div
           key={i}
           data-index={i}
@@ -370,24 +381,34 @@ const DynamicGrid = ({
                 ? "none"
                 : "all 0.2s ease",
             zIndex: 2,
-            cursor: isStatic ? "pointer" : "move",
+            // Only show pointer for active reservations in static mode
+            cursor: isStatic
+              ? res.status === "active" ? "pointer" : "default"
+              : "move",
           }}
         >
           <div className="d-flex flex-column h-100 p-1">
             <div className="flex-grow-1 d-flex align-items-center justify-content-center">
               <strong>{i + 1}</strong>
             </div>
-            <select
-              className="form-select form-select-sm"
-              value={res.status}
-              onChange={(e) => handleStatusChange(i, e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              disabled={isStatic}
-            >
-              <option value="active">Aktivní</option>
-              <option value="reserved">Rezervováno</option>
-              <option value="blocked">Blokováno</option>
-            </select>
+            {isStatic ? (
+              // Show status text in static mode
+              <div className="status-text text-center">
+                {statusLabels[res.status]}
+              </div>
+            ) : (
+              // Show dropdown in non-static mode
+              <select
+                className="form-select form-select-sm"
+                value={res.status}
+                onChange={(e) => handleStatusChange(i, e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value="active">Aktivní</option>
+                <option value="reserved">Rezervováno</option>
+                <option value="blocked">Blokováno</option>
+              </select>
+            )}
           </div>
           {!isStatic && (
             <div
