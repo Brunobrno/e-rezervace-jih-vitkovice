@@ -13,7 +13,13 @@ from account.permissions import *
     tags=["Square"],
     description=(
         "Správa náměstí – vytvoření, aktualizace a výpis s doplňkovými informacemi (`quarks`) "
-        "a připojenými eventy. Možno filtrovat podle města, PSČ a velikosti."
+        "a připojenými eventy. Možno filtrovat podle města, PSČ a velikosti.\n\n"
+        "🔍 **Fulltextové vyhledávání (`?search=`)** prohledává následující pole:\n"
+        "- název náměstí (`name`)\n"
+        "- popis (`description`)\n"
+        "- ulice (`street`)\n"
+        "- město (`city`)\n\n"
+        "**Příklady:** `?search=Ostrava`, `?search=Hlavní třída`"
     )
 )
 class SquareViewSet(viewsets.ModelViewSet):
@@ -36,7 +42,17 @@ class SquareViewSet(viewsets.ModelViewSet):
 
 @extend_schema(
     tags=["Event"],
-    description="Základní operace pro správu událostí (Event). Lze filtrovat podle času, města a velikosti náměstí."
+    description=(
+        "Základní operace pro správu událostí (Event). Lze filtrovat podle času, města a velikosti náměstí.\n\n"
+        "🔍 **Fulltextové vyhledávání (`?search=`)** prohledává:\n"
+        "- název události (`name`)\n"
+        "- popis (`description`)\n"
+        "- název náměstí (`square.name`)\n"
+        "- město (`square.city`)\n"
+        "- popis náměstí (`square.description`)\n"
+        "- ulice (`square.street`)\n\n"
+        "**Příklady:** `?search=Jarmark`, `?search=Ostrava`, `?search=Masarykovo`"
+    )
 )
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all().order_by("start")
@@ -72,7 +88,17 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
 
 @extend_schema(
     tags=["Reservation"],
-    description="Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd."
+    description=(
+        "Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd.\n\n"
+        "🔍 **Fulltextové vyhledávání (`?search=`)** prohledává:\n"
+        "- název události (`event.name`)\n"
+        "- název náměstí (`event.square.name`)\n"
+        "- město (`event.square.city`)\n"
+        "- poznámku (`note`)\n"
+        "- e-mail uživatele (`user.email`)\n"
+        "- jméno a příjmení uživatele (`user.first_name`, `user.last_name`)\n\n"
+        "**Příklady:** `?search=jan.novak@example.com`, `?search=Velikonoční`, `?search=Ostrava`"
+    )
 )
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.select_related("event", "marketSlot", "user").all().order_by("-created_at")
