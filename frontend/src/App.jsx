@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import CreateReservation from './pages/CreateReservation';
 import SelectReservation from './pages/SelectReservation';
 import Test from './pages/Test';
+import EventsTree from './components/EventsTree';
 
 function App() {
 
@@ -25,6 +26,7 @@ function App() {
         <Route path="/register" element={<Register />}/>
         <Route path="/clerk/create/reservation" element={<CreateReservation />}/>
         <Route path="/seller/reservation" element={<SelectReservation />}/>
+        <Route path="/components" element={<EventsTree />}/>
         <Route path="/test" element={<Test />}/> 
       </Routes>
 

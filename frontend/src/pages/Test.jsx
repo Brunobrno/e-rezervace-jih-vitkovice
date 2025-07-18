@@ -8,6 +8,7 @@ function Test(){
         <div>
             <Button variant="danger" href="/clerk/create/reservation" >Clerk</Button>
             <Button variant="success" href="/seller/reservation" >Seller</Button>
+            <Button variant="warning" href="/components" >Components</Button>
         </div>
     )
 }
