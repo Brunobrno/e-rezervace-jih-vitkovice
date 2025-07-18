@@ -127,31 +127,17 @@ class EmailVerificationView(APIView):
     responses={200: UserActivationSerializer},
     description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
 )
-class UserActivationViewSet(ModelViewSet):
-    queryset = CustomUser.objects.filter(is_active=False)
-    serializer_class = UserActivationSerializer
-    permission_classes = [IsAuthenticated, RoleAllowed('cityClerk', 'admin')]
-    http_method_names = ['patch']
+class UserActivationViewSet(APIView):
+    permission_classes = [permissions.IsAuthenticated, RoleAllowed('cityClerk', 'admin')]
 
-    def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+    def patch(self, request, *args, **kwargs):
+        serializer = UserActivationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        user = serializer.save()
 
-        # Aktivuj účet
-        instance.is_active = True
+        send_email_clerk_accepted(user)
 
-        # Ulož var_symbol, pokud je ve validovaných datech
-        for attr, value in serializer.validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
-
-        # Odeslání e-mailu s potvrzením
-        send_email_clerk_accepted(instance)
-        
-
-        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
+        return Response(serializer.to_representation(user), status=status.HTTP_200_OK)
 
 #--------------------------------------------------------------------------------------------------------------
 

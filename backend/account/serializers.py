@@ -153,25 +153,23 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
     
 class UserActivationSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField(help_text="ID uživatele, kterému se aktivuje účet.")
-    var_symbol = serializers.IntegerField(help_text="Variabilní symbol, který musí být doplněn úředníkem pro aktivaci účtu.")
-
-    def validate_user_id(self, value):
-        try:
-            user = User.objects.get(pk=value)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("Uživatel s tímto ID neexistuje.")
-        return value
+    user_id = serializers.IntegerField()
+    var_symbol = serializers.IntegerField()
 
     def save(self, **kwargs):
-        user_id = self.validated_data['user_id']
-        var_symbol = self.validated_data['var_symbol']
-
-        user = User.objects.get(pk=user_id)
-        user.var_symbol = var_symbol
+        user = User.objects.get(pk=self.validated_data['user_id'])  # bez try/except, nech to padnout pokud neexistuje
+        user.var_symbol = self.validated_data['var_symbol']
         user.is_active = True
         user.save()
         return user
+
+    def to_representation(self, instance):
+        return {
+            "id": instance.id,
+            "email": instance.email,
+            "var_symbol": instance.var_symbol,
+            "is_active": instance.is_active,
+        }
     
     class Meta:
         model = User
@@ -179,8 +177,8 @@ class UserActivationSerializer(serializers.Serializer):
             'user_id', 'var_symbol'
         ]
         extra_kwargs = {
-            'first_name': {'required': True, 'help_text': 'ID uživatele'},
-            'last_name': {'required': True, 'help_text': 'Variablní symbol, zadán úředníkem'},
+            'user_id': {'required': True, 'help_text': 'ID uživatele'},
+            'var_symbol': {'required': True, 'help_text': 'Variablní symbol, zadán úředníkem'},
         }
 # user creating section end --------------------------------------------
 

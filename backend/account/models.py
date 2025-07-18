@@ -39,9 +39,42 @@ class CustomUser(AbstractUser):
     create_time = models.DateTimeField(auto_now_add=True)
 
     var_symbol = models.IntegerField(null=True, blank=True)
-    bank_account = models.CharField(null=True, blank=True)
-    ICO = models.CharField(null=True, blank=True)
-    RC = models.CharField(max_length=11, blank=True, null=True)
+    bank_account = models.CharField(
+        null=True, 
+        blank=True, 
+        validators=[RegexValidator(
+            regex=r'^[A-Z]{2}[0-9A-Z]{13,32}$',
+            message="Zadejte platný IBAN (např. CZ6508000000192000145399).",
+            code='invalid_bank_account'
+            )
+        ]
+    )
+
+    ICO = models.CharField(
+        max_length=8,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{8}$',
+                message="IČO musí obsahovat přesně 8 číslic.",
+                code='invalid_ico'
+            )
+        ]
+    )
+
+    RC = models.CharField(
+        max_length=11,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{6}\/?\d{3,4}$',
+                message="Rodné číslo musí být ve formátu 123456/7890 nebo 1234567890.",
+                code='invalid_rc'
+            )
+        ]
+    )
 
     city = models.CharField(null=True, blank=True, max_length=100)
     street = models.CharField(null=True, blank=True, max_length=200)

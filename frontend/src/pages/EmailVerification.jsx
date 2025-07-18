@@ -32,7 +32,7 @@ function EmailVerificationPage() {
 
     try {
       // Sestavíme URL pro API volání
-      const url = `/api/account/registration/verify-email/?uidb64=${encodeURIComponent(uidb64)}&token=${encodeURIComponent(token)}`;
+      const url = `http://127.0.0.1:8000/api/account/registration/verify-email/${encodeURIComponent(uidb64)}/${encodeURIComponent(token)}`;
       
       // Pošleme GET požadavek na backend
       const response = await fetch(url, { method: 'GET' });

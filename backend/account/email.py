@@ -33,7 +33,7 @@ def send_email_verification(user):
     print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
 
     send_email_with_context(
-        recipient=user.email,
+        recipients=user.email,
         subject="Ověření e-mailu",
         message=f"{message}"
     )
@@ -49,7 +49,7 @@ def send_email_clerk_accepted(user):
 
 
     send_email_with_context(
-        recipient=user.email,
+        recipients=user.email,
         subject="Úředník potvrdil váší registraci",
         message=f""
     )
