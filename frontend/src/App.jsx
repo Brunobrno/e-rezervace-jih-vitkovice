@@ -13,6 +13,7 @@ import SelectReservation from './pages/SelectReservation';
 import Test from './pages/Test';
 import EventsTree from './components/EventsTree';
 import EmailVerificationPage from './pages/EmailVerification';
+import Home from './pages/Home';
 
 function App() {
 
