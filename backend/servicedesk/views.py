@@ -3,9 +3,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth import get_user_model
 
-from .models import UserRequest
-from .serializers import UserRequestSerializer
-from .filters import UserRequestFilter
+from .models import ServiceTicket
+from .serializers import ServiceTicketSerializer
+from .filters import ServiceTicketFilter
 from account.email import send_email_with_context
 
 from rest_framework.permissions import IsAuthenticated
@@ -13,14 +13,14 @@ from rest_framework.permissions import IsAuthenticated
 
 
 @extend_schema(
-    tags=["UserRequest"],
+    tags=["ServiceTicket"],
     description="Správa uživatelských požadavků – vytvoření, úprava a výpis. Filtrování podle stavu, urgence, uživatele atd."
 )
-class UserRequestViewSet(viewsets.ModelViewSet):
-    queryset = UserRequest.objects.select_related("user").all().order_by("-created_at")
-    serializer_class = UserRequestSerializer
+class ServiceTicketViewSet(viewsets.ModelViewSet):
+    queryset = ServiceTicket.objects.select_related("user").all().order_by("-created_at")
+    serializer_class = ServiceTicketSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_class = UserRequestFilter
+    filterset_class = ServiceTicketFilter
     ordering_fields = ["urgency", "created_at"]
     search_fields = ["title", "description", "user__username"]
     permission_classes = [IsAuthenticated]

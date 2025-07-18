@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Group
+from django.core.validators import MinValueValidator, MaxValueValidator
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext_lazy as _
@@ -157,7 +157,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
 class UserActivationSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
-    var_symbol = serializers.IntegerField()
+    var_symbol = serializers.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(9999999999)])
 
     def save(self, **kwargs):
         user = User.objects.get(pk=self.validated_data['user_id'])  # bez try/except, nech to padnout pokud neexistuje

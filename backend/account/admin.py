@@ -13,7 +13,7 @@ class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     
     list_display = (
-        "username", "email", "role","create_time", "account_type", "is_active", "is_staff", "email_verified", 
+        "id", "username", "email", "role","create_time", "account_type", "is_active", "is_staff", "email_verified", 
     )
     list_filter = ("role", "account_type", "is_active", "is_staff", "email_verified")
     search_fields = ("username", "email", "phone_number")
