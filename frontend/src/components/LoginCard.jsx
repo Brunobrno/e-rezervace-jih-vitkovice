@@ -15,7 +15,7 @@ import API_URL from "../api/auth"
 import { login } from "../api/auth";
 
 function LoginCard() {
-  const [username, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 

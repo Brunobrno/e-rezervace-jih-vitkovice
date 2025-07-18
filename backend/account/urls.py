@@ -22,7 +22,7 @@ urlpatterns = [
     #slouží čistě pro email 
     path("registration/verify-email/<uidb64>/<token>/", EmailVerificationView.as_view(), name="verify-email"),
     
-    path('registration/activation-varsymbol', UserActivationViewSet.as_view({'patch': 'partial_update'}), name='activate_user_and_input_var_symbol'),
+    path("registration/activation-varsymbol/", UserActivationViewSet.as_view(), name="activate_user_and_input_var_symbol"),
 
     path("reset-password/", PasswordResetRequestView.as_view(), name="reset-password-request"),
     path("reset-password/<uidb64>/<token>/", PasswordResetConfirmView.as_view(), name="reset-password-confirm"),

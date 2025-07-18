@@ -3,7 +3,7 @@ function ClerkHome(){
 
     return(
         <div>
-            <header>Admin page</header>
+            <header>ClerkHome</header>
         </div>
     )
 }
