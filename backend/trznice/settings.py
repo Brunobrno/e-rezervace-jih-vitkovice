@@ -364,6 +364,8 @@ if USE_AWS is False:
 
     # Media and Static URL for local dev
     MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    
     STATIC_URL = '/static/'
 
     # Local folder for collected static files
