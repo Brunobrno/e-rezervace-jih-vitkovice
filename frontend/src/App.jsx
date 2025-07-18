@@ -27,7 +27,7 @@ function App() {
         <Route path="/login" element={<Login />}/>
         <Route path="/register" element={<Register />}/>
         <Route path="/email-verification" element={<EmailVerificationPage />} />
-
+        <Route path="/home" element={<Home />}/>
         <Route path="/clerk/create/reservation" element={<CreateReservation />}/>
         <Route path="/seller/reservation" element={<SelectReservation />}/>
         <Route path="/components" element={<EventsTree />}/>
