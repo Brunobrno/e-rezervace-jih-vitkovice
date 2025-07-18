@@ -12,136 +12,99 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_URL from "../api/auth"
 
+import { login } from "../api/auth";
+
 function LoginCard() {
   const [username, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    try {
-      const response = await fetch(`${API_URL}/account/token/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Neplatné přihlašovací údaje");
-      }
-
-      const data = await response.json();
-      localStorage.setItem("user_access_token", data.access);
-      localStorage.setItem("user_refresh_token", data.refresh);
-      console.log(localStorage.getItem("user_access_token"))
-
-      // přesměruj na dashboard nebo domovskou stránku
-      navigate("/clerk/create/reservation");
-    } catch (err) {
-      setError(err.message || "Přihlášení selhalo");
+    const success = await login(username, password);
+    if (success) {
+      navigate("/clerk/create/reservation"); // přesměrování po přihlášení
+    } else {
+      setError("Neplatné přihlašovací údaje");
     }
   };
 
   return (
-    <Card className="align-self-center">
-      <Card.Header>
-        <h3>Přihlášení</h3>
-      </Card.Header>
+    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
+      <Card className="w-100" style={{ maxWidth: "420px" }}>
+        <Card.Header>
+          <h3 className="mb-0">Přihlášení</h3>
+        </Card.Header>
 
-      <Card.Body>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group
-            className="input-group form-group"
-          >
-            <Form.Group className="input-group-prepend">
+        <Card.Body>
+          <Form onSubmit={handleSubmit}>
+            {/* Uživatelské jméno */}
+            <Form.Group className="input-group mb-3">
               <span className="input-group-text">
                 <FontAwesomeIcon icon={faEnvelope} />
               </span>
+              <Form.Control
+                type="text"
+                placeholder="Uživatelské jméno"
+                required
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
             </Form.Group>
-            <Form.Label hidden>Email address</Form.Label>
-            <Form.Control
-              type="email"
-              placeholder=""
-              required
-              autoComplete="email"
-              autoFocus
-              name="email"
-              value={username}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Form.Group>
 
-          <Form.Group
-            className="input-group form-group"
-            controlId="formBasicPassword"
-          >
-            <Form.Group className="input-group-prepend">
+            {/* Heslo */}
+            <Form.Group className="input-group mb-3">
               <span className="input-group-text">
                 <FontAwesomeIcon icon={faKey} />
               </span>
+              <Form.Control
+                type="password"
+                placeholder="Heslo"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </Form.Group>
-            <Form.Label hidden>Password</Form.Label>
-            <Form.Control
-              type="password"
-              placeholder=""
-              required
-              autoComplete="current-password"
-              autoFocus
-              name="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Form.Group>
 
-          <Form.Group className="row form-group">
-            <Col>
-              <div className="custom-control custom-checkbox">
-                <input
-                  className="custom-control-input"
-                  type="checkbox"
-                  name="remember"
-                  id="remember"
-                />
+            {/* Zapamatovat si mě */}
+            <Form.Group className="form-group mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Zapamatovat si mě"
+                id="remember"
+              />
+            </Form.Group>
 
-                <label className="custom-control-label" htmlFor="remember">
-                  Zapamatovat si mě
-                </label>
-              </div>
-            </Col>
-          </Form.Group>
+            {/* Chybová hláška */}
+            {error && <div className="text-danger mb-3">{error}</div>}
 
-          <Form.Group className="form-group">
-            <Button type="submit" className="float-right login_btn">
-              Přihlášení
+            {/* Tlačítko přihlášení */}
+            <Button type="submit" variant="primary" className="w-100">
+              Přihlásit se
             </Button>
-          </Form.Group>
-        </Form>
-      </Card.Body>
+          </Form>
+        </Card.Body>
 
-      <Card.Footer>
-        <Row>
-          <Col className="links">
-            <Button
-              href="/register"
-              variant="success"
-              className="float-right text-white"
-            >
-              {" "}
-              Vytvořit účet stánkaře
-            </Button>
-
-            <div className="pt-1">
+        <Card.Footer>
+          <Row className="justify-content-between">
+            <Col xs="auto">
               <a href="#">Zapomenuté heslo?</a>
-            </div>
-          </Col>
-        </Row>
-      </Card.Footer>
-    </Card>
+            </Col>
+            <Col xs="auto">
+              <Button href="/register" variant="success" size="sm">
+                Vytvořit účet stánkaře
+              </Button>
+            </Col>
+          </Row>
+        </Card.Footer>
+      </Card>
+    </Container>
   );
 }
 
