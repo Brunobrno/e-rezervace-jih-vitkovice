@@ -6,7 +6,7 @@ import '/node_modules/react-grid-layout/css/styles.css'
 import '/node_modules/react-resizable/css/styles.css'
 import { Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
-import Home from './pages/Home';
+import Login from './pages/ClerkHome';
 import Register from './pages/Register';
 import CreateReservation from './pages/CreateReservation';
 import SelectReservation from './pages/SelectReservation';
@@ -21,7 +21,7 @@ function App() {
     </header>
     
       <Routes>
-        <Route path="/" element={<Home />}/>
+        <Route path="/" element={<Login />}/>
         <Route path="/register" element={<Register />}/>
         <Route path="/clerk/create/reservation" element={<CreateReservation />}/>
         <Route path="/seller/reservation" element={<SelectReservation />}/>
