@@ -21,11 +21,9 @@ class RolePermission(BasePermission):
 
         return user_has_role or has_api_key
 
+
 #TOHLE POUŽÍT!!!
 #Prostě stačí vložit: RoleAllowed('seller','cityClerk')
-from rest_framework.permissions import BasePermission, SAFE_METHODS
-from rest_framework.permissions import IsAuthenticated
-
 def RoleAllowed(*roles):
     class SafeOrRolePermission(BasePermission):
         """
