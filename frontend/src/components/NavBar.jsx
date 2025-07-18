@@ -21,7 +21,7 @@ function NavBar(){
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="navbar-nav ml-auto text-uppercase">
-            <Nav.Link href="/">Přihlášení </Nav.Link>
+            <Nav.Link href="/login">Přihlášení </Nav.Link>
             
           </Nav>
         </Navbar.Collapse>

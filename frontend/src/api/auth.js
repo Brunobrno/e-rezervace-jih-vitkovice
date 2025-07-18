@@ -15,7 +15,7 @@ const setAxiosAuthHeader = (accessToken) => {
 // ✅ Přihlášení uživatele – získá tokeny a uloží je
 export const login = async (username, password) => {
   try {
-    const response = await axios.post(`${API_URL}/token/`, {
+    const response = await axios.post(`${API_URL}/account/token/`, {
       username,
       password,
     });
