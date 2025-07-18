@@ -122,7 +122,7 @@ function LoginCard() {
             </Button>
 
             <div className="pt-1">
-              <a href="#">
+              <a href="/reset-password">
                 Zapomenuté heslo?
               </a>
             </div>

@@ -7,22 +7,24 @@ from .tokens import *
 from django.conf import settings
 from rest_framework.response import Response
 
+# This function sends a password reset email to the user.
 def send_password_reset_email(user, request):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = password_reset_token.make_token(user)
 
-    reset_url = request.build_absolute_uri(
-        reverse("reset-password-confirm", kwargs={"uidb64": uid, "token": token})
-    )
+    url = f"http://localhost:5173/reset-password/?uidb64={uid}&token={token}"
 
-    send_mail(
+    send_email_with_context(
         subject="Obnova hesla",
-        message=f"Pro obnovu hesla klikni na následující odkaz:\n{reset_url}",
-        from_email=None,
-        recipient_list=[user.email],
-        fail_silently=False,
+        message=f"Pro obnovu hesla klikni na následující odkaz:\n{url}",
+        recipients=[user.email],
     )
 
+
+
+
+
+# This function sends an email to the user for email verification after registration.
 def send_email_verification(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
@@ -38,6 +40,7 @@ def send_email_verification(user):
         message=f"{message}"
     )
 
+# This function sends an email to the user when their registration is accepted by a clerk.
 def send_email_clerk_accepted(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
@@ -56,7 +59,7 @@ def send_email_clerk_accepted(user):
 
 
 
-
+# This function is a general-purpose email sender that can be used to send emails with a specific context.
 def send_email_with_context(recipients, subject, message):
     """
     General function to send emails with a specific context.

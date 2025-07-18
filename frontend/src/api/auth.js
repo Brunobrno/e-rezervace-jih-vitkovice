@@ -43,7 +43,7 @@ export const logout = () => {
 };
 
 // 📡 Volání chráněného endpointu (použije aktuální token)
-export const getProtectedData = async () => {
+export const getRequest = async () => {
   try {
     const res = await axios.get(`${API_URL}/protected/`);
     return res.data;
@@ -75,6 +75,10 @@ export async function refreshAccessToken() {
   }
 }
 
+
+
+
+
 // 🧠 Při načtení stránky: pokud existuje token, nastav ho do axios
 const existingToken = localStorage.getItem(ACCESS_TOKEN_KEY);
 if (existingToken) {
@@ -104,5 +108,37 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+
+
+
+
+/**
+ * 📡 Obecný API request pro GET, POST, DELETE, PUT, PATCH
+ * @param {string} method - HTTP metoda ('get', 'post', 'put', 'patch', 'delete')
+ * @param {string} endpoint - např. "/account/reset-password/"
+ * @param {object} data - Tělo nebo parametry
+ * @param {object} config - Axios config (např. headers)
+ * @returns {Promise<any>} odpověď z backendu
+ */
+export const apiRequest = async (method, endpoint, data = {}, config = {}) => {
+  const url = `${API_URL}${endpoint}`;
+
+  try {
+    const response = await axios({
+      method,
+      url,
+      data: ["post", "put", "patch"].includes(method.toLowerCase()) ? data : undefined,
+      params: ["get", "delete"].includes(method.toLowerCase()) ? data : undefined,
+      ...config,
+    });
+
+    return response.data;
+  } catch (err) {
+    // Přepošleme dál – zachytí se v komponentě
+    throw err;
+  }
+};
+
 
 export default API_URL;
