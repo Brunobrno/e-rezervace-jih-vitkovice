@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/account/', include('account.urls')),
     path('api/booking/', include('booking.urls')),
     path('api/product/', include('product.urls')),
+    path('api/user-request/', include('servicedesk.urls')),
 
     #rest framework, map of api
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

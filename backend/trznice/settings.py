@@ -89,7 +89,8 @@ else:
 MY_CREATED_APPS = [
     'account',
     'booking',
-    'product'
+    'product',
+    'servicedesk'
 ]
 
 INSTALLED_APPS = [

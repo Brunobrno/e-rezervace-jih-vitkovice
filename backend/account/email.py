@@ -57,18 +57,22 @@ def send_email_clerk_accepted(user):
 
 
 
-def send_email_with_context(recipient, subject, message):
+def send_email_with_context(recipients, subject, message):
     """
     General function to send emails with a specific context.
     """
+    if isinstance(recipients, str):
+        recipients = [recipients]
+
     try:
         send_mail(
             subject=subject,
             message=message,
             from_email=None,
-            recipient_list=[recipient],
+            recipient_list=recipients,
             fail_silently=False,
         )
+        return True
     except Exception as e:
         if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
             print(f"email se neodeslal... DEBUG: {e}")
