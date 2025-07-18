@@ -103,7 +103,7 @@ const DynamicGrid = ({
 
   // Function to handle mouse down events
   // This function initiates dragging or resizing of reservations based on mouse events.
- const handleMouseDown = useCallback(
+  const handleMouseDown = useCallback(
     (e) => {
       if (e.button !== 0) return;
       lastCoordsRef.current = null;
@@ -133,23 +133,25 @@ const DynamicGrid = ({
             y: coords.y - res.y,
           };
 
-          // FIX: Only set draggedIndex OR resizingIndex, not both
           if (e.target.classList.contains("resize-handle")) {
             setResizingIndex(resIndex);
-            setDraggedIndex(null); // Ensure dragging is not activated
+            setDraggedIndex(null);
           } else {
             setDraggedIndex(resIndex);
-            setResizingIndex(null); // Ensure resizing is not activated
+            setResizingIndex(null);
           }
         }
       } else if (!isStatic) {
         setStartCell(coords);
         setIsDragging(true);
-        setDraggedIndex(null); // FIX: Clear drag index when starting new selection
-        setResizingIndex(null); // FIX: Clear resize index when starting new selection
+        setDraggedIndex(null);
+        setResizingIndex(null);
       }
 
-      // ... deselection logic ...
+      // Deselect if clicking outside any reservation
+      if (!isReservationClicked) {
+        onSelectedIndexChange(null);
+      }
     },
     [getCellCoords, reservations, onSelectedIndexChange, isStatic]
   );
