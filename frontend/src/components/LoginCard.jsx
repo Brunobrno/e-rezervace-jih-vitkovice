@@ -8,8 +8,34 @@ import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
 import ToggleButton from "react-bootstrap/ToggleButton";
 import Container from "react-bootstrap/Container";
+import { useState } from "react";
+
+import { login } from "../api/auth";
+import { useNavigate } from "react-router-dom";
+
 
 function LoginCard() {
+
+  const navigate = useNavigate();
+
+  // Stavy pro email a heslo
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Zpracování formuláře
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate("/home")
+        console.log("Přihlášení bylo úspěšné");
+      }
+    } catch (error) {
+      console.error("Chyba při přihlášení:", error);
+    }
+  };
+
   return (
     <Card className="align-self-center">
       <Card.Header>
@@ -17,7 +43,7 @@ function LoginCard() {
       </Card.Header>
 
       <Card.Body>
-        <Form>
+        <Form onSubmit={handleSubmit}>
           <Form.Group
             className="input-group form-group"
             controlId="formBasicEmail"
@@ -35,7 +61,8 @@ function LoginCard() {
               autoComplete="email"
               autofocus
               name="email"
-              id="email"
+              onChange={(e) => setEmail(e.target.value)}
+              value={email}
             />
           </Form.Group>
 
@@ -56,7 +83,8 @@ function LoginCard() {
               autoComplete="current-password"
               autofocus
               name="loginPassword"
-              id="loginPassword"
+              onChange={(e) => setPassword(e.target.value)}
+              value={password}
             />
           </Form.Group>
 

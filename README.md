@@ -61,11 +61,10 @@ npm install --progress=false --cache
 
 npm install vite --save-de
 npm install -g npm@11.4.2
+npm i mantine-datatable clsx
 
 npm i react-router-dom
 
 npm run dev
-
-npm i mantine-datatable clsx
 ```
 ```ipconfig /flushdns```
