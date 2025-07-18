@@ -22,7 +22,14 @@ class SquareViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["city", "psc", "width", "height"]
     ordering_fields = ["name", "width", "height"]
-    search_fields = ["name", "description", "street", "city"]
+    search_fields = [
+        "name",         # název náměstí
+        "description",  # popis
+        "street",       # ulice
+        "city",         # město
+        # "psc" je číslo, obvykle do search_fields nepatří, ale můžeš ho filtrovat přes filterset_fields
+    ]
+
 
     permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
 
@@ -37,7 +44,14 @@ class EventViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = EventFilter
     ordering_fields = ["start", "end", "price_per_m2"]
-    search_fields = ["name", "description", "city"]
+    search_fields = [
+        "name",                       # název události
+        "description",                # popis události
+        "square__name",              # název náměstí
+        "square__city",              # město
+        "square__description",       # popis náměstí (volitelný)
+        "square__street",            # ulice
+    ]
 
     permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
 
@@ -66,6 +80,15 @@ class ReservationViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = ReservationFilter
     ordering_fields = ["reserved_from", "reserved_to", "created_at"]
+    search_fields = [
+        "event__name",
+        "event__square__name",
+        "event__square__city",
+        "note",
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+    ]
 
     def get_queryset(self):
         qs = Reservation.objects.select_related("event", "marketSlot", "user").order_by("-created_at")

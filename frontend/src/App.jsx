@@ -12,6 +12,7 @@ import CreateReservation from './pages/CreateReservation';
 import SelectReservation from './pages/SelectReservation';
 import Test from './pages/Test';
 import EventsTree from './components/EventsTree';
+import EmailVerificationPage from './pages/EmailVerification';
 
 function App() {
 
@@ -24,6 +25,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />}/>
         <Route path="/register" element={<Register />}/>
+        <Route path="/email-verification" element={<EmailVerificationPage />} />
+        
         <Route path="/clerk/create/reservation" element={<CreateReservation />}/>
         <Route path="/seller/reservation" element={<SelectReservation />}/>
         <Route path="/components" element={<EventsTree />}/>
