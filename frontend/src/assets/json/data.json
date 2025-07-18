@@ -1,0 +1,339 @@
+[
+  {
+    "id": 1,
+    "name": "Tržiště Hlavní",
+    "description": "Centrální tržnice města s širokou nabídkou zboží.",
+    "street": "Hlavní 25",
+    "city": "Praha",
+    "psc": 11000,
+    "width": 6000,
+    "height": 4000,
+    "grid_rows": 60,
+    "grid_cols": 40,
+    "cellsize": 100,
+    "image": "market_hlavni.jpg",
+    "events": [
+      {
+        "id": 201,
+        "name": "Letní jarmark",
+        "description": "Událost plná rukodělných výrobků a tradičních pokrmů.",
+        "start": "2025-07-22T09:00:00.000Z",
+        "end": "2025-07-22T19:00:00.000Z",
+        "price_per_m2": "380",
+        "image": "event_letni.jpg",
+        "market_slots": [
+          {
+            "id": 3001,
+            "event": 201,
+            "status": "empty",
+            "base_size": 6,
+            "available_extension": 3,
+            "x": 200,
+            "y": 300,
+            "width": 300,
+            "height": 300,
+            "price_per_m2": "380"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Farmářský dvůr",
+    "description": "Místní trhy s bio produkcí a sezónní zeleninou.",
+    "street": "Zahradní 3",
+    "city": "Olomouc",
+    "psc": 77900,
+    "width": 4000,
+    "height": 2500,
+    "grid_rows": 40,
+    "grid_cols": 25,
+    "cellsize": 100,
+    "image": "farm_dvur.jpg",
+    "events": [
+      {
+        "id": 202,
+        "name": "Podzimní sklizeň",
+        "description": "Speciální prodejní den se zaměřením na jablka a dýně.",
+        "start": "2025-09-15T08:00:00.000Z",
+        "end": "2025-09-15T16:00:00.000Z",
+        "price_per_m2": "320",
+        "image": "event_podzim.jpg",
+        "market_slots": [
+          {
+            "id": 3002,
+            "event": 202,
+            "status": "occupied",
+            "base_size": 8,
+            "available_extension": 4,
+            "x": 150,
+            "y": 250,
+            "width": 400,
+            "height": 300,
+            "price_per_m2": "320"
+          },
+          {
+            "id": 3003,
+            "event": 202,
+            "status": "empty",
+            "base_size": 6,
+            "available_extension": 2,
+            "x": 600,
+            "y": 250,
+            "width": 300,
+            "height": 300,
+            "price_per_m2": "320"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Jihotržnice",
+    "description": "Moderní tržiště na okraji města s parkováním.",
+    "street": "U Výstaviště 10",
+    "city": "Ostrava",
+    "psc": 70030,
+    "width": 5000,
+    "height": 3000,
+    "grid_rows": 50,
+    "grid_cols": 30,
+    "cellsize": 100,
+    "image": "jihotrznice.jpg",
+    "events": [
+      {
+        "id": 203,
+        "name": "Festival chutí",
+        "description": "Gastronomický zážitek s mezinárodní kuchyní.",
+        "start": "2025-08-05T10:00:00.000Z",
+        "end": "2025-08-05T22:00:00.000Z",
+        "price_per_m2": "550",
+        "image": "food_festival.jpg",
+        "market_slots": [
+          {
+            "id": 3004,
+            "event": 203,
+            "status": "reserved",
+            "base_size": 10,
+            "available_extension": 5,
+            "x": 100,
+            "y": 100,
+            "width": 500,
+            "height": 300,
+            "price_per_m2": "550"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "Tržiště Jih",
+    "description": "Trh v jižní části města zaměřený na lokální produkty.",
+    "street": "Jižní 5",
+    "city": "Brno",
+    "psc": 60200,
+    "width": 5000,
+    "height": 3000,
+    "grid_rows": 50,
+    "grid_cols": 30,
+    "cellsize": 100,
+    "image": "trh_jih.jpg",
+    "events": [
+      {
+        "id": 100,
+        "name": "Letní trhy",
+        "description": "Prodej ovoce, zeleniny a domácích výrobků.",
+        "start": "2025-08-01T08:00:00.000Z",
+        "end": "2025-08-01T16:00:00.000Z",
+        "price_per_m2": "420",
+        "image": "leto.jpg",
+        "market_slots": [
+          {
+            "id": 1001,
+            "event": 100,
+            "status": "empty",
+            "base_size": 6,
+            "available_extension": 2,
+            "x": 100,
+            "y": 100,
+            "width": 300,
+            "height": 300,
+            "price_per_m2": "420"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Staroměstská tržnice",
+    "description": "Historické tržiště s tradičními řemeslnými stánky.",
+    "street": "Náměstí 1",
+    "city": "Praha",
+    "psc": 11000,
+    "width": 6000,
+    "height": 3500,
+    "grid_rows": 60,
+    "grid_cols": 35,
+    "cellsize": 100,
+    "image": "staromestska.jpg",
+    "events": [
+      {
+        "id": 101,
+        "name": "Řemeslný den",
+        "description": "Ukázky tradičních řemesel a rukodělných výrobků.",
+        "start": "2025-09-10T10:00:00.000Z",
+        "end": "2025-09-10T18:00:00.000Z",
+        "price_per_m2": "500",
+        "image": "remesla.jpg",
+        "market_slots": [
+          {
+            "id": 1002,
+            "event": 101,
+            "status": "occupied",
+            "base_size": 8,
+            "available_extension": 3,
+            "x": 200,
+            "y": 150,
+            "width": 400,
+            "height": 300,
+            "price_per_m2": "500"
+          },
+          {
+            "id": 1003,
+            "event": 101,
+            "status": "empty",
+            "base_size": 6,
+            "available_extension": 1,
+            "x": 650,
+            "y": 150,
+            "width": 300,
+            "height": 300,
+            "price_per_m2": "500"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Tržiště Sever",
+    "description": "Nové moderní tržiště v severní části města.",
+    "street": "Severní 99",
+    "city": "Ostrava",
+    "psc": 70030,
+    "width": 4000,
+    "height": 2800,
+    "grid_rows": 40,
+    "grid_cols": 28,
+    "cellsize": 100,
+    "image": "trh_sever.jpg",
+    "events": [
+      {
+        "id": 102,
+        "name": "Festival chutí",
+        "description": "Ochutnávky světových kuchyní a místních specialit.",
+        "start": "2025-07-25T12:00:00.000Z",
+        "end": "2025-07-25T22:00:00.000Z",
+        "price_per_m2": "620",
+        "image": "foodfest.jpg",
+        "market_slots": [
+          {
+            "id": 1004,
+            "event": 102,
+            "status": "reserved",
+            "base_size": 10,
+            "available_extension": 5,
+            "x": 300,
+            "y": 200,
+            "width": 500,
+            "height": 300,
+            "price_per_m2": "620"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Náměstí svobody",
+    "description": "Centrální náměstí s možností konání kulturních akcí.",
+    "street": "Svobody 1",
+    "city": "Zlín",
+    "psc": 76001,
+    "width": 5500,
+    "height": 3300,
+    "grid_rows": 55,
+    "grid_cols": 33,
+    "cellsize": 100,
+    "image": "namesti.jpg",
+    "events": [
+      {
+        "id": 103,
+        "name": "Letní slavnosti",
+        "description": "Hudební program, stánky a večerní ohňostroj.",
+        "start": "2025-08-10T15:00:00.000Z",
+        "end": "2025-08-10T23:00:00.000Z",
+        "price_per_m2": "700",
+        "image": "slavnosti.jpg",
+        "market_slots": [
+          {
+            "id": 1005,
+            "event": 103,
+            "status": "empty",
+            "base_size": 7,
+            "available_extension": 2,
+            "x": 150,
+            "y": 300,
+            "width": 350,
+            "height": 300,
+            "price_per_m2": "700"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Městská tržnice",
+    "description": "Tradiční městské tržiště s krytým i venkovním prostorem.",
+    "street": "Masarykova 88",
+    "city": "Plzeň",
+    "psc": 30100,
+    "width": 4800,
+    "height": 2900,
+    "grid_rows": 48,
+    "grid_cols": 29,
+    "cellsize": 100,
+    "image": "mestskatrznice.jpg",
+    "events": [
+      {
+        "id": 104,
+        "name": "Plzeňský trh",
+        "description": "Speciální nabídka pivních specialit a suvenýrů.",
+        "start": "2025-08-28T10:00:00.000Z",
+        "end": "2025-08-28T20:00:00.000Z",
+        "price_per_m2": "560",
+        "image": "plzen.jpg",
+        "market_slots": [
+          {
+            "id": 1006,
+            "event": 104,
+            "status": "occupied",
+            "base_size": 9,
+            "available_extension": 3,
+            "x": 500,
+            "y": 400,
+            "width": 450,
+            "height": 300,
+            "price_per_m2": "560"
+          }
+        ]
+      }
+    ]
+  }
+  
+]

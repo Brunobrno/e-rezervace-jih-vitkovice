@@ -1,40 +1,49 @@
-import {
-  Table,
-  Nav,
-} from "react-bootstrap";
+import { Nav } from "react-bootstrap";
 import logo from "../assets/img/logo.png";
+import dataFile from "../assets/json/data.json";
+import React, { useState, useEffect } from "react";
+import { Box } from "@mantine/core";
+import { DataTable } from "mantine-datatable";
+import { Anchor } from "@mantine/core";
 
 function EventsTree() {
+  console.log(dataFile);
+
+  const columns = [
+    { accessor: "id", title: "ID" },
+    { accessor: "name", title: "Název" },
+    { accessor: "city", title: "Město" },
+    { accessor: "street", title: "Ulice" },
+    { accessor: "name", title: "Název" },
+    { accessor: "img", title: "Obrázek" },
+    {
+      accessor: "events",
+      title: "Událost",
+      render: (row) =>
+        row.events?.[0] ? (
+          <Anchor
+            href={`/events/${row.events[0].id}`}
+            target="_blank"
+            underline="hover"
+          >
+            {row.events[0].name}
+          </Anchor>
+        ) : (
+          "—"
+        ),
+    },
+  ];
   return (
-    <Table striped bordered hover>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>First Name</th>
-          <th>Last Name</th>
-          <th>Username</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td>Mark</td>
-          <td>Otto</td>
-          <td>@mdo</td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Jacob</td>
-          <td>Thornton</td>
-          <td>@fat</td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td colSpan={2}>Larry the Bird</td>
-          <td>@twitter</td>
-        </tr>
-      </tbody>
-    </Table>
+    <Box>
+      <DataTable
+        records={dataFile}
+        columns={columns}
+        withBorder
+        withColumnBorders
+        striped
+        highlightOnHover
+      />
+    </Box>
 
     // Cena Int, Nazev String, Souřadnice,
 
