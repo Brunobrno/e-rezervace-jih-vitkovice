@@ -3,108 +3,105 @@ import Form from "react-bootstrap/Form";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
-import { faKey } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { faKey } from '@fortawesome/free-solid-svg-icons'
 import ToggleButton from "react-bootstrap/ToggleButton";
 import Container from "react-bootstrap/Container";
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import API_URL from "../api/auth"
-
-import { login } from "../api/auth";
 
 function LoginCard() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    const success = await login(username, password);
-    if (success) {
-      navigate("/clerk/create/reservation"); // přesměrování po přihlášení
-    } else {
-      setError("Neplatné přihlašovací údaje");
-    }
-  };
-
   return (
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
-      <Card className="w-100" style={{ maxWidth: "420px" }}>
-        <Card.Header>
-          <h3 className="mb-0">Přihlášení</h3>
-        </Card.Header>
+    <Card className="align-self-center">
+      <Card.Header>
+        <h3>Přihlášení</h3>
+      </Card.Header>
 
-        <Card.Body>
-          <Form onSubmit={handleSubmit}>
-            {/* Uživatelské jméno */}
-            <Form.Group className="input-group mb-3">
-              <span className="input-group-text">
+      <Card.Body>
+        <Form>
+          <Form.Group
+            className="input-group form-group"
+            controlId="formBasicEmail"
+          >
+            <Form.Group className="input-group-prepend">
+              <span class="input-group-text">
                 <FontAwesomeIcon icon={faEnvelope} />
               </span>
-              <Form.Control
-                type="text"
-                placeholder="Uživatelské jméno"
-                required
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
             </Form.Group>
+            <Form.Label hidden>Email address</Form.Label>
+            <Form.Control
+              type="email"
+              placeholder=""
+              required
+              autoComplete="email"
+              autofocus
+              name="email"
+              id="email"
+            />
+          </Form.Group>
 
-            {/* Heslo */}
-            <Form.Group className="input-group mb-3">
-              <span className="input-group-text">
+          <Form.Group
+            className="input-group form-group"
+            controlId="formBasicPassword"
+          >
+            <Form.Group className="input-group-prepend">
+              <span class="input-group-text">
                 <FontAwesomeIcon icon={faKey} />
               </span>
-              <Form.Control
-                type="password"
-                placeholder="Heslo"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
             </Form.Group>
+            <Form.Label hidden>Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder=""
+              required
+              autoComplete="current-password"
+              autofocus
+              name="loginPassword"
+              id="loginPassword"
+            />
+          </Form.Group>
 
-            {/* Zapamatovat si mě */}
-            <Form.Group className="form-group mb-3">
-              <Form.Check
-                type="checkbox"
-                label="Zapamatovat si mě"
-                id="remember"
-              />
-            </Form.Group>
+          <Form.Group className="row form-group">
+            <Col>
+              <div class="custom-control custom-checkbox">
+                <input
+                  class="custom-control-input"
+                  type="checkbox"
+                  name="remember"
+                  id="remember"
+                />
 
-            {/* Chybová hláška */}
-            {error && <div className="text-danger mb-3">{error}</div>}
+                <label class="custom-control-label" for="remember">
+                  Zapamatovat si mě
+                </label>
+              </div>
+            </Col>
+          </Form.Group>
 
-            {/* Tlačítko přihlášení */}
-            <Button type="submit" variant="primary" className="w-100">
-              Přihlásit se
+          <Form.Group className="form-group">
+            <Button type="submit" className="float-right login_btn">
+              Přihlášení
             </Button>
-          </Form>
-        </Card.Body>
+          </Form.Group>
+        </Form>
+      </Card.Body>
 
-        <Card.Footer>
-          <Row className="justify-content-between">
-            <Col xs="auto">
-              <a href="#">Zapomenuté heslo?</a>
-            </Col>
-            <Col xs="auto">
-              <Button href="/register" variant="success" size="sm">
-                Vytvořit účet stánkaře
-              </Button>
-            </Col>
-          </Row>
-        </Card.Footer>
-      </Card>
-    </Container>
+      <Card.Footer>
+        <Row>
+          <Col className="links">
+            <Button href="/register"variant="success" className="float-right text-white">
+              {" "}
+              Vytvořit účet stánkaře
+            </Button>
+
+            <div className="pt-1">
+              <a href="#">
+                Zapomenuté heslo?
+              </a>
+            </div>
+          </Col>
+        </Row>
+      </Card.Footer>
+    </Card>
   );
 }
 
