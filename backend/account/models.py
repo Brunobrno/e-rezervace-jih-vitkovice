@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator, MinLengthValidator
+from django.core.validators import RegexValidator, MinLengthValidator, MaxValueValidator, MinValueValidator
 
 from django.conf import settings
 from django.db import models
@@ -38,16 +38,21 @@ class CustomUser(AbstractUser):
     otc = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     create_time = models.DateTimeField(auto_now_add=True)
 
-    var_symbol = models.IntegerField(null=True, blank=True)
+    var_symbol = models.PositiveIntegerField(null=True, blank=True, validators=[
+            MaxValueValidator(9999999999),
+            MinValueValidator(0)
+        ],
+    )
     bank_account = models.CharField(
         null=True, 
         blank=True, 
-        validators=[RegexValidator(
-            regex=r'^[A-Z]{2}[0-9A-Z]{13,32}$',
-            message="Zadejte platný IBAN (např. CZ6508000000192000145399).",
+        validators=[
+        RegexValidator(
+            regex=r'^(\d{0,6}-)?\d{10}/\d{4}$', # r'^(\d{0,6}-)?\d{2,10}/\d{4}$' for range 2-10 digits
+            message="Zadejte platné číslo účtu ve formátu [prefix-]číslo_účtu/kód_banky, např. 1234567890/0100 nebo 123-4567890/0100.",
             code='invalid_bank_account'
             )
-        ]
+        ],
     )
 
     ICO = models.CharField(
@@ -69,8 +74,8 @@ class CustomUser(AbstractUser):
         null=True,
         validators=[
             RegexValidator(
-                regex=r'^\d{6}\/?\d{3,4}$',
-                message="Rodné číslo musí být ve formátu 123456/7890 nebo 1234567890.",
+                regex=r'^\d{6}\/\d{3,4}$',
+                message="Rodné číslo musí být ve formátu 123456/7890.",
                 code='invalid_rc'
             )
         ]
@@ -78,8 +83,19 @@ class CustomUser(AbstractUser):
 
     city = models.CharField(null=True, blank=True, max_length=100)
     street = models.CharField(null=True, blank=True, max_length=200)
-    PSC = models.CharField(null=True, blank=True, max_length=5)
 
+    PSC = models.CharField(
+        max_length=5,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{5}$',
+                message="PSČ musí obsahovat přesně 5 číslic.",
+                code='invalid_psc'
+            )
+        ]
+    )
     GDPR = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=False)

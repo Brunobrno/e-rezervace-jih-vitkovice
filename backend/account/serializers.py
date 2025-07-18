@@ -119,6 +119,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, data):
         email = data.get("email")
         phone = data.get("phone_number")
+        dgpr = data.get("GDPR")
+        if not dgpr:
+            raise serializers.ValidationError({"GDPR": "Pro registraci musíte souhlasit s GDPR"})
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError({"email": "Účet s tímto emailem již existuje."})
         if phone and User.objects.filter(phone_number=phone).exists():
