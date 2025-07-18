@@ -36,9 +36,9 @@ function LoginCard() {
       }
 
       const data = await response.json();
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
-      console.log(localStorage.getItem("access_token"))
+      localStorage.setItem("user_access_token", data.access);
+      localStorage.setItem("user_refresh_token", data.refresh);
+      console.log(localStorage.getItem("user_access_token"))
 
       // přesměruj na dashboard nebo domovskou stránku
       navigate("/clerk/create/reservation");

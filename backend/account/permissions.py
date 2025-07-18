@@ -1,4 +1,5 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_api_key.permissions import HasAPIKey
 
 
@@ -20,9 +21,23 @@ class RolePermission(BasePermission):
 
         return user_has_role or has_api_key
 
+
 #TOHLE POUŽÍT!!!
 #Prostě stačí vložit: RoleAllowed('seller','cityClerk')
 def RoleAllowed(*roles):
-    class CustomRolePermission(RolePermission):
-        allowed_roles = roles
-    return CustomRolePermission
+    class SafeOrRolePermission(BasePermission):
+        """
+        Allows safe methods for any authenticated user.
+        Allows unsafe methods only for users with specific roles.
+        """
+
+        def has_permission(self, request, view):
+            # Allow safe methods for any authenticated user
+            if request.method in SAFE_METHODS:
+                return IsAuthenticated().has_permission(request, view)
+
+            # Otherwise, check the user's role
+            user = request.user
+            return user and user.is_authenticated and getattr(user, "role", None) in roles
+
+    return SafeOrRolePermission
