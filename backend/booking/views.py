@@ -67,3 +67,10 @@ class ReservationViewSet(viewsets.ModelViewSet):
     filterset_class = ReservationFilter
     ordering_fields = ["reserved_from", "reserved_to", "created_at"]
 
+    def get_queryset(self):
+        qs = Reservation.objects.select_related("event", "marketSlot", "user").order_by("-created_at")
+        user = self.request.user
+        if hasattr(user, "role") and user.role == "seller":
+            return qs.filter(user=user)
+        return qs
+
