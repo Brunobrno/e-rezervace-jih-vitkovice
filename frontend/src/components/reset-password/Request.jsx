@@ -50,12 +50,13 @@ const ResetPasswordRequest = () => {
         ) : (
           <Form onSubmit={handleSubmit}>
             <Form.Group className="input-group form-group" controlId="formEmail">
-              <div className="input-group-prepend">
+              <Form.Group className="input-group-prepend">
                 <span className="input-group-text">
                   <FontAwesomeIcon icon={faEnvelope} />
                 </span>
-              </div>
-              <Form.Label className="visually-hidden">Email</Form.Label>
+              </Form.Group>
+
+              <Form.Label hidden>Email</Form.Label>
               <Form.Control
                 type="email"
                 placeholder="Zadejte váš email"
@@ -68,10 +69,11 @@ const ResetPasswordRequest = () => {
               />
             </Form.Group>
 
-            <Form.Group className="form-group">
+            <Form.Group className="form-group d-flex justify-content-center">
               <Button
                 type="submit"
-                className="float-right login_btn mt-3"
+                style={{ width: "fit-content" }}
+                className="float-right login_btn mt-3 d-inline-flex"
                 disabled={status === "loading"}
               >
                 {status === "loading" ? (

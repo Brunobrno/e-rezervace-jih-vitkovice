@@ -7,12 +7,16 @@ from .tokens import *
 from django.conf import settings
 from rest_framework.response import Response
 
+
+import logging
+logger = logging.getLogger(__name__)
+
 # This function sends a password reset email to the user.
 def send_password_reset_email(user, request):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = password_reset_token.make_token(user)
 
-    url = f"http://localhost:5173/reset-password/?uidb64={uid}&token={token}"
+    url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}"
 
     send_email_with_context(
         subject="Obnova hesla",
@@ -29,16 +33,19 @@ def send_email_verification(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
 
-    url = f"http://localhost:5173/email-verification/?uidb64={uid}&token={token}"
+    url = f"{settings.FRONTEND_URL}/email-verification/?uidb64={uid}&token={token}"
 
     message = f"Ověřte svůj e-mail kliknutím na odkaz:\n{url}"
-    print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+
+    logger.debug(f"\nEMAIL OBSAH:\n {message}\nKONEC OBSAHU")
 
     send_email_with_context(
         recipients=user.email,
         subject="Ověření e-mailu",
         message=f"{message}"
     )
+
+
 
 # This function sends an email to the user when their registration is accepted by a clerk.
 def send_email_clerk_accepted(user):

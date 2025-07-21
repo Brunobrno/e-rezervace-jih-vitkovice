@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Container, Button, Alert, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom'; // Umožňuje odkazování v rámci SPA
 
+const backendURL = import.meta.env.VITE_BACKEND_URL; //import url backendu
+
 // Komponenta pro ověření e-mailu
 function EmailVerificationPage() {
   // Stavy komponenty:
@@ -32,7 +34,7 @@ function EmailVerificationPage() {
 
     try {
       // Sestavíme URL pro API volání
-      const url = `http://127.0.0.1:8000/api/account/registration/verify-email/${encodeURIComponent(uidb64)}/${encodeURIComponent(token)}`;
+      const url = `${backendURL}/api/account/registration/verify-email/${encodeURIComponent(uidb64)}/${encodeURIComponent(token)}`;
       
       // Pošleme GET požadavek na backend
       const response = await fetch(url, { method: 'GET' });

@@ -32,7 +32,6 @@ function App() {
         <Route path="/register" element={<Register />}/>
         <Route path="/email-verification" element={<EmailVerificationPage />} />
 
-        // FIXME - Po předání tokenu se stále načíta požadavek o email
         <Route path="/reset-password" element={<RequestPasswordPage />} />
         <Route path="/reset-password/:uidb64/:token" element={<CreatePasswordPage />} />
 

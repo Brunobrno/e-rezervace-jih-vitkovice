@@ -20,6 +20,13 @@ daphne -b localhost -p 8000 trznice.asgi:application
 ## django command that will use barebones settings.py for basic work
 ```python manage.py runserver --settings=trznice.base_settings```
 
+
+## logovaní do dockeru (klasický print nefunguje kvůli bezpečnosti)
+```import logging
+
+logger = logging.getLogger(__name__)
+logger.debug("Tvoje hláška")```
+
 # Django Management Commands
 
 | Command | Description | Example |

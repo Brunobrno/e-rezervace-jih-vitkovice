@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // 📍 Adresa tvého Django backendu (můžeš ji mít ve .env)
-const API_URL = "http://127.0.0.1:8000/api";
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
 // 🔐 Klíče v localStorage pro tokeny
 const ACCESS_TOKEN_KEY = "user_access_token";
