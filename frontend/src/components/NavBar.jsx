@@ -1,7 +1,5 @@
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
-import NavDropdown from 'react-bootstrap/NavDropdown';
+import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import logo from '../assets/img/logo.png';
 
 
 function NavBar(){
@@ -12,15 +10,15 @@ function NavBar(){
       <Container>
         <Navbar.Brand href="/">
             <img
-              src="./src/assets/img/logo.png"
+              src={logo}
               className="d-none d-sm-block"
-              alt="React Bootstrap logo"
+              alt="Ostrava-Jih"
             />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="navbar-nav ml-auto text-uppercase">
-            <Nav.Link href="/">Přihlášení </Nav.Link>
+            <Nav.Link href="/login">Přihlášení </Nav.Link>
             
           </Nav>
         </Navbar.Collapse>

@@ -47,13 +47,16 @@ djangorestframework #REST Framework
 
 djangorestframework-api-key #API key
 
-djangorestframework-simplejwt
-PyJWT
-asgiref
+djangorestframework-simplejwt #JWT authentication for Django REST Framework
+PyJWT #JSON Web Token implementation in Python
+
+asgiref #ASGI reference implementation, to be used with Django Channels
 pytz
+# pytz brings the Olson tz database into Python and allows 
+# accurate and cross platform timezone calculations. 
+# It also solves the issue of ambiguous times at the end of daylight saving time.
 
-
-drf-yasg #documentation for frontend dev
+#documentation for frontend dev
 drf-spectacular
 
 # -- APPS --

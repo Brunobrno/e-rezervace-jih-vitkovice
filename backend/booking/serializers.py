@@ -79,9 +79,9 @@ class SquareSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "description", "street", "city", "psc",
             "width", "height", "grid_rows", "grid_cols", "cellsize",
-            "image", "events", "quarks"
+            "image", "events"
         ]
-        read_only_fields = ["id", "events", "quarks"]
+        read_only_fields = ["id", "events"]
         extra_kwargs = {
             "name": {"help_text": "Název náměstí", "required": True},
             "description": {"help_text": "Popis náměstí", "required": False},

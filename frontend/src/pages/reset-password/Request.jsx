@@ -1,13 +1,12 @@
-
 import {Container, Button, Card, Row, Col} from "react-bootstrap";
-import LoginCard from "../components/LoginCard";
+import ResetPasswordRequest from "../../components/reset-password/Request";
 
-function Login() {
+function RequestPasswordPage() {
   return (
     
     <Container fluid className="flex-grow-1 login-bg py-5">
       <div className="d-flex flex-column justify-content-center h-100">
-        <LoginCard />
+        <ResetPasswordRequest />
       </div>
       <div className="m-auto ">
         <h2 className="text-center my-5 text-white fw-semibold">eTržnice</h2>
@@ -16,4 +15,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default RequestPasswordPage;

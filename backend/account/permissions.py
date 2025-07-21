@@ -21,16 +21,17 @@ class RolePermission(BasePermission):
 
         return user_has_role or has_api_key
 
+
 #TOHLE POUŽÍT!!!
 #Prostě stačí vložit: RoleAllowed('seller','cityClerk')
-from rest_framework.permissions import BasePermission, SAFE_METHODS
-from rest_framework.permissions import IsAuthenticated
-
 def RoleAllowed(*roles):
     class SafeOrRolePermission(BasePermission):
         """
         Allows safe methods for any authenticated user.
         Allows unsafe methods only for users with specific roles.
+
+        Args:
+            RolerAllowed('seller', 'cityClerk')
         """
 
         def has_permission(self, request, view):
@@ -43,3 +44,15 @@ def RoleAllowed(*roles):
             return user and user.is_authenticated and getattr(user, "role", None) in roles
 
     return SafeOrRolePermission
+
+
+
+# For Settings.py
+class AdminOnly(BasePermission):
+    """ Allows access only to users with the 'admin' role.
+
+    Args:
+        BasePermission (rest_framework.permissions.BasePermission): Base class for permission classes.
+    """
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'admin'
