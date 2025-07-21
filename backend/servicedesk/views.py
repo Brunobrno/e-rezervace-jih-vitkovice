@@ -25,6 +25,19 @@ class ServiceTicketViewSet(viewsets.ModelViewSet):
     search_fields = ["title", "description", "user__username"]
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ["admin", "cityClerk"]:  # Adjust as needed for staff roles
+            return ServiceTicket.objects.select_related("user").all().order_by("-created_at")
+        else:
+            return ServiceTicket.objects.select_related("user").filter(user=user).order_by("-created_at")
+
+    def get_object(self):
+        obj = super().get_object()
+        if self.request.user.role not in ["admin", "cityClerk"] and obj.user != self.request.user:
+            raise PermissionDenied("Nemáte oprávnění pracovat s tímto požadavkem.")
+        return obj
+
     def perform_create(self, serializer):
         user_request = serializer.save(user=self.request.user)
 

@@ -7,10 +7,20 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-import uuid
 
+from trznice.models import SoftDeleteModel
 
-class CustomUser(AbstractUser):
+from django.contrib.auth.models import UserManager
+
+class CustomUserActiveManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+class CustomUserAllManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset()
+
+class CustomUser(SoftDeleteModel, AbstractUser):
     ROLE_CHOICES = (
         ('admin', 'Administrátor'),
         ('seller', 'Prodejce'),
@@ -100,8 +110,10 @@ class CustomUser(AbstractUser):
 
     is_active = models.BooleanField(default=False)
 
-    REQUIRED_FIELDS = ['email']
+    objects = CustomUserActiveManager()
+    all_objects = CustomUserAllManager()
 
+    REQUIRED_FIELDS = ['email']
 
 
     def __str__(self):
@@ -121,6 +133,13 @@ class CustomUser(AbstractUser):
             counter += 1
         return login
     
+    def delete(self, *args, **kwargs):
+        self.is_active = False
+
+        self.tickets.all().update(is_deleted=True, deleted_at=timezone.now())
+        self.user_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
+
+        return super().delete(*args, **kwargs)
     
     def save(self, *args, **kwargs):
         is_new = self.pk is None  # check BEFORE saving

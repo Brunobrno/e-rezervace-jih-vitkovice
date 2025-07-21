@@ -1,8 +1,8 @@
 from django.db import models
 from django.conf import settings
+from trznice.models import SoftDeleteModel
 
-
-class ServiceTicket(models.Model):
+class ServiceTicket(SoftDeleteModel):
     STATUS_CHOICES = [
         ("new", "Nový"),
         ("in_progress", "Řeší se"),
@@ -29,7 +29,7 @@ class ServiceTicket(models.Model):
 
     title = models.CharField(max_length=255, verbose_name="Název")
     description = models.TextField(verbose_name="Popis problému", null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Zadavatel", related_name="ServiceTicket_user")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Zadavatel", related_name="tickets")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", verbose_name="Stav", null=True, blank=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="tech", verbose_name="Kategorie", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Datum")
@@ -37,3 +37,4 @@ class ServiceTicket(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"
+    

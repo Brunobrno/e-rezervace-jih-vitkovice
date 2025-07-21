@@ -3,6 +3,9 @@ from django.utils.encoding import force_bytes
 from django.urls import reverse
 from django.core.mail import send_mail
 from .tokens import *
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 from django.conf import settings
 from rest_framework.response import Response
@@ -38,6 +41,23 @@ def send_email_verification(user):
         message=f"{message}"
     )
 
+def send_email_clerk_add_var_symbol(user):
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = account_activation_token.make_token(user)
+    # url = f"http://localhost:5173/clerk/add-var-symbol/{uid}/" # NEVIM
+    url = f"URL"
+    message = f"Byl vytvořen nový uživatel:\n {user.firstname} {user.secondname} {user.email} .\n Doplňte variabilní symbol {url} ."
+
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+        print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+
+    
+    send_email_with_context(
+        recipients=user.email,
+        subject="Doplnění variabilního symbolu",
+        message=message
+    )
+
 def send_email_clerk_accepted(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
@@ -46,16 +66,12 @@ def send_email_clerk_accepted(user):
 
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
         print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
-
-
+    
     send_email_with_context(
         recipients=user.email,
         subject="Úředník potvrdil váší registraci",
-        message=f""
+        message=message
     )
-
-
-
 
 def send_email_with_context(recipients, subject, message):
     """

@@ -41,3 +41,16 @@ def RoleAllowed(*roles):
             return user and user.is_authenticated and getattr(user, "role", None) in roles
 
     return SafeOrRolePermission
+
+def OnlyRolesAllowed(*roles):
+    class SafeOrRolePermission(BasePermission):
+        """
+        Allows all methods only for users with specific roles.
+        """
+
+        def has_permission(self, request, view):
+            # Otherwise, check the user's role
+            user = request.user
+            return user and user.is_authenticated and getattr(user, "role", None) in roles
+
+    return SafeOrRolePermission
