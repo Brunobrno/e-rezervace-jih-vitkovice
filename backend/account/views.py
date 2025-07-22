@@ -146,7 +146,8 @@ class LogoutView(APIView):
 #--------------------------------------------------------------------------------------------------------------
 
 @extend_schema(
-    tags=["User"]
+    tags=["User"],
+    responses={200: UserSerializer}
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -155,7 +156,7 @@ class UserView(viewsets.ModelViewSet):
     filterset_class = UserFilter
 
     # Require authentication and role permission
-    permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
+    permission_classes = [OnlyRolesAllowed("cityClerk", "admin")]
 
     class Meta:
         model = CustomUser
@@ -245,6 +246,7 @@ class EmailVerificationView(APIView):
         if account_activation_token.check_token(user, token):
             user.email_verified = True
             user.save()
+            
             return Response({"detail": "E-mail byl úspěšně ověřen. Účet čeká na schválení."})
         else:
             return Response({"error": "Token je neplatný nebo expirovaný."}, status=400)
@@ -257,7 +259,7 @@ class EmailVerificationView(APIView):
     description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
 )
 class UserActivationViewSet(APIView):
-    permission_classes = [permissions.IsAuthenticated, RoleAllowed('cityClerk', 'admin')]
+    permission_classes = [OnlyRolesAllowed('cityClerk', 'admin')]
 
     def patch(self, request, *args, **kwargs):
         serializer = UserActivationSerializer(data=request.data)

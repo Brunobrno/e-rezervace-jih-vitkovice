@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from .models import UserRequest
+from .models import ServiceTicket
 
-class UserRequestSerializer(serializers.ModelSerializer):
+class ServiceTicketSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserRequest
+        model = ServiceTicket
         fields = [
             "id", "title", "description", "user",
             "status", "category", "created_at", "urgency"
@@ -21,13 +21,13 @@ class UserRequestSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # Example validation: status must be one of the defined choices
-        if "status" in data and data["status"] not in dict(UserRequest.STATUS_CHOICES):
+        if "status" in data and data["status"] not in dict(ServiceTicket.STATUS_CHOICES):
             raise serializers.ValidationError({"status": "Neplatný stav požadavku."})
         
-        if "category" in data and data["category"] not in dict(UserRequest.CATEGORY_CHOICES):
+        if "category" in data and data["category"] not in dict(ServiceTicket.CATEGORY_CHOICES):
             raise serializers.ValidationError({"category": "Neplatn8 kategorie požadavku."})
 
-        if "urgency" in data and data["urgency"] not in dict(UserRequest.URGENCY_CHOICES):
+        if "urgency" in data and data["urgency"] not in dict(ServiceTicket.URGENCY_CHOICES):
             raise serializers.ValidationError({"urgency": "Neplatná urgence."})
 
         return data

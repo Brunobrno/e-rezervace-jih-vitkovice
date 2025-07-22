@@ -2,13 +2,14 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from booking.models import Event, Reservation, MarketSlot, Square
 from product.models import Product, EventProduct
+from servicedesk.models import ServiceTicket
 from django.contrib.auth import get_user_model
 
 
 def assign_permissions_based_on_role(user):
     role_perms = {
         "cityClerk": {
-            "view": [Event, Reservation, MarketSlot, get_user_model(), Product, EventProduct],
+            "view": [Event, Reservation, MarketSlot, get_user_model(), Product, EventProduct, ServiceTicket],
             "add": [Reservation, get_user_model()],
             "change": [Reservation, get_user_model()],
             # "delete": [Reservation],
