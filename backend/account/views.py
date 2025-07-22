@@ -147,7 +147,8 @@ class LogoutView(APIView):
 
 @extend_schema(
     tags=["User"],
-    responses={200: UserSerializer}
+    responses={200: CustomUserSerializer},
+    description="Zobrazí všechny uživatele s možností filtrování a řazení.",
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -198,7 +199,7 @@ class CurrentUserView(APIView):
         return Response(serializer.data)
 
 
-   
+#------------------------------------------------REGISTRACE--------------------------------------------------------------
 
 #1. registration API
 @extend_schema(
@@ -270,7 +271,7 @@ class UserActivationViewSet(APIView):
 
         return Response(serializer.to_representation(user), status=status.HTTP_200_OK)
 
-#--------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------END REGISTRACE-------------------------------------------------------------
 
 #1. PasswordReset + send Email
 @extend_schema(
