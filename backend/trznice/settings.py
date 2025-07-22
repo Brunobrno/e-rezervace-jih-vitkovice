@@ -372,16 +372,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # říka že se úkladá do databáze, místo do cookie
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-USE_OWN_DB = os.getenv("USE_OWN_DB", "False") == "True"
+USE_PRODUCTION_DB = os.getenv("USE_PRODUCTION_DB", "False") == "True"
 
-if USE_OWN_DB is False:
+if USE_PRODUCTION_DB is False:
+    # DEVELOPMENT
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',  # Database engine
             'NAME': BASE_DIR / 'db.sqlite3',         # Path to the SQLite database file
-        }
+        } 
     }
 else:
+    #PRODUCTION
     DATABASES = {
         'default': {
             'ENGINE': os.getenv('DATABASE_ENGINE'),
