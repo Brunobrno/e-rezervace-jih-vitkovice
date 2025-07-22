@@ -17,25 +17,48 @@ fake = Faker("cs_CZ")
 
 def create_users(n=10):
     roles = ['admin', 'seller', 'squareManager', 'cityClerk', 'checker', None]
+    account_types = ['company', 'individual']
     users = []
+
     for _ in range(n):
         first_name = fake.first_name()
         last_name = fake.last_name()
         role = random.choice(roles)
         email = fake.unique.email()
 
+        # Generuj náhodné hodnoty
+        phone = fake.phone_number()
+        ico = fake.unique.msisdn()[0:8]
+        rc = f"{fake.random_int(100000, 999999)}/{fake.random_int(100, 9999)}"
+        psc = fake.postcode().replace(" ", "")[:5]
+        bank_prefix = f"{random.randint(0, 999999)}-" if random.random() > 0.5 else ""
+        bank_number = f"{random.randint(1000000000, 9999999999)}/0100"  # např. KB
+        bank_account = f"{bank_prefix}{bank_number}"
+
         user = CustomUser(
             first_name=first_name,
             last_name=last_name,
             email=email,
             role=role,
+            account_type=random.choice(account_types),
+            phone_number=fake.phone_number(),
+            ICO=ico,
+            RC=rc,
+            city=fake.city(),
+            street=fake.street_name() + " " + str(fake.building_number()),
+            PSC=psc,
+            GDPR=True,
+            email_verified=random.choice([True, False]),
+            bank_account=bank_account,
             is_active=True,
         )
+
         user.username = user.generate_login(first_name, last_name)
         user.set_password("password123")
         user.save()
         print(f"Vytvořen uživatel: {user.email} ({role})")
         users.append(user)
+
     print(f"✅ Vytvořeno {len(users)} uživatelů")
     return users
 
