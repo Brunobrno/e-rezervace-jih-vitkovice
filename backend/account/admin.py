@@ -13,9 +13,9 @@ class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     
     list_display = (
-        "username", "email", "role","create_time", "account_type", "is_active", "is_staff", "email_verified", 
+        "id", "username", "email", "role","create_time", "account_type", "is_deleted", "is_active", "is_staff", "email_verified", 
     )
-    list_filter = ("role", "account_type", "is_active", "is_staff", "email_verified")
+    list_filter = ("role", "account_type", "is_deleted", "is_active", "is_staff", "email_verified")
     search_fields = ("username", "email", "phone_number")
     ordering = ("-create_time",)
 
@@ -24,7 +24,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("username", "email", "password")}),
         ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_account", "ICO", "city", "street", "PSC")}),
-        ("Práva a stav", {"fields": ("is_active", "is_staff", "is_superuser", "email_verified", "groups", "user_permissions")}),
+        ("Práva a stav", {"fields": ("is_active", "is_deleted", "is_staff", "is_superuser", "email_verified", "groups", "user_permissions")}),
         ("Důležité časy", {"fields": ("last_login",)}),  # create_time vyjmuto odsud
     )
 
@@ -87,10 +87,10 @@ class CustomUserAdmin(UserAdmin):
         return super().get_fieldsets(request, obj)
     
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
+        qs = self.model.all_objects.all()
         if request.user.role == "cityClerk":
             return qs.filter(
-                Q(role__in=["seller", ""]) |  (Q(role__isnull=True)) & Q(is_superuser=False))
+                Q(role__in=["seller", ""]) |  (Q(role__isnull=True)) & Q(is_superuser=False) | Q(is_deleted=False))
         return qs
     
 

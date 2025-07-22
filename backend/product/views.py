@@ -20,7 +20,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name", "code"]
     search_fields = ["name", "code"]
 
-    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
+    permission_classes = [RoleAllowed("admin", "squareManager")]
 
 
 @extend_schema(
@@ -34,4 +34,4 @@ class EventProductViewSet(viewsets.ModelViewSet):
     filterset_fields = ["product", "event"]
     ordering_fields = ["start_selling_date", "end_selling_date"]
 
-    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
+    permission_classes = [RoleAllowed("admin", "squareManager")]

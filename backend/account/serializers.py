@@ -1,11 +1,16 @@
-from django.contrib.auth.models import Group
+import re
+from django.utils.text import slugify
+from django.core.validators import MinValueValidator, MaxValueValidator
 from rest_framework import serializers
-from django.contrib.auth import get_user_model, authenticate
+from rest_framework.exceptions import NotFound
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 
 from .permissions import *
 from .email import *
+
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -37,7 +42,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "is_active",
         ]
         read_only_fields = ["id", "create_time"]
-
 
 
 # Token obtaining Default Serializer
@@ -166,10 +170,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
 class UserActivationSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
-    var_symbol = serializers.IntegerField()
+    var_symbol = serializers.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(9999999999)])
 
     def save(self, **kwargs):
-        user = User.objects.get(pk=self.validated_data['user_id'])  # bez try/except, nech to padnout pokud neexistuje
+        try:
+            user = User.objects.get(pk=self.validated_data['user_id'])
+        except User.DoesNotExist:
+            raise NotFound("Uživatel s tímto ID neexistuje.")
         user.var_symbol = self.validated_data['var_symbol']
         user.is_active = True
         user.save()
