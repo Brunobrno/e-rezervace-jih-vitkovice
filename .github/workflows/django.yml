@@ -1,62 +1,55 @@
-name: Django CI via Docker Compose
+name: Django CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
-  docker-compose-ci:
+  django-tests:
     runs-on: ubuntu-latest
 
+    env:
+      USE_PRODUCTION_DB: ${{ secrets.USE_PRODUCTION_DB }}
+      DEBUG: ${{ secrets.DEBUG }}
+
+      DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
+      DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+      DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+      DATABASE_USER: ${{ secrets.DATABASE_USER }}
+      DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+
+      EMAIL_PORT_DEV: ${{ secrets.EMAIL_PORT_DEV }}
+      EMAIL_HOST_DEV: ${{ secrets.EMAIL_HOST_DEV }}
+      EMAIL_USER_DEV: ${{ secrets.EMAIL_USER_DEV }}
+      EMAIL_USER_PASSWORD_DEV: ${{ secrets.EMAIL_USER_PASSWORD_DEV }}
+      DEFAULT_FROM_EMAIL_DEV: ${{ secrets.DEFAULT_FROM_EMAIL_DEV }}
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-    - name: Install Docker Compose
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      working-directory: backend
       run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        docker-compose --version
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-    - name: Create backend/.env from secrets
-      run: |
-        mkdir -p backend
-        cat <<EOF > backend/.env
-        USE_PRODUCTION_DB=${{ secrets.USE_PRODUCTION_DB }}
-        DATABASE_ENGINE=${{ secrets.DATABASE_ENGINE }}
-        DATABASE_HOST=${{ secrets.DATABASE_HOST }}
-        DATABASE_PORT=${{ secrets.DATABASE_PORT }}
-        DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-        DATABASE_USER=${{ secrets.DATABASE_USER }}
-        DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-        DEBUG=${{ secrets.DEBUG }}
-        DEFAULT_FROM_EMAIL_DEV=${{ secrets.DEFAULT_FROM_EMAIL_DEV }}
-        EMAIL_HOST_DEV=${{ secrets.EMAIL_HOST_DEV }}
-        EMAIL_PORT_DEV=${{ secrets.EMAIL_PORT_DEV }}
-        EMAIL_USER_DEV=${{ secrets.EMAIL_USER_DEV }}
-        EMAIL_USER_PASSWORD_DEV=${{ secrets.EMAIL_USER_PASSWORD_DEV }}
-        FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-        EOF
+    - name: Run migrations
+      working-directory: backend
+      run: python manage.py migrate
 
-    - name: Build and run Docker Compose
-      run: docker-compose up -d --build
+    - name: Run DB populating script
+      working-directory: backend
+      run: python populate_db.py
 
-    - name: Wait for containers to stabilize
-      run: sleep 10
-
-    - name: Run migrations inside container
-      run: docker-compose exec -T web python manage.py migrate
-
-    - name: Check for missing migrations
-      run: docker-compose exec -T web python manage.py makemigrations --check --dry-run
-
-    - name: Populate DB (faker)
-      run: docker-compose exec -T web python populate_db.py
-
-    - name: Run Django tests
-      run: docker-compose exec -T web python manage.py test
-
-    - name: Stop and remove containers
-      if: always()
-      run: docker-compose down
+    - name: Run tests
+      working-directory: backend
+      run: python manage.py test
