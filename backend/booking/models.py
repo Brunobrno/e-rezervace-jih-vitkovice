@@ -50,7 +50,7 @@ class Square(SoftDeleteModel):
         if self.width <= 0 :
             raise ValidationError("Šířka náměstí nemůže být menší nebo rovna nule.")
                 
-        if self.height <= 0():
+        if self.height <= 0:
             raise ValidationError("Výška náměstí nemůže být menší nebo rovna nule.")
         
         return super().clean()
@@ -153,7 +153,7 @@ class MarketSlot(SoftDeleteModel):
 
     def save(self, *args, **kwargs):
         # If price_per_m2 is 0, use the event default
-        if self.base_size <= 0():
+        if self.base_size <= 0:
             raise ValidationError("Základní velikost prodejního místa musí být větší než nula.")
 
         if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
