@@ -10,36 +10,44 @@ User = get_user_model()
 from django.conf import settings
 from rest_framework.response import Response
 
+
+import logging
+logger = logging.getLogger(__name__)
+
+# This function sends a password reset email to the user.
 def send_password_reset_email(user, request):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = password_reset_token.make_token(user)
 
-    reset_url = request.build_absolute_uri(
-        reverse("reset-password-confirm", kwargs={"uidb64": uid, "token": token})
-    )
+    url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}"
 
-    send_mail(
+    send_email_with_context(
         subject="Obnova hesla",
-        message=f"Pro obnovu hesla klikni na následující odkaz:\n{reset_url}",
-        from_email=None,
-        recipient_list=[user.email],
-        fail_silently=False,
+        message=f"Pro obnovu hesla klikni na následující odkaz:\n{url}",
+        recipients=[user.email],
     )
 
+
+
+
+
+# This function sends an email to the user for email verification after registration.
 def send_email_verification(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
 
-    url = f"http://localhost:5173/email-verification/?uidb64={uid}&token={token}"
+    url = f"{settings.FRONTEND_URL}/email-verification/?uidb64={uid}&token={token}"
 
     message = f"Ověřte svůj e-mail kliknutím na odkaz:\n{url}"
-    print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+
+    logger.debug(f"\nEMAIL OBSAH:\n {message}\nKONEC OBSAHU")
 
     send_email_with_context(
         recipients=user.email,
         subject="Ověření e-mailu",
         message=f"{message}"
     )
+
 
 def send_email_clerk_add_var_symbol(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -64,6 +72,7 @@ def send_email_clerk_accepted(user):
 
     message = f"Úředník potvrdil vaší registraci. Můžete se přihlásit."
 
+
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
         print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
     
@@ -72,6 +81,8 @@ def send_email_clerk_accepted(user):
         subject="Úředník potvrdil váší registraci",
         message=message
     )
+    
+    
 
 def send_email_with_context(recipients, subject, message):
     """

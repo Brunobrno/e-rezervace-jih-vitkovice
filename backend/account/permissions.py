@@ -29,6 +29,9 @@ def RoleAllowed(*roles):
         """
         Allows safe methods for any authenticated user.
         Allows unsafe methods only for users with specific roles.
+
+        Args:
+            RolerAllowed('seller', 'cityClerk')
         """
 
         def has_permission(self, request, view):
@@ -42,6 +45,7 @@ def RoleAllowed(*roles):
 
     return SafeOrRolePermission
 
+# FIXME: je tohle nutné???
 def OnlyRolesAllowed(*roles):
     class SafeOrRolePermission(BasePermission):
         """
@@ -54,3 +58,15 @@ def OnlyRolesAllowed(*roles):
             return user and user.is_authenticated and getattr(user, "role", None) in roles
 
     return SafeOrRolePermission
+
+  
+# For Settings.py
+class AdminOnly(BasePermission):
+    """ Allows access only to users with the 'admin' role.
+
+    Args:
+        BasePermission (rest_framework.permissions.BasePermission): Base class for permission classes.
+    """
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'admin'
+

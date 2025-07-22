@@ -6,24 +6,42 @@ from rest_framework.exceptions import NotFound
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 from .permissions import *
 from .email import *
 
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+
+import re
+
 User = get_user_model()
 
-
-class UserSerializer(serializers.ModelSerializer):
+class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        # fields = '__all__'  # Všechny fieldy z modelu User
         fields = [
-            "id", "username", "first_name", "last_name", "email",
-            "phone_number", "role", "account_type", "is_active",
-            "city", "street", "PSC", "GDPR", "create_time", "var_symbol",
-            "bank_account", "ICO", "RC",
+            "id",
+            "username",
+            "email",
+            "role",
+            "account_type",
+            "email_verified",
+            "phone_number",
+            "create_time",
+            "var_symbol",
+            "bank_account",
+            "ICO",
+            "RC",
+            "city",
+            "street",
+            "PSC",
+            "GDPR",
+            "is_active",
         ]
+        read_only_fields = ["id", "create_time"]
 
 
 # Token obtaining Default Serializer

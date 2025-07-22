@@ -6,27 +6,11 @@ services:
       dockerfile: Dockerfile
     restart: always
     env_file:
-      - .env
+      - ./backend/.env
     networks:
       - app_network
-    environment:
-      DATABASE_HOST: db
-      DATABASE_PORT: ${DATABASE_PORT}
-      DATABASE_ENGINE: ${DATABASE_ENGINE}
-      DATABASE_NAME: ${DATABASE_NAME}
-      DATABASE_USER: ${DATABASE_USER}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME}
-      AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME}
-      REDIS_PASSWORD: ${REDIS}
-      DEBUG: ${DEBUG}
-      EMAIL_HOST: ${EMAIL_HOST}
-      EMAIL_USER: ${EMAIL_USER}
-      EMAIL_USER_PASSWORD: ${EMAIL_USER_PASSWORD}
     depends_on:
-      #- db
+      - db
       - redis
     command: sh -c "
       python manage.py check &&
@@ -40,31 +24,50 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: dockerfile
     container_name: frontend
-    environment:
-      - REACT_APP_API_URL=http://backend:8000/api  # Django backend URL
     ports:
-      - "3000:3000"
+      - "3000:80"  # Access on http://localhost:3000
     depends_on:
       - backend
+    env_file:
+      - ./frontend/.env
     networks:
       - app_network
 
-    env_file:
-      - .env
 
 
   redis:
     container_name: redis-vontor-cz
     image: redis:alpine
     restart: always
+    env_file:
+      - ./backend/.env
     environment:
       - REDIS_PASSWORD=${REDIS}
     volumes:
       - redis-data:/data
     expose:
       - "6379"
+    networks:
+      - app_network
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DOCKER_DATABASE_USER}
+      POSTGRES_PASSWORD: ${DOCKER_DATABASE_PASSWORD}
+      POSTGRES_DB: ${DOCKER_DATABASE_NAME}
+    env_file:
+      - ./backend/.env
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"   # Pokud chceš přistupovat i zvenčí (např. lokálně)
+    networks:
+      - app_network
+
+
 
 networks:
   app_network:
@@ -73,6 +76,7 @@ networks:
 volumes:
   data:
   redis-data:
+  db-data:
 
 
 #OBNOVA ZÁLOHY (spustin vevnitř containeru databáze)

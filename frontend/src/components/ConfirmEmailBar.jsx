@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Container, Button, Alert, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom'; // Umožňuje odkazování v rámci SPA
 
+const backendURL = import.meta.env.VITE_BACKEND_URL; //import url backendu
+
 // Komponenta pro ověření e-mailu
 function EmailVerificationPage() {
   // Stavy komponenty:
@@ -32,7 +34,7 @@ function EmailVerificationPage() {
 
     try {
       // Sestavíme URL pro API volání
-      const url = `http://127.0.0.1:8000/api/account/registration/verify-email/${encodeURIComponent(uidb64)}/${encodeURIComponent(token)}`;
+      const url = `${backendURL}/api/account/registration/verify-email/${encodeURIComponent(uidb64)}/${encodeURIComponent(token)}`;
       
       // Pošleme GET požadavek na backend
       const response = await fetch(url, { method: 'GET' });
@@ -54,14 +56,14 @@ function EmailVerificationPage() {
   };
 
   return (
-    <Container className="my-5 p-4 shadow-sm border rounded" style={{ maxWidth: 500 }}>
+    <Container className="my-5 p-4 shadow-sm bg-light border rounded" style={{ maxWidth: 500 }}>
       <h2 className="mb-4 text-center">Ověření e-mailu</h2>
 
       {/* Výchozí stav: uživatel může kliknout na tlačítko */}
       {status === 'idle' && (
         <>
           <p className="text-center">Kliknutím ověříš svůj e-mailový účet.</p>
-          <div className="d-grid">
+          <div className="d-flex justify-content-center">
             <Button variant="primary" onClick={handleVerify}>
               Verifikovat
             </Button>
@@ -71,7 +73,7 @@ function EmailVerificationPage() {
 
       {/* Stav: načítání – zobrazí spinner */}
       {status === 'loading' && (
-        <div className="text-center">
+        <div className="text-center d-flex justify-content-center">
           <Spinner animation="border" role="status" />
           <p className="mt-3">Probíhá ověřování...</p>
         </div>
@@ -83,7 +85,7 @@ function EmailVerificationPage() {
           <Alert variant="success" className="text-center">
             E-mail byl úspěšně ověřen!
           </Alert>
-          <div className="d-grid mt-3">
+          <div className="mt-3 d-flex justify-content-center">
             {/* Odkaz na přihlášení – používá react-router */}
             <Button as={Link} to="/" variant="success">
               Přihlásit se

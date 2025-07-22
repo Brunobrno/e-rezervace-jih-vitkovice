@@ -1,3 +1,0 @@
-všechny pages které se týkaji te registrace kromě té samotné stránky
-ještě bude ta stránka na potvrzení toho odkazu z mailu a idk co všechno...
-ještě bude např ten portal občana jen ať je to roztříděne

@@ -349,7 +349,7 @@ const DynamicGrid = ({
     >
       {gridCells}
 
-{reservations.map((res, i) => (
+      {reservations.map((res, i) => (
         <div
           key={i}
           data-index={i}
@@ -379,7 +379,9 @@ const DynamicGrid = ({
             zIndex: 2,
             // Only show pointer for active reservations in static mode
             cursor: isStatic
-              ? res.status === "active" ? "pointer" : "default"
+              ? res.status === "active"
+                ? "pointer"
+                : "default"
               : "move",
           }}
         >

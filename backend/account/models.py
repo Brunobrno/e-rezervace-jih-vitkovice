@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.core.validators import RegexValidator, MinLengthValidator, MaxValueValidator, MinValueValidator
 
 from django.conf import settings
@@ -20,7 +20,23 @@ class CustomUserAllManager(UserManager):
     def get_queryset(self):
         return super().get_queryset()
 
+
 class CustomUser(SoftDeleteModel, AbstractUser):
+    groups = models.ManyToManyField(
+        Group,
+        related_name="customuser_set",  # <- přidáš related_name
+        blank=True,
+        help_text="The groups this user belongs to.",
+        related_query_name="customuser",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="customuser_set",  # <- přidáš related_name
+        blank=True,
+        help_text="Specific permissions for this user.",
+        related_query_name="customuser",
+    )
+
     ROLE_CHOICES = (
         ('admin', 'Administrátor'),
         ('seller', 'Prodejce'),
@@ -54,6 +70,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         ],
     )
     bank_account = models.CharField(
+        max_length=255,
         null=True, 
         blank=True, 
         validators=[

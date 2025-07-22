@@ -1,5 +1,5 @@
 
-import RegisterCard from "../components/RegisterCard";
+import RegisterCard from "../../components/RegisterCard";
 
 import { Modal, Col, Row, Container, Button, Form, Card, ToggleButton, InputGroup } from "react-bootstrap";
 

@@ -2,20 +2,19 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import *
 
-from rest_framework_simplejwt.views import (
-    #TokenObtainPairView,
-    TokenRefreshView,
-)
 
 router = DefaultRouter()
 router.register(r'users', UserView, basename='user') # change URL to plural users ?
 
 urlpatterns = [
     path('', include(router.urls)),  # automaticky přidá všechny cesty z viewsetu
+    path("user/me/", CurrentUserView.as_view(), name="user-me"), # get current user data
 
-    path('token/', EmailOrUsernameTokenObtainPairView.as_view(), name='token_obtain_pair'), #přihlášení
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'), #přihlášení (get token)
+    path('token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'), #refresh token
     #potom co access token vyprší tak se pomocí refresh tokenu získa další
+
+    path('logout/', LogoutView.as_view(), name='logout'),  # odhlášení (smaže tokeny)
     
     path('registration/', UserRegistrationViewSet.as_view({'post': 'create'}), name='create_seller'),
 
