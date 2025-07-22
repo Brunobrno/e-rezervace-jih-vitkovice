@@ -16,6 +16,8 @@ from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 from django.db import OperationalError, connections
 
+from datetime import timedelta
+
 from dotenv import load_dotenv
 load_dotenv()  # Pouze načte proměnné lokálně, pokud nejsou dostupné
 
@@ -180,6 +182,41 @@ print(f"\nUsing SSL: {USE_SSL}\n")
 
 
 #-------------------------------------REST FRAMEWORK 🛠️------------------------------------
+
+# ⬇️ Základní lifetime konfigurace
+ACCESS_TOKEN_LIFETIME = timedelta(minutes=15)
+REFRESH_TOKEN_LIFETIME = timedelta(days=1)
+
+# ⬇️ Nastavení SIMPLE_JWT podle režimu
+if DEBUG:
+    SIMPLE_JWT = {
+        "ACCESS_TOKEN_LIFETIME": ACCESS_TOKEN_LIFETIME,
+        "REFRESH_TOKEN_LIFETIME": REFRESH_TOKEN_LIFETIME,
+
+        "AUTH_COOKIE": "access_token",
+        "AUTH_COOKIE_SECURE": False,         # není HTTPS
+        "AUTH_COOKIE_HTTP_ONLY": True,
+        "AUTH_COOKIE_PATH": "/",
+        "AUTH_COOKIE_SAMESITE": "Lax",       # není cross-site
+
+        "ROTATE_REFRESH_TOKENS": True,
+        "BLACKLIST_AFTER_ROTATION": True,
+    }
+else:
+    SIMPLE_JWT = {
+        "ACCESS_TOKEN_LIFETIME": ACCESS_TOKEN_LIFETIME,
+        "REFRESH_TOKEN_LIFETIME": REFRESH_TOKEN_LIFETIME,
+
+        "AUTH_COOKIE": "access_token",
+        "AUTH_COOKIE_SECURE": True,          # HTTPS only
+        "AUTH_COOKIE_HTTP_ONLY": True,
+        "AUTH_COOKIE_PATH": "/",
+        "AUTH_COOKIE_SAMESITE": "None",      # potřebné pro cross-origin
+
+        "ROTATE_REFRESH_TOKENS": True,
+        "BLACKLIST_AFTER_ROTATION": True,
+    }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -351,29 +388,10 @@ else:
             'NAME': os.getenv('DATABASE_NAME'),
             'USER': os.getenv('DATABASE_USER'),
             'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-            'HOST': os.getenv('DATABASE_HOST'),
+            'HOST': os.getenv('DATABASE_HOST', "localhost"),
             'PORT': os.getenv('DATABASE_PORT'),
         }
     }
-    
-    
-#TODO: není optimalní nastav v budoucnu v docker-compose.yml při startu aby se otestovalo připojení přes ,,django check,, command
-#DATABASE HEALTH CHECK
-
-try:
-    # Check if the default database connection is working
-    connection = connections['default']
-    
-    print("\n----------DATABASE CHECK---------------\nDatabase host: " + str(os.getenv('DATABASE_HOST')))
-    print(connection)
-    
-    connection.ensure_connection()
-    print("Database connection is successful.")
-except OperationalError:
-    print("Database connection failed!")
-    raise Exception("Database connection not available, shutting down!")
-
-print("---------------------------------------\n")
 
 AUTH_USER_MODEL = 'account.CustomUser' #class CustomUser(AbstractUser) best practice to use AbstractUser
 

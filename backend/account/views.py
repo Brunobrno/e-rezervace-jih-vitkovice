@@ -14,7 +14,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -24,12 +27,130 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 User = get_user_model()
 
 #general user view API
+ 
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+#---------------------------------------------TOKENY------------------------------------------------
+
+# Custom Token obtaining view
+@extend_schema(
+    tags=["api"],
+    request=CustomTokenObtainPairSerializer,
+    description="Authentication - získaš Access a Refresh token... lze do <username> vložit E-mail nebo username"
+)
+class CookieTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        # Získáme tokeny z odpovědi
+        access = response.data.get("access")
+        refresh = response.data.get("refresh")
+
+        if not access or not refresh:
+            return response  # Např. při chybě přihlášení
+
+        jwt_settings = settings.SIMPLE_JWT
+
+        # Access token cookie
+        response.set_cookie(
+            key=jwt_settings.get("AUTH_COOKIE", "access_token"),
+            value=access,
+            httponly=jwt_settings.get("AUTH_COOKIE_HTTP_ONLY", True),
+            secure=jwt_settings.get("AUTH_COOKIE_SECURE", not settings.DEBUG),
+            samesite=jwt_settings.get("AUTH_COOKIE_SAMESITE", "Lax"),
+            path=jwt_settings.get("AUTH_COOKIE_PATH", "/"),
+            max_age=5 * 60,  # 5 minut
+        )
+
+        # Refresh token cookie
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh,
+            httponly=True,
+            secure=not settings.DEBUG,
+            samesite="Lax",
+            path="/",
+            max_age=7 * 24 * 60 * 60,  # 7 dní
+        )
+
+        return response
+    
+@extend_schema(
+    tags=["api"],
+    description="Refresh JWT token"
+)
+class CookieTokenRefreshView(APIView):
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({"detail": "Refresh token cookie not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+            new_refresh_token = str(refresh)  # volitelně nový refresh token
+
+            response = Response({
+                "access": access_token,
+                "refresh": new_refresh_token,
+            })
+
+            # Nastav nové HttpOnly cookies
+            # Access token cookie (např. 5 minut platnost)
+            response.set_cookie(
+                "access_token",
+                access_token,
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax",
+                max_age=5 * 60,
+                path="/",
+            )
+
+            # Refresh token cookie (delší platnost, např. 7 dní)
+            response.set_cookie(
+                "refresh_token",
+                new_refresh_token,
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax",
+                max_age=7 * 24 * 60 * 60,
+                path="/",
+            )
+
+            return response
+
+        except TokenError:
+            return Response({"detail": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+
+@extend_schema(
+    tags=["api"],
+    description="Odhlásí uživatele – smaže access a refresh token cookies"
+)
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        response = Response({"detail": "Logout successful"}, status=status.HTTP_200_OK)
+
+        # Smazání cookies
+        response.delete_cookie("access_token", path="/")
+        response.delete_cookie("refresh_token", path="/")
+
+        return response
+
+#--------------------------------------------------------------------------------------------------------------
+
 @extend_schema(
     tags=["User"]
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = UserFilter
 
@@ -56,19 +177,27 @@ class UserView(viewsets.ModelViewSet):
             "GDPR": {"help_text": "Souhlas se zpracováním osobních údajů."},
             "is_active": {"help_text": "Stav aktivace uživatele.", "read_only": True},
         }
-    
+   
 
-from rest_framework_simplejwt.views import TokenObtainPairView
-# Custom Token obtaining view
+# Get current user data
 @extend_schema(
-    tags=["api"],
-    request=CustomTokenObtainPairSerializer,
-    description="Authentication - získaš Access a Refresh token... lze do <username> vložit E-mail nebo username"
+    tags=["User"],
+    summary="Get current authenticated user",
+    description="Vrátí detail aktuálně přihlášeného uživatele podle JWT tokenu nebo session.",
+    responses={
+        200: OpenApiResponse(response=CustomUserSerializer),
+        401: OpenApiResponse(description="Unauthorized, uživatel není přihlášen"),
+    }
 )
-class EmailOrUsernameTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
 
-#--------------------------------------------------------------------------------------------------------------
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)
+
+
+   
 
 #1. registration API
 @extend_schema(

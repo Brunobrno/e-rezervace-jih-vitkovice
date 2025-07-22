@@ -19,6 +19,8 @@ psycopg[binary] #PostgreSQL database adapter for the Python
 
 django-filter
 
+faker #generates fake data for testing purposes
+
 
 # -- OBJECT STORAGE -- 
 Pillow #adds image processing capabilities to your Python interpreter

@@ -10,7 +10,7 @@ services:
     networks:
       - app_network
     depends_on:
-      #- db
+      - db
       - redis
     command: sh -c "
       python manage.py check &&
@@ -40,13 +40,14 @@ services:
     container_name: redis-vontor-cz
     image: redis:alpine
     restart: always
+    env_file:
+      - ./backend/.env
     environment:
       - REDIS_PASSWORD=${REDIS}
     volumes:
       - redis-data:/data
     expose:
       - "6379"
-
     networks:
       - app_network
 
@@ -54,9 +55,11 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: bdbdfbdbdbsbsbgfbgergreg
-      POSTGRES_PASSWORD: grgrdbcisnhcikcf4479ve13r
-      POSTGRES_DB: djangoDB
+      POSTGRES_USER: ${DOCKER_DATABASE_USER}
+      POSTGRES_PASSWORD: ${DOCKER_DATABASE_PASSWORD}
+      POSTGRES_DB: ${DOCKER_DATABASE_NAME}
+    env_file:
+      - ./backend/.env
     volumes:
       - db-data:/var/lib/postgresql/data
     ports:

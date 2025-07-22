@@ -14,8 +14,8 @@ import Test from './pages/Test';
 import EventsTree from './components/EventsTree';
 import EmailVerificationPage from './pages/register/EmailVerification';
 import Home from './pages/Home';
-import RequestPasswordPage from './pages/reset-password/Request';
-import CreatePasswordPage from './pages/reset-password/Create';
+import ResetPasswordPage from './pages/PasswordReset';
+
 
 function App() {
 
@@ -30,10 +30,13 @@ function App() {
         <Route path="/login" element={<Login />}/>
 
         <Route path="/register" element={<Register />}/>
-        <Route path="/email-verification" element={<EmailVerificationPage />} />
 
-        <Route path="/reset-password" element={<RequestPasswordPage />} />
-        <Route path="/reset-password/:uidb64/:token" element={<CreatePasswordPage />} />
+        // after user registers, they will be redirected from email, to the email verification page
+        <Route path="/email-verification" element={<EmailVerificationPage />} />
+        <Route path="/email-verification/:uidb64/:token" element={<EmailVerificationPage />} />
+
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />} />
 
 
         
