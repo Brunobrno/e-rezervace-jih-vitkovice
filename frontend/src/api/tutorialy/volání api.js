@@ -7,9 +7,15 @@ const response = await fetch(`${API_URL}/account/registration/`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    nejakeData: "nejakeData",
+    username: "exampleUser",
+    email: "example@example.com",
+    password: "tajneheslo123",
   }),
-})
+});
+
+const data = await response.json();
+console.log(data);
+
 
 
 
@@ -18,21 +24,27 @@ const response = await fetch(`${API_URL}/account/registration/`, {
 
 /*---------------PRO CHRÁNĚNÉ ENDPOINTY----------------*/ 
 
-import { apiRequest } from "../auth"; // musíš si importovat apiRequest z auth.js!!!
+import { apiRequest } from "../auth"; // důležitý helper pro chráněné API
 
-// 🔄 Obecná funkce pro volání API s různými metodami
-// GET
-const data = await apiRequest("get", "/nějaká/url/adresa/");
+// ✅ GET – Načtení dat
+const userData = await apiRequest("get", "/account/profile/");
 
-// POST
-const data1 = await apiRequest("post", "/nějaká/url/adresa/", { nejakeData: "nejakeData"});
+// ✅ POST – Např. vytvoření nové rezervace
+const newItem = await apiRequest("post", "/reservation/create/", {
+  name: "Stánek s medem",
+  location: "A5",
+});
 
-// PUT
-const data2 = await apiRequest("put", `/nějaká/url/adresa/`, { nejakeData: "nejakeData" });
+// ✅ PUT – Úplná aktualizace
+const updatedItem = await apiRequest("put", "/reservation/42/", {
+  name: "Upravený stánek",
+  location: "B1",
+});
 
-// PATCH (částečná aktualizace)
-const data3 = await apiRequest("patch", `/nějaká/url/adresa/`, { nejakeData: "nejakeData" });
+// ✅ PATCH – Částečná aktualizace
+const partiallyUpdated = await apiRequest("patch", "/reservation/42/", {
+  location: "C3",
+});
 
-// DELETE
-await apiRequest("delete", `/nějaká/url/adresa/{ídečko xD}`);
-
+// ✅ DELETE – Smazání záznamu
+await apiRequest("delete", "/reservation/42/");

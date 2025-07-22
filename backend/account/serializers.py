@@ -2,34 +2,43 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 from .permissions import *
 from .email import *
 
-from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-User = get_user_model()
 
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'  # Všechny fieldy z modelu User
-
-
-
-# serializers.py
-
-from rest_framework import serializers
-from django.utils.text import slugify
-from django.contrib.auth import get_user_model
-import unicodedata
 import re
 
 User = get_user_model()
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "role",
+            "account_type",
+            "email_verified",
+            "phone_number",
+            "create_time",
+            "var_symbol",
+            "bank_account",
+            "ICO",
+            "RC",
+            "city",
+            "street",
+            "PSC",
+            "GDPR",
+            "is_active",
+        ]
+        read_only_fields = ["id", "create_time"]
+
+
 
 # Token obtaining Default Serializer
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
