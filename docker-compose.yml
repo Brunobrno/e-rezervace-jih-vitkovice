@@ -55,9 +55,9 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: ${DOCKER_DATABASE_USER}
-      POSTGRES_PASSWORD: ${DOCKER_DATABASE_PASSWORD}
-      POSTGRES_DB: ${DOCKER_DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
     env_file:
       - ./backend/.env
     volumes:
