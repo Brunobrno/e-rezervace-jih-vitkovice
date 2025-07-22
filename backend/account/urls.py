@@ -8,7 +8,7 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
-router.register(r'user', UserView, basename='user')
+router.register(r'users', UserView, basename='user') # change URL to plural users ?
 
 urlpatterns = [
     path('', include(router.urls)),  # automaticky přidá všechny cesty z viewsetu

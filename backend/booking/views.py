@@ -83,7 +83,7 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     filterset_fields = ["event", "status"]
     ordering_fields = ["price_per_m2", "x", "y"]
 
-    permission_classes = [RoleAllowed("admin", "squareManager", "seller")]
+    permission_classes = [RoleAllowed("admin", "squareManager", "seller")] # maybe limit what can seller do
 
 
 @extend_schema(

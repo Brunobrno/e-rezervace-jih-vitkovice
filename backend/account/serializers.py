@@ -17,7 +17,13 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'  # Všechny fieldy z modelu User
+        # fields = '__all__'  # Všechny fieldy z modelu User
+        fields = [
+            "id", "username", "first_name", "last_name", "email",
+            "phone_number", "role", "account_type", "is_active",
+            "city", "street", "PSC", "GDPR", "create_time", "var_symbol",
+            "bank_account", "ICO", "RC",
+        ]
 
 
 # Token obtaining Default Serializer

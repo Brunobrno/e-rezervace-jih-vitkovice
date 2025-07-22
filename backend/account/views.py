@@ -25,7 +25,8 @@ User = get_user_model()
 
 #general user view API
 @extend_schema(
-    tags=["User"]
+    tags=["User"],
+    responses={200: UserSerializer}
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()

@@ -46,6 +46,19 @@ class Square(SoftDeleteModel):
 
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
+    def clean(self):
+        if self.width <= 0 :
+            raise ValidationError("Šířka náměstí nemůže být menší nebo rovna nule.")
+                
+        if self.height <= 0():
+            raise ValidationError("Výška náměstí nemůže být menší nebo rovna nule.")
+        
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
     
@@ -89,7 +102,7 @@ class Event(SoftDeleteModel):
         )
         if overlapping.exists():
             raise ValidationError("V tomto termínu už na daném náměstí probíhá jiná událost.")
-
+        
         # Zavolej rodičovskou validaci (volitelné, pokud nepoužíváš dědičnost)
         return super().clean()
 
@@ -140,6 +153,9 @@ class MarketSlot(SoftDeleteModel):
 
     def save(self, *args, **kwargs):
         # If price_per_m2 is 0, use the event default
+        if self.base_size <= 0():
+            raise ValidationError("Základní velikost prodejního místa musí být větší než nula.")
+
         if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
             self.price_per_m2 = self.event.price_per_m2
 
@@ -212,9 +228,10 @@ class Reservation(SoftDeleteModel):
 
     def save(self, *args, **kwargs):
         self.clean()
-        self.final_price = self.marketSlot.price_per_m2 * (
-        Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
-    )
+        if (self.marketSlot):
+            self.final_price = self.marketSlot.price_per_m2 * (
+            Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
+        )
         super().save(*args, **kwargs)
 
     def __str__(self):

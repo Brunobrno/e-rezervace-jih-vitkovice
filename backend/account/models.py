@@ -145,6 +145,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         is_new = self.pk is None  # check BEFORE saving
 
         if is_new:
+            # self.generate_login() neni treba
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
                 self.is_staff = True
                 self.is_active = True
