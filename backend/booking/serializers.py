@@ -51,7 +51,7 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         }
 
 class EventSerializer(serializers.ModelSerializer):
-    market_slots = MarketSlotSerializer(many=True, read_only=True, source="marketSlot_event")
+    market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
 
     class Meta:
         model = Event
@@ -72,7 +72,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class SquareSerializer(serializers.ModelSerializer):
-    events = EventSerializer(many=True, read_only=True, source="event_on_sqare")
+    events = EventSerializer(many=True, read_only=True, source="square_events")
 
     class Meta:
         model = Square

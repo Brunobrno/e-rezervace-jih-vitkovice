@@ -168,6 +168,8 @@ class CustomUser(SoftDeleteModel, AbstractUser):
                 self.is_active = True
                 if self.role == 'admin':
                     self.is_superuser = True
+                if self.is_superuser:
+                    self.role = 'admin'
             else:
                 self.is_staff = False
         

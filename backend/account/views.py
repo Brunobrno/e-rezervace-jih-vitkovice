@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 
@@ -17,8 +17,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-
+from rest_framework_simplejwt.exceptions import TokenError, AuthenticationFailed
 from django_filters.rest_framework import DjangoFilterBackend
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
@@ -41,6 +40,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 )
 class CookieTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+    print("Používám vlastní view – CookieTokenObtainPairView")
+
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -77,6 +79,25 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         )
 
         return response
+    
+    def validate(self, attrs):
+        username = attrs.get("username")
+        password = attrs.get("password")
+
+        # Přihlaš uživatele ručně
+        user = authenticate(request=self.context.get('request'), username=username, password=password)
+
+        if not user:
+            raise AuthenticationFailed("Špatné uživatelské jméno nebo heslo.")
+
+        if not user.is_active:
+            raise AuthenticationFailed("Uživatel je deaktivován.")
+
+        # Nastav validní uživatele (přebere další logiku ze SimpleJWT)
+        self.user = user
+
+        # Vrátí access a refresh token jako obvykle
+        return super().validate(attrs)
     
 @extend_schema(
     tags=["api"],
@@ -126,6 +147,7 @@ class CookieTokenRefreshView(APIView):
         except TokenError:
             return Response({"detail": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
         
+#---------------------------------------------LOGIN/LOGOUT------------------------------------------------
 
 @extend_schema(
     tags=["api"],

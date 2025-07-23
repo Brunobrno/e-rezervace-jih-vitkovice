@@ -10,13 +10,8 @@ const api = axios.create({
 
 // ✅ Přihlášení
 export const login = async (username, password) => {
-  try {
-    await api.post(`/account/token/`, { username, password });
-    return true;
-  } catch (err) {
-    console.error("Login failed", err);
-    return false;
-  }
+  const response = await api.post(`/account/token/`, { username, password });
+  return response.data;
 };
 
 // ❌ Odhlášení
