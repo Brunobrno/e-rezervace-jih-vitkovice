@@ -385,11 +385,15 @@ if not DEBUG:
     CELERY_TIMEZONE = 'Europe/Prague'
 
     from celery.schedules import crontab
-    
+
     CELERY_BEAT_SCHEDULE = {
-        'delete-old-records-daily': {
-            'task': 'myapp.tasks.delete_old_records',
-            'schedule': crontab(hour=0, minute=0),
+        'hard_delete_soft_deleted_monthly': {
+            'task': 'account.tasks.hard_delete_soft_deleted_records',
+            'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
+        },
+        'delete_old_reservations_monthly': {
+            'task': 'account.tasks.delete_old_reservations',
+            'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
         },
     }
 else:

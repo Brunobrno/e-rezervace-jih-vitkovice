@@ -3,40 +3,32 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.response import Response
 
-from .email import send_email_with_context
+@shared_task
+def hard_delete_soft_deleted_records():
+    """
+    Hard delete všech objektů, které jsou soft-deleted (is_deleted=True)
+    a zároveň byly označeny jako smazané (deleted_at) před více než rokem.
+    """
+    one_year_ago = timezone.now() - timedelta(days=365)
+
+    # Pro všechny modely, které dědí z SoftDeleteModel, smaž staré smazané záznamy
+    for model in apps.get_models():
+        if issubclass(model, apps.get_model('myapp', 'SoftDeleteModel')) or \
+           'SoftDeleteModel' in [base.__name__ for base in model.__bases__]:
+            # Filtrování soft-deleted a starých
+            deleted_qs = model.all_objects.filter(is_deleted=True, deleted_at__lt=one_year_ago)
+            count = deleted_qs.count()
+            deleted_qs.delete()  # hard delete
+            print(f"Hard deleted {count} records from {model.__name__}")
 
 @shared_task
-def send_email_with_context_task(recipients=[], subject="", message=""):
+def delete_old_reservations():
     """
-    General function to send emails with a specific context.
+    Smaže rezervace starší než 10 let počítané od začátku příštího roku.
     """
-    print("in celery task")
+    now = timezone.now()
+    next_january_1 = datetime(year=now.year + 1, month=1, day=1, tzinfo=timezone.get_current_timezone())
+    cutoff_date = next_january_1 - timedelta(days=365 * 10)
 
-    if isinstance(recipients, str):
-        recipients = [recipients]
-
-    try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=None,
-            recipient_list=recipients,
-            fail_silently=False,
-        )
-        print("email was sent")
-        return True
-    except Exception as e:
-        if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-            print(f"email se neodeslal... DEBUG: {e}")
-            pass
-        else:
-            return Response({"error": f"E-mail se neodeslal, důvod: {e}"}, status=500)
-        
-
-    # send_mail(
-    #     "Welcome!",
-    #     "Thank you for registering.",
-    #     "from@example.com",
-    #     [],
-    #     fail_silently=False,
-    # )
+    deleted, _ = Reservation.objects.filter(created__lt=cutoff_date).delete()
+    print(f"Deleted {deleted} old reservations.")

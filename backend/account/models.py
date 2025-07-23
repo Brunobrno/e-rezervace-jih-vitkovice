@@ -16,10 +16,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Custom User Manager to handle soft deletion
 class CustomUserActiveManager(UserManager):
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
 
+# Custom User Manager to handle all users, including soft deleted
 class CustomUserAllManager(UserManager):
     def get_queryset(self):
         return super().get_queryset()
