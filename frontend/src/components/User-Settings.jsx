@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Form, Container, Row, Col, Alert } from "react-bootstrap";
+import { Form, Container, Alert } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import { apiRequest } from "../api/auth";
+import { useNavigate } from "react-router-dom";
+
+// Import FontAwesome
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPen } from "@fortawesome/free-solid-svg-icons";
 
 export default function UserSettings() {
   const [user, setUser] = useState(null);
@@ -9,6 +14,8 @@ export default function UserSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingFields, setEditingFields] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -16,7 +23,7 @@ export default function UserSettings() {
         const data = await apiRequest("get", "/account/user/me/");
         setUser(data);
         setFormData(data);
-      } catch (err) {
+      } catch {
         setError("Nepodařilo se načíst profil.");
       } finally {
         setLoading(false);
@@ -27,10 +34,19 @@ export default function UserSettings() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const startEdit = (field) => {
+    setEditingFields((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const stopEdit = (field) => {
+    setEditingFields((prev) => {
+      const copy = { ...prev };
+      delete copy[field];
+      return copy;
+    });
   };
 
   const handleSave = async (e) => {
@@ -54,16 +70,67 @@ export default function UserSettings() {
         email: formData.email,
       });
       setUser(updated);
+      setFormData(updated);
+      setEditingFields({});
       alert("✅ Údaje byly uloženy.");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("❌ Nepodařilo se uložit změny.");
     } finally {
       setSaving(false);
     }
   };
 
+  const handleResetPassword = () => {
+    navigate("/reset-password");
+  };
+
   if (loading) return <p>⏳ Načítání...</p>;
+
+  const renderField = (label, name, type = "text") => {
+    const isEditing = !!editingFields[name];
+    const value = formData[name] ?? "";
+
+    return (
+      <Form.Group className="mb-3" controlId={`field-${name}`}>
+        <Form.Label>{label}</Form.Label>
+
+        {isEditing ? (
+          <Form.Control
+            type={type}
+            name={name}
+            value={value}
+            onChange={handleChange}
+            onBlur={() => stopEdit(name)}
+            autoFocus
+          />
+        ) : (
+          <div
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #ced4da",
+              borderRadius: 4,
+              minHeight: "38px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "#f8f9fa",
+            }}
+          >
+            <span>{value || <i>(neuvedeno)</i>}</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => startEdit(name)}
+              style={{ textDecoration: "none" }}
+              aria-label={`Upravit ${label}`}
+            >
+              <FontAwesomeIcon icon={faPen} />
+            </Button>
+          </div>
+        )}
+      </Form.Group>
+    );
+  };
 
   return (
     <Container className="mt-5">
@@ -72,120 +139,26 @@ export default function UserSettings() {
       {error && <Alert variant="danger">{error}</Alert>}
 
       <Form onSubmit={handleSave}>
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Jméno</Form.Label>
-              <Form.Control
-                type="text"
-                name="first_name"
-                value={formData.first_name || ""}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
+        {renderField("Jméno", "first_name")}
+        {renderField("Příjmení", "last_name")}
+        {renderField("RČ", "RC")}
+        {renderField("IČ", "ICO")}
+        {renderField("Ulice a č.p.", "street")}
+        {renderField("Město", "city")}
+        {renderField("PSČ", "PSC")}
+        {renderField("Číslo účtu", "bank_account")}
+        {renderField("Telefon", "phone_number", "tel")}
+        {renderField("Email", "email", "email")}
 
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Příjmení</Form.Label>
-              <Form.Control
-                type="text"
-                name="last_name"
-                value={formData.last_name || ""}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <Button type="submit" variant="primary" disabled={saving}>
+            {saving ? "💾 Ukládání..." : "Uložit změny"}
+          </Button>
 
-        <Form.Group className="mb-3">
-          <Form.Label>RČ</Form.Label>
-          <Form.Control
-            type="text"
-            name="RC"
-            value={formData.RC || ""}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>IČ</Form.Label>
-          <Form.Control
-            type="text"
-            name="ICO"
-            value={formData.ICO || ""}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Ulice a č.p.</Form.Label>
-          <Form.Control
-            type="text"
-            name="street"
-            value={formData.street || ""}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Město</Form.Label>
-              <Form.Control
-                type="text"
-                name="city"
-                value={formData.city || ""}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>PSČ</Form.Label>
-              <Form.Control
-                type="text"
-                name="PSC"
-                value={formData.PSC || ""}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Číslo účtu</Form.Label>
-          <Form.Control
-            type="text"
-            name="bank_account"
-            value={formData.bank_account || ""}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Telefon</Form.Label>
-          <Form.Control
-            type="tel"
-            name="phone_number"
-            value={formData.phone_number || ""}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-4">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
-            type="email"
-            name="email"
-            value={formData.email || ""}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        <Button type="submit" variant="primary" disabled={saving}>
-          {saving ? "💾 Ukládání..." : "Uložit změny"}
-        </Button>
+          <Button variant="warning" onClick={handleResetPassword}>
+            Resetovat heslo
+          </Button>
+        </div>
       </Form>
     </Container>
   );
