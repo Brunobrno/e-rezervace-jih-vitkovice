@@ -83,7 +83,7 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     filterset_fields = ["event", "status"]
     ordering_fields = ["price_per_m2", "x", "y"]
 
-    permission_classes = [RoleAllowed("admin", "squareManager", "seller")] # maybe limit what can seller do
+    permission_classes = [RoleAllowed("admin", "squareManager")]
 
 
 @extend_schema(
@@ -115,7 +115,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
         "user__first_name",
         "user__last_name",
     ]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RoleAllowed("admin", "squareManager", "seller")]
 
     def get_queryset(self):
         qs = Reservation.objects.select_related("event", "marketSlot", "user").order_by("-created_at")

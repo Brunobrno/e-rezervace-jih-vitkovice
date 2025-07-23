@@ -55,6 +55,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
+        unique=True,
         max_length=16,
         blank=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]

@@ -41,7 +41,59 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "GDPR",
             "is_active",
         ]
-        read_only_fields = ["id", "create_time"]
+        read_only_fields = ["id", "create_time"]#, "username"]
+    #     extra_kwargs = {
+    #         "password": {"write_only": True, "required": True},
+    #     }
+
+
+    # def validate_password(self, value):
+    #     if len(value) < 8:
+    #         raise serializers.ValidationError("Heslo musí mít alespoň 8 znaků.")
+    #     if not re.search(r"[A-Z]", value):
+    #         raise serializers.ValidationError("Heslo musí obsahovat alespoň jedno velké písmeno.")
+    #     if not re.search(r"[a-z]", value):
+    #         raise serializers.ValidationError("Heslo musí obsahovat alespoň jedno malé písmeno.")
+    #     if not re.search(r"\d", value):
+    #         raise serializers.ValidationError("Heslo musí obsahovat alespoň jednu číslici.")
+    #     return value
+
+    # def validate(self, data):
+    #     email = data.get("email")
+    #     phone = data.get("phone_number")
+    #     dgpr = data.get("GDPR")
+    #     if not dgpr:
+    #         raise serializers.ValidationError({"GDPR": "Pro registraci musíte souhlasit s GDPR"})
+    #     if User.objects.filter(email=email).exists():
+    #         raise serializers.ValidationError({"email": "Účet s tímto emailem již existuje."})
+    #     if phone and User.objects.filter(phone_number=phone).exists():
+    #         raise serializers.ValidationError({"phone_number": "Účet s tímto telefonem již existuje."})
+    #     return data
+
+    # def generate_username(self, first_name, last_name):
+    #     # Převod na ascii (bez diakritiky)
+    #     base_login = slugify(f"{last_name}{first_name[:2]}")
+    #     login = base_login
+    #     counter = 1
+    #     while User.objects.filter(username=login).exists():
+    #         login = f"{base_login}{counter}"
+    #         counter += 1
+    #     return login
+    
+    # def create(self, validated_data):
+    #     password = validated_data.pop("password", None)
+    #     first_name = validated_data.get("first_name", "")
+    #     last_name = validated_data.get("last_name", "")
+    #     username = self.generate_username(first_name, last_name)
+    #     user = User.objects.create(
+    #         username=username,
+    #         is_active=True, #uživatel je defaultně deaktivovaný
+    #         **validated_data
+    #     )
+    #     user.set_password(password)
+    #     user.save()
+
+    #     return user
 
 
 # Token obtaining Default Serializer
@@ -99,25 +151,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'GDPR': {'required': True, 'help_text': 'Souhlas se zpracováním osobních údajů'},
         }
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            first_name=validated_data.get('first_name'),
-            last_name=validated_data.get('last_name'),
-            phone_number=validated_data.get('phone_number'),
-            role='seller',  # automaticky nastavíme roli seller
-            city=validated_data.get('city'),
-            street=validated_data.get('street'),
-            PSC=validated_data.get('PSC'),
-            bank_account=validated_data.get('bank_account'),
-            RC=validated_data.get('RC'),
-            ICO=validated_data.get('ICO'),
-            GDPR=validated_data.get('GDPR'),
-            account_type=validated_data.get('account_type')
-        )
-        return user
-
     def validate_password(self, value):
         if len(value) < 8:
             raise serializers.ValidationError("Heslo musí mít alespoň 8 znaků.")
@@ -151,8 +184,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             counter += 1
         return login
     
-    
-
     def create(self, validated_data):
         password = validated_data.pop("password")
         first_name = validated_data.get("first_name", "")

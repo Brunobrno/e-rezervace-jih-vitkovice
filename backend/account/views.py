@@ -157,7 +157,7 @@ class UserView(viewsets.ModelViewSet):
     filterset_class = UserFilter
 
     # Require authentication and role permission
-    permission_classes = [OnlyRolesAllowed("cityClerk", "admin")]
+    # permission_classes = [OnlyRolesAllowed("cityClerk", "admin")]
 
     class Meta:
         model = CustomUser
@@ -179,6 +179,39 @@ class UserView(viewsets.ModelViewSet):
             "GDPR": {"help_text": "Souhlas se zpracováním osobních údajů."},
             "is_active": {"help_text": "Stav aktivace uživatele.", "read_only": True},
         }
+
+        def get_permissions(self):
+            if self.action in ['list', 'create']:  # GET / POST /api/account/users/
+                return [OnlyRolesAllowed("cityClerk", "admin")()]
+            
+            elif self.action in ['update', 'partial_update', 'destroy']:  # PUT / PATCH / DELETE /api/account/users/{id}
+                if self.request.user.role in ['cityClerk', 'admin']:
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]
+                elif self.kwargs.get('pk') and str(self.request.user.id) == self.kwargs['pk']:
+                    return [IsAuthenticated()]
+                else:
+                    # fallback - deny access
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]  # or custom DenyAll()
+
+            elif self.action == 'retrieve':  # GET /api/account/users/{id}
+                if self.request.user.role in ['cityClerk', 'admin']:
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]
+                elif self.kwargs.get('pk') and str(self.request.user.id) == self.kwargs['pk']:
+                    return [IsAuthenticated()]
+                else:
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]  # or a custom read-only self-access permission
+
+            return super().get_permissions()
+        
+        # def create(self, request, *args, **kwargs):
+        #     serializer = self.get_serializer(data=request.data)
+        #     serializer.is_valid(raise_exception=True)
+        #     user = serializer.save()
+
+        #     send_email_verification(user) # posílaní emailu pro potvrzení registrace
+                
+        #     headers = self.get_success_headers(serializer.data)
+        #     return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
    
 
 # Get current user data
