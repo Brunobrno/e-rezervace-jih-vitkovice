@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios_instance from './auth';
 
 const API_BASE_URL = '/api/booking/events';
 
@@ -17,7 +17,7 @@ const API_BASE_URL = '/api/booking/events';
  * @returns {Promise<Array<Event>>}
  */
 export const getEvents = (params = {}) => {
-  return axios.get(API_BASE_URL + '/', { params });
+  return axios_instance.get(API_BASE_URL + '/', { params });
 };
 
 /**
@@ -27,7 +27,7 @@ export const getEvents = (params = {}) => {
  * @returns {Promise<Event>}
  */
 export const getEventById = (id) => {
-  return axios.get(`${API_BASE_URL}/${id}/`);
+  return axios_instance.get(`${API_BASE_URL}/${id}/`);
 };
 
 /**
@@ -43,7 +43,7 @@ export const getEventById = (id) => {
  * @returns {Promise<Event>}
  */
 export const updateEvent = (id, data) => {
-  return axios.put(`${API_BASE_URL}/${id}/`, data);
+  return axios_instance.put(`${API_BASE_URL}/${id}/`, data);
 };
 
 /**
@@ -59,7 +59,7 @@ export const updateEvent = (id, data) => {
  * @returns {Promise<Event>}
  */
 export const partialUpdateEvent = (id, data) => {
-  return axios.patch(`${API_BASE_URL}/${id}/`, data);
+  return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
 };
 
 /**
@@ -69,5 +69,5 @@ export const partialUpdateEvent = (id, data) => {
  * @returns {Promise<void>} - HTTP 204 No Content při úspěchu
  */
 export const deleteEvent = (id) => {
-  return axios.delete(`${API_BASE_URL}/${id}/`);
+  return axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };

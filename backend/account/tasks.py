@@ -2,6 +2,12 @@ from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.response import Response
+from django.utils import timezone
+from datetime import timedelta, datetime
+from django.apps import apps
+
+from trznice.models import SoftDeleteModel
+from booking.models import Reservation
 
 @shared_task
 def hard_delete_soft_deleted_records():
@@ -13,8 +19,9 @@ def hard_delete_soft_deleted_records():
 
     # Pro všechny modely, které dědí z SoftDeleteModel, smaž staré smazané záznamy
     for model in apps.get_models():
-        if issubclass(model, apps.get_model('myapp', 'SoftDeleteModel')) or \
-           'SoftDeleteModel' in [base.__name__ for base in model.__bases__]:
+        if issubclass(model, SoftDeleteModel):
+            # dělej věci
+            
             # Filtrování soft-deleted a starých
             deleted_qs = model.all_objects.filter(is_deleted=True, deleted_at__lt=one_year_ago)
             count = deleted_qs.count()

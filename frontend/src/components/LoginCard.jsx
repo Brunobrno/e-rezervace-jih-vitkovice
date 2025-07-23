@@ -33,10 +33,10 @@ function LoginCard() {
         console.log("Přihlášení bylo úspěšné");
       }
     } catch (error) {
+      console.error("Chyba při přihlášení:", error);
       const err = error.response.data.non_field_errors || "Neočekávaná chyba při přihlášení.";
       
       setErrorMessage(err);
-      console.error("Chyba při přihlášení:", error);
     }
   };
 

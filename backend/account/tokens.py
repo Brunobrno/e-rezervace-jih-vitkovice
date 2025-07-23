@@ -13,3 +13,23 @@ account_activation_token = AccountActivationTokenGenerator()
 # Create an instance of the base PasswordResetTokenGenerator to be used
 # for password reset tokens.
 password_reset_token = PasswordResetTokenGenerator()
+
+
+
+
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+#NEMĚNIT CUSTOM SBÍRANÍ COOKIE TOKENU
+class CookieJWTAuthentication(JWTAuthentication):
+    def authenticate(self, request):
+        print("Cookies:", request.COOKIES)
+
+        raw_token = request.COOKIES.get('access_token')
+        print("Token z cookie:", raw_token)
+
+        if not raw_token:
+            return None
+        
+        validated_token = self.get_validated_token(raw_token)
+        return self.get_user(validated_token), validated_token
+

@@ -15,6 +15,10 @@ import EventsTree from './components/EventsTree';
 import EmailVerificationPage from './pages/register/EmailVerification';
 import Home from './pages/Home';
 import ResetPasswordPage from './pages/PasswordReset';
+import UserSettings from './pages/Settings';
+
+import RequireRole from './components/security/RequireRole';
+import RequireAuthLayout from './components/security/RequireAuthLayout';
 
 
 function App() {
@@ -45,6 +49,22 @@ function App() {
         <Route path="/seller/reservation" element={<SelectReservation />}/>
         <Route path="/components" element={<EventsTree />}/>
         <Route path="/test" element={<Test />}/> 
+
+        {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
+        <Route element={<RequireAuthLayout />}>
+
+          <Route path="/settings" element={<UserSettings />} />
+
+          {/* Admin - tady si můžeš specifikovat roli která má oprávnění */}
+          <Route element={<RequireRole roles={["admin"]} />}>
+
+            <Route path="/test" element={<Test />}/> 
+
+          </Route>
+        </Route>
+
+
+
       </Routes>
 
     <footer className="mt-auto">

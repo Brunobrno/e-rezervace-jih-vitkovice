@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios_instance from './auth';
 
 const API_BASE_URL = '/api/booking/reservations';
 
@@ -15,7 +15,7 @@ const API_BASE_URL = '/api/booking/reservations';
  * @returns {Promise<Array<Reservation>>}
  */
 export const getReservations = (params = {}) => {
-  return axios.get(`${API_BASE_URL}/`, { params });
+  return axios_instance.get(`${API_BASE_URL}/`, { params });
 };
 
 /**
@@ -25,7 +25,7 @@ export const getReservations = (params = {}) => {
  * @returns {Promise<Reservation>}
  */
 export const getReservationById = (id) => {
-  return axios.get(`${API_BASE_URL}/${id}/`);
+  return axios_instance.get(`${API_BASE_URL}/${id}/`);
 };
 
 /**
@@ -41,7 +41,7 @@ export const getReservationById = (id) => {
  * @returns {Promise<Reservation>}
  */
 export const createReservation = (data) => {
-  return axios.post(`${API_BASE_URL}/`, data);
+  return axios_instance.post(`${API_BASE_URL}/`, data);
 };
 
 /**
@@ -52,7 +52,7 @@ export const createReservation = (data) => {
  * @returns {Promise<Reservation>}
  */
 export const updateReservation = (id, data) => {
-  return axios.put(`${API_BASE_URL}/${id}/`, data);
+  return axios_instance.put(`${API_BASE_URL}/${id}/`, data);
 };
 
 /**
@@ -67,7 +67,7 @@ export const updateReservation = (id, data) => {
  * @returns {Promise<Reservation>}
  */
 export const partialUpdateReservation = (id, data) => {
-  return axios.patch(`${API_BASE_URL}/${id}/`, data);
+  return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
 };
 
 /**
@@ -77,5 +77,5 @@ export const partialUpdateReservation = (id, data) => {
  * @returns {Promise<void>} HTTP 204 při úspěchu
  */
 export const deleteReservation = (id) => {
-  return axios.delete(`${API_BASE_URL}/${id}/`);
+  return axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };

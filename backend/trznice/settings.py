@@ -26,7 +26,8 @@ load_dotenv()  # Pouze načte proměnné lokálně, pokud nejsou dostupné
 # a použiješ takto: settings.FRONTEND_URL
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
+FRONTEND_URL_DEV = os.getenv("FRONTEND_URL_DEV", "http://localhost:5173")
+print(f"FRONTEND_URL: {FRONTEND_URL}\nFRONTEND_URL_DEV: {FRONTEND_URL_DEV}\n")
 
 #-------------------------BASE ⚙️------------------------
 
@@ -141,23 +142,31 @@ AUTHENTICATION_BACKENDS = [
 
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ['https://domena.cz', "https://www.domena.cz", FRONTEND_URL]
+CSRF_TRUSTED_ORIGINS = [
+    'https://domena.cz',
+    "https://www.domena.cz",
+    "http://localhost:3000",
+    "http://localhost:5173"
+]
 
-
-if DEBUG is False:
-    CORS_ALLOW_ALL_ORIGINS = False
-
+if DEBUG:
     CORS_ALLOWED_ORIGINS = [
-        FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:3000",
     ]
 else:
-
-    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1"])
-    CSRF_TRUSTED_ORIGINS.extend(["http://localhost:8000"])
-
-    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = [
+        "https://www.domena.cz",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False  # Tohle musí být false, když používáš credentials
+
+print("CORS_ALLOWED_ORIGINS =", CORS_ALLOWED_ORIGINS)
+print("CSRF_TRUSTED_ORIGINS =", CSRF_TRUSTED_ORIGINS)
+print("ALLOWED_HOSTS =", ALLOWED_HOSTS)
+
+
 
 #--------------------------------END CORS + HOSTs 🌐🔐---------------------------------
 
@@ -234,8 +243,7 @@ else:
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        'account.tokens.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
