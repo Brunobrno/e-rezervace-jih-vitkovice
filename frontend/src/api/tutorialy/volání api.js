@@ -18,10 +18,6 @@ console.log(data);
 
 
 
-
-
-
-
 /*---------------PRO CHRÁNĚNÉ ENDPOINTY----------------*/ 
 
 import { apiRequest } from "../auth"; // důležitý helper pro chráněné API

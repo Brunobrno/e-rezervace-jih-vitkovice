@@ -84,9 +84,24 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "INFO",
+        "level": "DEBUG" if DEBUG else "INFO",
+
     },
 }
+
+"""
+import logging
+
+# Vytvoř si logger podle názvu souboru (modulu)
+logger = logging.getLogger(__name__)
+
+
+logger.debug("Ladicí zpráva – vidíš jen když je DEBUG = True")
+logger.info("Informace – např. že uživatel klikl na tlačítko")
+logger.warning("Varování – něco nečekaného, ale ne kritického")
+logger.error("Chyba – něco se pokazilo, ale aplikace jede dál")
+logger.critical("Kritická chyba – selhání systému, třeba pád služby")
+"""
 
 #---------------------------------- END LOGS ---------------------------------------
 
