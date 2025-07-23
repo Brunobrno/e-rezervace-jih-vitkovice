@@ -1,4 +1,4 @@
-import { Nav } from "react-bootstrap";
+import { Nav, Modal } from "react-bootstrap";
 import logo from "/img/logo.png";
 import dataFile from "../assets/json/data.json";
 import sortBy from "lodash/sortBy";
@@ -11,26 +11,37 @@ import {
   TextInput,
   Anchor,
   Box,
+  Group,
 } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
-import { IconSearch, IconX } from "@tabler/icons-react";
+import {
+  IconSearch,
+  IconX,
+  IconEye,
+  IconEdit,
+  IconTrash,
+  IconPlus,
+} from "@tabler/icons-react";
 import { DataTable } from "mantine-datatable";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
 function EventsTree() {
-  // Stav pro řazení, dotaz a vybraná města
-  // Používáme useState pro uchování stavu komponenty
   const [sortStatus, setSortStatus] = useState({
-    columnAccessor: "name",
+    columnAccessor: "id",
     direction: "asc",
   });
-
 
   const [query, setQuery] = useState("");
   const [selectedCities, setSelectedCities] = useState([]);
   const [debouncedQuery] = useDebouncedValue(query, 200);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+  const [modalTitle, setModalTitle] = useState("");
+  const [events, setEvents] = useState([]);
+  const [squares, setSquares] = useState([]);
+  const [records, setRecords] = useState([]);
 
   // Používáme useMemo pro optimalizaci výkonu a zabránění zbytečným přepočtům
   // Vytvoříme unikátní seznam měst z datového souboru
@@ -39,34 +50,144 @@ function EventsTree() {
     return [...uniqueCities];
   }, []);
 
-  const [records, setRecords] = useState([]);
+  useEffect(() => {
+    setSquares(dataFile);
+    const allEvents = dataFile.flatMap(
+      (square) =>
+        square.events?.map((event) => ({
+          ...event,
+          squareId: square.id,
+          squareName: square.name,
+          city: square.city,
+        })) || []
+    );
+    setEvents(allEvents);
+  }, []);
 
   // Inicializujeme záznamy s daty z dataFile
   useEffect(() => {
-    let filtered = dataFile;
+    let filtered = squares;
 
-    // Filtrování záznamů podle dotazu a vybraných měst
     if (debouncedQuery.trim() !== "") {
       filtered = filtered.filter((r) =>
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase())
       );
     }
 
-    // Filtrování záznamů podle vybraných měst
     if (selectedCities.length > 0) {
       filtered = filtered.filter((r) => selectedCities.includes(r.city));
     }
 
-    // Řazení záznamů podle aktuálního stavu řazení
-    // Používáme lodash sortBy pro řazení podle sloupce a směru
-    // Pokud je řazení sestupné, obrátíme pořadí
     const sorted = sortBy(filtered, sortStatus.columnAccessor);
     setRecords(sortStatus.direction === "desc" ? sorted.reverse() : sorted);
-  }, [sortStatus, debouncedQuery, selectedCities]);
+  }, [sortStatus, debouncedQuery, selectedCities, squares]);
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setModalContent(null);
+  };
+
+  const handleShowEvent = (event) => {
+    setModalTitle("Detaily události");
+    setModalContent(
+      <div>
+        <Text size="sm" fw={700}>
+          Název:
+        </Text>
+        <Text mb="sm">{event.name}</Text>
+
+        <Text size="sm" fw={700}>
+          Popis:
+        </Text>
+        <Text mb="sm">{event.description || "—"}</Text>
+
+        <Text size="sm" fw={700}>
+          Začátek:
+        </Text>
+        <Text mb="sm">{dayjs(event.start).format("DD.MM.YYYY HH:mm")}</Text>
+
+        <Text size="sm" fw={700}>
+          Konec:
+        </Text>
+        <Text mb="sm">{dayjs(event.end).format("DD.MM.YYYY HH:mm")}</Text>
+
+        <Text size="sm" fw={700}>
+          Cena za m²:
+        </Text>
+        <Text mb="sm">{event.price_per_m2} Kč</Text>
+      </div>
+    );
+    setShowModal(true);
+  };
+
+  const handleEditEvent = (event) => {
+    setModalTitle("Upravit událost");
+    setModalContent(
+      <Stack>
+        <TextInput label="Název" defaultValue={event.name} />
+        <TextInput label="Popis" defaultValue={event.description} />
+        <DatePicker label="Začátek" defaultValue={new Date(event.start)} />
+        <DatePicker label="Konec" defaultValue={new Date(event.end)} />
+        <TextInput
+          label="Cena za m²"
+          type="number"
+          defaultValue={event.price_per_m2}
+        />
+        <Button mt="md" onClick={handleCloseModal}>
+          Uložit změny
+        </Button>
+      </Stack>
+    );
+    setShowModal(true);
+  };
+
+  const handleDeleteEvent = (event) => {
+    setModalTitle("Smazat událost");
+    setModalContent(
+      <Stack>
+        <Text>Opravdu chcete smazat událost "{event.name}"?</Text>
+        <Group mt="md">
+          <Button variant="outline" onClick={handleCloseModal}>
+            Zrušit
+          </Button>
+          <Button
+            color="red"
+            onClick={() => {
+              // Delete logic here
+              handleCloseModal();
+            }}
+          >
+            Smazat
+          </Button>
+        </Group>
+      </Stack>
+    );
+    setShowModal(true);
+  };
+
+  const handleAddEvent = () => {
+    setModalTitle("Přidat novou událost");
+    setModalContent(
+      <Stack>
+        <TextInput label="Název" placeholder="Název události" />
+        <TextInput label="Popis" placeholder="Popis události" />
+        <DatePicker label="Začátek" />
+        <DatePicker label="Konec" />
+        <TextInput label="Cena za m²" type="number" placeholder="Cena" />
+        <MultiSelect
+          label="Přiřadit k tržišti"
+          data={squares.map((s) => ({ value: s.id, label: s.name }))}
+        />
+        <Button mt="md" onClick={handleCloseModal}>
+          Vytvořit událost
+        </Button>
+      </Stack>
+    );
+    setShowModal(true);
+  };
   // Definujeme sloupce pro tabulku
   const squareColumns = [
-    { accessor: "id", title: "#", sortable: true },
+    { accessor: "id", title: "#", sortable: true},
     { accessor: "street", title: "Ulice", sortable: true },
     {
       accessor: "name",
@@ -112,40 +233,63 @@ function EventsTree() {
       ),
       filtering: selectedCities.length > 0,
     },
-
     {
       accessor: "image",
       title: "Obrázek",
-      render: (row) => (
-        <img
-          src={row.image}
-          alt={row.name}
-          style={{ width: "100px", height: "auto", borderRadius: "8px" }}
-        />
-      ),
+      render: (row) =>
+        row.image ? (
+          <img
+            src={row.image}
+            alt={row.name}
+            style={{ width: "100px", height: "auto", borderRadius: "8px" }}
+          />
+        ) : (
+          <Text c="dimmed" fs="italic">
+            Žádný obrázek
+          </Text>
+        ),
     },
     {
-      accessor: "event_name",
-      title: "Událost",
-      render: (row) =>
-        row.events?.length > 0 ? (
-          <>
-            {row.events.map((event, index) => (
-              <Anchor
-                key={event.id}
-                href={`/events/${event.id}`}
-                target="_blank"
-                underline="hover"
-              >
-                {event.name}
-                {index < row.events.length - 1 ? ", " : ""}
-              </Anchor>
-            ))}
-          </>
-        ) : (
-          "—"
-        ),
+      accessor: "events",
+      title: "Počet událostí",
+      width: "0%",
+      textAlign: "center",
+      render: (row) => row.events?.length || 0,
       sortable: true,
+    },
+    {
+      accessor: "actions",
+      title: "Akce",
+      width: "0%",
+
+      render: (square) => (
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="green"
+            onClick={() => handleShowEvent(square)}
+          >
+            <IconEye size={16} />
+          </ActionIcon>
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="blue"
+            onClick={() => handleEditEvent(square)}
+          >
+            <IconEdit size={16} />
+          </ActionIcon>
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="red"
+            onClick={() => handleDeleteEvent(square)}
+          >
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Group>
+      ),
     },
   ];
 
@@ -160,19 +304,28 @@ function EventsTree() {
   ];
 
   return (
-    <Box>
-      <DataTable
-        records={records}
-        columns={squareColumns}
-        withTableBorder
-        borderRadius="md"
-        shadow="sm"
-        highlightOnHover
-        verticalAlign="center"
-        sortStatus={sortStatus}
-        onSortStatusChange={setSortStatus}
-      />
-    </Box>
+    <>
+      <Box>
+        <DataTable
+          records={records}
+          columns={squareColumns}
+          withTableBorder
+          borderRadius="md"
+          shadow="sm"
+          highlightOnHover
+          verticalAlign="center"
+          sortStatus={sortStatus}
+          onSortStatusChange={setSortStatus}
+          idAccessor="id"
+        />
+      </Box>
+      <Modal show={showModal} onHide={handleCloseModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{modalTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{modalContent}</Modal.Body>
+      </Modal>
+    </>
 
     // Cena Int, Nazev String, Souřadnice,
 
