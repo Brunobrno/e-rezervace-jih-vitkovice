@@ -165,22 +165,23 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         if is_new:
             # self.generate_login() neni treba
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
-                self.is_staff = True
+                # self.is_staff = True
                 self.is_active = True
                 if self.role == 'admin':
+                    self.is_staff = True
                     self.is_superuser = True
             else:
                 self.is_staff = False
         
-        super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
+
+        # NEMAZAT prozatim to nechame, kdybychom to potrebovali
 
         # Now assign permissions after user exists
         # if is_new and self.role:
         if self.role:
             from account.utils import assign_permissions_based_on_role
             print(f"Assigning permissions to: {self.email} with role {self.role}")
-            assign_permissions_based_on_role(self)
-        
         # super().save(*args, **kwargs)  # save once, after prep
     
 
