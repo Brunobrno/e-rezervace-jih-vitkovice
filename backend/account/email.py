@@ -57,7 +57,7 @@ def send_email_clerk_add_var_symbol(user):
     message = f"Byl vytvořen nový uživatel:\n {user.firstname} {user.secondname} {user.email} .\n Doplňte variabilní symbol {url} ."
 
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
 
     
     send_email_with_context(
@@ -74,7 +74,7 @@ def send_email_clerk_accepted(user):
 
 
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
     
     send_email_with_context(
         recipients=user.email,
@@ -102,7 +102,7 @@ def send_email_with_context(recipients, subject, message):
         return True
     except Exception as e:
         if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-            print(f"email se neodeslal... DEBUG: {e}")
+            logger.error(f"email se neodeslal... DEBUG: {e}")
             pass
         else:
             return Response({"error": f"E-mail se neodeslal, důvod: {e}"}, status=500)

@@ -5,6 +5,9 @@ from product.models import Product, EventProduct
 from servicedesk.models import ServiceTicket
 from django.contrib.auth import get_user_model
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 def assign_permissions_based_on_role(user):
     role_perms = {
@@ -30,7 +33,7 @@ def assign_permissions_based_on_role(user):
     }
 
     if not user.role:
-        print("User has no role set")
+        logger.info("User has no role set")
         return
 
     if user.role == "admin":
@@ -42,11 +45,9 @@ def assign_permissions_based_on_role(user):
     # Reset in case role changed away from admin
     user.is_superuser = False
     
-    # print(f"Assigning role-based permissions for: {user.email}, role: {user.role}")
     
     perms_for_role = role_perms.get(user.role, {})
 
-    # print(perms_for_role)
 
     for action, models in perms_for_role.items():
         for model in models:

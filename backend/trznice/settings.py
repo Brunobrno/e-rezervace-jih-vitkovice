@@ -85,7 +85,6 @@ LOGGING = {
     "root": {
         "handlers": ["console"],
         "level": "DEBUG" if DEBUG else "INFO",
-
     },
 }
 
@@ -376,6 +375,27 @@ else:
     }
 
 #--------------------------------END CACHE + CHANNELS 📡🗄️---------------------------------
+
+#-------------------------------------CELERY 📅------------------------------------
+
+if not DEBUG:
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'Europe/Prague'
+
+    from celery.schedules import crontab
+    
+    CELERY_BEAT_SCHEDULE = {
+        'delete-old-records-daily': {
+            'task': 'myapp.tasks.delete_old_records',
+            'schedule': crontab(hour=0, minute=0),
+        },
+    }
+else:
+    # Nebo nastav dummy broker, aby se úlohy neodesílaly
+    CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
+
 
 
 

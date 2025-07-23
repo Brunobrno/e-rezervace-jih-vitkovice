@@ -41,8 +41,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 class CookieTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
-    print("Používám vlastní view – CookieTokenObtainPairView")
-
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)

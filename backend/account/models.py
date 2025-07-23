@@ -12,6 +12,10 @@ from trznice.models import SoftDeleteModel
 
 from django.contrib.auth.models import UserManager
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class CustomUserActiveManager(UserManager):
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
@@ -179,7 +183,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         # if is_new and self.role:
         if self.role:
             from account.utils import assign_permissions_based_on_role
-            print(f"Assigning permissions to: {self.email} with role {self.role}")
+            logger.debug(f"Assigning permissions to: {self.email} with role {self.role}")
             assign_permissions_based_on_role(self)
         
         # super().save(*args, **kwargs)  # save once, after prep
