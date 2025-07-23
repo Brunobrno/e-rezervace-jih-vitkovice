@@ -4,7 +4,7 @@ from .models import Product, EventProduct
 
 
 class ProductAdmin(admin.ModelAdmin):
-    base_list_display = ("name", "code")
+    base_list_display = ("name", "code", "id")
     admin_extra_display = ("is_deleted",)
     list_filter = ("is_deleted",)
     search_fields = ("name", "code")
@@ -27,7 +27,7 @@ custom_admin_site.register(Product, ProductAdmin)
 
 
 class EventProductAdmin(admin.ModelAdmin):
-    list_display = ("event", "product", "start_selling_date", "end_selling_date", "is_deleted")
+    list_display = ("event", "product", "start_selling_date", "end_selling_date", "id", "is_deleted")
     list_filter = ("event", "product", "start_selling_date", "end_selling_date", "is_deleted")
     search_fields = ("product__name", "event__name")
     ordering = ("-start_selling_date",)
