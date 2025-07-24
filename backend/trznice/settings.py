@@ -145,8 +145,8 @@ ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
     'https://domena.cz',
     "https://www.domena.cz",
-    "http://localhost:3000",
-    "http://localhost:5173"
+    "http://localhost:3000", #react docker
+    "http://localhost:5173"  #react dev
 ]
 
 if DEBUG:

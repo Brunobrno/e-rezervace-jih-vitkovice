@@ -81,3 +81,5 @@ celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčis
 #yt-dlp
 
 weasyprint #tvoření PDFek z html dokumentu + css styly
+
+## -- MISCELLANEOUS --
