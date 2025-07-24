@@ -12,10 +12,16 @@ from trznice.models import SoftDeleteModel
 
 from django.contrib.auth.models import UserManager
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Custom User Manager to handle soft deletion
 class CustomUserActiveManager(UserManager):
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
 
+# Custom User Manager to handle all users, including soft deleted
 class CustomUserAllManager(UserManager):
     def get_queryset(self):
         return super().get_queryset()
@@ -55,6 +61,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
+        unique=True,
         max_length=16,
         blank=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]
@@ -164,20 +171,25 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         if is_new:
             # self.generate_login() neni treba
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
-                self.is_staff = True
+                # self.is_staff = True
                 self.is_active = True
                 if self.role == 'admin':
+                    self.is_staff = True
                     self.is_superuser = True
+                if self.is_superuser:
+                    self.role = 'admin'
             else:
                 self.is_staff = False
         
-        super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
+
+        # NEMAZAT prozatim to nechame, kdybychom to potrebovali
 
         # Now assign permissions after user exists
         # if is_new and self.role:
         if self.role:
             from account.utils import assign_permissions_based_on_role
-            print(f"Assigning permissions to: {self.email} with role {self.role}")
+            logger.debug(f"Assigning permissions to: {self.email} with role {self.role}")
             assign_permissions_based_on_role(self)
         
         # super().save(*args, **kwargs)  # save once, after prep

@@ -11,20 +11,22 @@ from django.db.models import Q
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
     add_form = CustomUserCreationForm
-    
+
     list_display = (
-        "id", "username", "email", "role","create_time", "account_type", "is_deleted", "is_active", "is_staff", "email_verified", 
+        "id", "username", "first_name", "last_name", "email", "role",
+        "create_time", "account_type", "is_active", "is_staff", "email_verified", "is_deleted"
     )
+
     list_filter = ("role", "account_type", "is_deleted", "is_active", "is_staff", "email_verified")
     search_fields = ("username", "email", "phone_number")
     ordering = ("-create_time",)
 
-    readonly_fields = ("create_time",)  # zde
+    readonly_fields = ("create_time", "id")  # zde
 
     fieldsets = (
-        (None, {"fields": ("username", "email", "password")}),
+        (None, {"fields": ("username", "first_name", "last_name", "email", "password")}),
         ("Osobní údaje", {"fields": ("role", "account_type", "phone_number", "var_symbol", "bank_account", "ICO", "city", "street", "PSC")}),
-        ("Práva a stav", {"fields": ("is_active", "is_deleted", "is_staff", "is_superuser", "email_verified", "groups", "user_permissions")}),
+        ("Práva a stav", {"fields": ("is_active", "is_staff", "is_superuser", "email_verified", "is_deleted", "deleted_at", "groups", "user_permissions")}),
         ("Důležité časy", {"fields": ("last_login",)}),  # create_time vyjmuto odsud
     )
 
@@ -55,7 +57,7 @@ class CustomUserAdmin(UserAdmin):
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == "role" and request.user.role == "cityClerk":
             # Restrict choices to only blank and "seller"
-            kwargs["choices"] = [
+            kwargs["choices"] = [   
                 ("", "---------"),
                 ("seller", "Prodejce"),
             ]

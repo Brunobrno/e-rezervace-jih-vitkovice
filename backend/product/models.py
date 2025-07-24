@@ -18,9 +18,6 @@ class Product(SoftDeleteModel):
 
         return super().delete(*args, **kwargs)
 
-    
-from django.core.exceptions import ValidationError
-from django.utils.timezone import now
 
 class EventProduct(SoftDeleteModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="event_products")

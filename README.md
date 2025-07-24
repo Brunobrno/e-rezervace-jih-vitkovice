@@ -69,9 +69,13 @@ npm install --progress=false --cache
 npm install vite --save-de
 npm install -g npm@11.4.2
 npm i mantine-datatable clsx
+npm install @mantine/dates
+npm install dayjs
+npm install lodash
+npm install @tabler/icons-react
 
 npm i react-router-dom
-
+npm audit fix
 npm run dev
 ```
 ```ipconfig /flushdns```

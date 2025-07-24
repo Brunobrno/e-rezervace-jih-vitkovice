@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Product, EventProduct
+from booking.serializers import EventSerializer
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,6 +14,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class EventProductSerializer(serializers.ModelSerializer):
+    # product = ProductSerializer()
+    # event = EventSerializer()
     class Meta:
         model = EventProduct
         fields = [

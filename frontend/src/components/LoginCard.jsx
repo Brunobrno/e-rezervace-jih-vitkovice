@@ -21,6 +21,7 @@ function LoginCard() {
   // Stavy pro email a heslo
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Zpracování formuláře
   const handleSubmit = async (e) => {
@@ -33,6 +34,9 @@ function LoginCard() {
       }
     } catch (error) {
       console.error("Chyba při přihlášení:", error);
+      const err = error.response.data.non_field_errors || "Neočekávaná chyba při přihlášení.";
+      
+      setErrorMessage(err);
     }
   };
 
@@ -109,6 +113,13 @@ function LoginCard() {
             <Button type="submit" className="float-right login_btn">
               Přihlášení
             </Button>
+
+            {/* Zobrazení chyby */}
+            {errorMessage && (
+              <div className="mt-2 text-danger">
+                {errorMessage}
+              </div>
+            )}
           </Form.Group>
         </Form>
       </Card.Body>

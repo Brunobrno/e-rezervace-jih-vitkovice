@@ -11,7 +11,7 @@
     "grid_rows": 60,
     "grid_cols": 40,
     "cellsize": 100,
-    "image": "market_hlavni.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 201,
@@ -20,7 +20,7 @@
         "start": "2025-07-22T09:00:00.000Z",
         "end": "2025-07-22T19:00:00.000Z",
         "price_per_m2": "380",
-        "image": "event_letni.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 3001,
@@ -50,7 +50,7 @@
     "grid_rows": 40,
     "grid_cols": 25,
     "cellsize": 100,
-    "image": "farm_dvur.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 202,
@@ -59,7 +59,7 @@
         "start": "2025-09-15T08:00:00.000Z",
         "end": "2025-09-15T16:00:00.000Z",
         "price_per_m2": "320",
-        "image": "event_podzim.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 3002,
@@ -86,6 +86,29 @@
             "price_per_m2": "320"
           }
         ]
+      },
+      {
+        "id": 203,
+        "name": "Letní jarmark",
+        "description": "Událost plná rukodělných výrobků a tradičních pokrmů.",
+        "start": "2025-07-22T09:00:00.000Z",
+        "end": "2025-07-22T19:00:00.000Z",
+        "price_per_m2": "380",
+        "image": "/img/namest-1.png",
+        "market_slots": [
+          {
+            "id": 3001,
+            "event": 201,
+            "status": "empty",
+            "base_size": 6,
+            "available_extension": 3,
+            "x": 200,
+            "y": 300,
+            "width": 300,
+            "height": 300,
+            "price_per_m2": "380"
+          }
+        ]
       }
     ]
   },
@@ -101,7 +124,7 @@
     "grid_rows": 50,
     "grid_cols": 30,
     "cellsize": 100,
-    "image": "jihotrznice.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 203,
@@ -110,7 +133,7 @@
         "start": "2025-08-05T10:00:00.000Z",
         "end": "2025-08-05T22:00:00.000Z",
         "price_per_m2": "550",
-        "image": "food_festival.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 3004,
@@ -129,7 +152,7 @@
     ]
   },
   {
-    "id": 1,
+    "id": 4,
     "name": "Tržiště Jih",
     "description": "Trh v jižní části města zaměřený na lokální produkty.",
     "street": "Jižní 5",
@@ -140,7 +163,7 @@
     "grid_rows": 50,
     "grid_cols": 30,
     "cellsize": 100,
-    "image": "trh_jih.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 100,
@@ -149,7 +172,7 @@
         "start": "2025-08-01T08:00:00.000Z",
         "end": "2025-08-01T16:00:00.000Z",
         "price_per_m2": "420",
-        "image": "leto.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 1001,
@@ -168,7 +191,7 @@
     ]
   },
   {
-    "id": 2,
+    "id": 5,
     "name": "Staroměstská tržnice",
     "description": "Historické tržiště s tradičními řemeslnými stánky.",
     "street": "Náměstí 1",
@@ -179,7 +202,7 @@
     "grid_rows": 60,
     "grid_cols": 35,
     "cellsize": 100,
-    "image": "staromestska.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 101,
@@ -188,7 +211,7 @@
         "start": "2025-09-10T10:00:00.000Z",
         "end": "2025-09-10T18:00:00.000Z",
         "price_per_m2": "500",
-        "image": "remesla.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 1002,
@@ -219,7 +242,7 @@
     ]
   },
   {
-    "id": 3,
+    "id": 6,
     "name": "Tržiště Sever",
     "description": "Nové moderní tržiště v severní části města.",
     "street": "Severní 99",
@@ -230,7 +253,7 @@
     "grid_rows": 40,
     "grid_cols": 28,
     "cellsize": 100,
-    "image": "trh_sever.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 102,
@@ -239,7 +262,7 @@
         "start": "2025-07-25T12:00:00.000Z",
         "end": "2025-07-25T22:00:00.000Z",
         "price_per_m2": "620",
-        "image": "foodfest.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 1004,
@@ -258,7 +281,7 @@
     ]
   },
   {
-    "id": 4,
+    "id": 7,
     "name": "Náměstí svobody",
     "description": "Centrální náměstí s možností konání kulturních akcí.",
     "street": "Svobody 1",
@@ -269,7 +292,7 @@
     "grid_rows": 55,
     "grid_cols": 33,
     "cellsize": 100,
-    "image": "namesti.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 103,
@@ -278,7 +301,7 @@
         "start": "2025-08-10T15:00:00.000Z",
         "end": "2025-08-10T23:00:00.000Z",
         "price_per_m2": "700",
-        "image": "slavnosti.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 1005,
@@ -297,7 +320,7 @@
     ]
   },
   {
-    "id": 5,
+    "id": 8,
     "name": "Městská tržnice",
     "description": "Tradiční městské tržiště s krytým i venkovním prostorem.",
     "street": "Masarykova 88",
@@ -308,7 +331,7 @@
     "grid_rows": 48,
     "grid_cols": 29,
     "cellsize": 100,
-    "image": "mestskatrznice.jpg",
+    "image": "/img/namest-1.png",
     "events": [
       {
         "id": 104,
@@ -317,7 +340,7 @@
         "start": "2025-08-28T10:00:00.000Z",
         "end": "2025-08-28T20:00:00.000Z",
         "price_per_m2": "560",
-        "image": "plzen.jpg",
+        "image": "/img/namest-1.png",
         "market_slots": [
           {
             "id": 1006,

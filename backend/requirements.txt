@@ -34,6 +34,8 @@ boto3
 
 
 # -- PROTOCOLS (asgi, websockets) --
+redis
+
 channels_redis
 
 channels #django channels
@@ -67,7 +69,7 @@ django-tinymce
 
 django-cors-headers #csfr
 
-#celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčistit cache atd.)
+celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčistit cache atd.)
 
 
 # -- EDITING photos, gifs, videos --
@@ -79,3 +81,5 @@ django-cors-headers #csfr
 #yt-dlp
 
 weasyprint #tvoření PDFek z html dokumentu + css styly
+
+## -- MISCELLANEOUS --

@@ -26,7 +26,8 @@ load_dotenv()  # Pouze načte proměnné lokálně, pokud nejsou dostupné
 # a použiješ takto: settings.FRONTEND_URL
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
+FRONTEND_URL_DEV = os.getenv("FRONTEND_URL_DEV", "http://localhost:5173")
+print(f"FRONTEND_URL: {FRONTEND_URL}\nFRONTEND_URL_DEV: {FRONTEND_URL_DEV}\n")
 
 #-------------------------BASE ⚙️------------------------
 
@@ -84,9 +85,23 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "INFO",
+        "level": "DEBUG" if DEBUG else "INFO",
     },
 }
+
+"""
+import logging
+
+# Vytvoř si logger podle názvu souboru (modulu)
+logger = logging.getLogger(__name__)
+
+
+logger.debug("Ladicí zpráva – vidíš jen když je DEBUG = True")
+logger.info("Informace – např. že uživatel klikl na tlačítko")
+logger.warning("Varování – něco nečekaného, ale ne kritického")
+logger.error("Chyba – něco se pokazilo, ale aplikace jede dál")
+logger.critical("Kritická chyba – selhání systému, třeba pád služby")
+"""
 
 #---------------------------------- END LOGS ---------------------------------------
 
@@ -127,23 +142,31 @@ AUTHENTICATION_BACKENDS = [
 
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ['https://domena.cz', "https://www.domena.cz", FRONTEND_URL]
+CSRF_TRUSTED_ORIGINS = [
+    'https://domena.cz',
+    "https://www.domena.cz",
+    "http://localhost:3000", #react docker
+    "http://localhost:5173"  #react dev
+]
 
-
-if DEBUG is False:
-    CORS_ALLOW_ALL_ORIGINS = False
-
+if DEBUG:
     CORS_ALLOWED_ORIGINS = [
-        FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:3000",
     ]
 else:
-
-    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1"])
-    CSRF_TRUSTED_ORIGINS.extend(["http://localhost:8000"])
-
-    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = [
+        "https://www.domena.cz",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False  # Tohle musí být false, když používáš credentials
+
+print("CORS_ALLOWED_ORIGINS =", CORS_ALLOWED_ORIGINS)
+print("CSRF_TRUSTED_ORIGINS =", CSRF_TRUSTED_ORIGINS)
+print("ALLOWED_HOSTS =", ALLOWED_HOSTS)
+
+
 
 #--------------------------------END CORS + HOSTs 🌐🔐---------------------------------
 
@@ -220,8 +243,7 @@ else:
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        'account.tokens.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -318,7 +340,7 @@ MIDDLEWARE = [
 
 
 
-#-------------------------------------CACHE + CHANNELS 📡🗄️------------------------------------
+#-------------------------------------CACHE + CHANNELS(ws) 📡🗄️------------------------------------
 
 # Caching settings for Redis (using Docker's internal network name for Redis)
 if DEBUG is False:
@@ -360,8 +382,33 @@ else:
         }
     }
 
-#--------------------------------END CACHE + CHANNELS 📡🗄️---------------------------------
+#--------------------------------END CACHE + CHANNELS(ws) 📡🗄️---------------------------------
 
+#-------------------------------------CELERY 📅------------------------------------
+
+if not DEBUG:
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'Europe/Prague'
+
+    from celery.schedules import crontab
+
+    CELERY_BEAT_SCHEDULE = {
+        'hard_delete_soft_deleted_monthly': {
+            'task': 'account.tasks.hard_delete_soft_deleted_records',
+            'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
+        },
+        'delete_old_reservations_monthly': {
+            'task': 'account.tasks.delete_old_reservations',
+            'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
+        },
+    }
+else:
+    # Nebo nastav dummy broker, aby se úlohy neodesílaly
+    CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
+
+#-------------------------------------END CELERY 📅------------------------------------
 
 
 #-------------------------------------DATABASE 💾------------------------------------
@@ -798,3 +845,8 @@ SPECTACULAR_DEFAULTS: Dict[str, Any] = {
     'OAUTH2_REFRESH_URL': None,
     'OAUTH2_SCOPES': None,
 }
+
+# Celery - Pavel
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"

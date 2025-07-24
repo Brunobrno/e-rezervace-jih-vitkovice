@@ -25,6 +25,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "username",
+            "first_name",
+            "last_name",
             "email",
             "role",
             "account_type",
@@ -41,7 +43,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "GDPR",
             "is_active",
         ]
-        read_only_fields = ["id", "create_time"]
+        read_only_fields = ["id", "create_time", "GDPR", "username", "account_type"]
+ 
 
 
 # Token obtaining Default Serializer
@@ -99,25 +102,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'GDPR': {'required': True, 'help_text': 'Souhlas se zpracováním osobních údajů'},
         }
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            first_name=validated_data.get('first_name'),
-            last_name=validated_data.get('last_name'),
-            phone_number=validated_data.get('phone_number'),
-            role='seller',  # automaticky nastavíme roli seller
-            city=validated_data.get('city'),
-            street=validated_data.get('street'),
-            PSC=validated_data.get('PSC'),
-            bank_account=validated_data.get('bank_account'),
-            RC=validated_data.get('RC'),
-            ICO=validated_data.get('ICO'),
-            GDPR=validated_data.get('GDPR'),
-            account_type=validated_data.get('account_type')
-        )
-        return user
-
     def validate_password(self, value):
         if len(value) < 8:
             raise serializers.ValidationError("Heslo musí mít alespoň 8 znaků.")
@@ -151,8 +135,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             counter += 1
         return login
     
-    
-
     def create(self, validated_data):
         password = validated_data.pop("password")
         first_name = validated_data.get("first_name", "")
