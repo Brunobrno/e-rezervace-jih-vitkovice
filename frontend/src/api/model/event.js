@@ -16,10 +16,10 @@ const API_BASE_URL = '/booking/events';
  * 
  * @returns {Promise<Array<Event>>}
  */
-const getEvents = (params = {}) => {
-  return axios_instance.get(API_BASE_URL + '/', { params });
+const getEvents = async (params = {}) => {
+  const response = await axios_instance.get(API_BASE_URL + '/', { params });
+  return response.data;
 };
-
 
 /**
  * GET detail konkrétní události.
@@ -27,24 +27,9 @@ const getEvents = (params = {}) => {
  * @param {number} id - ID události
  * @returns {Promise<Event>}
  */
-export const getEventById = (id) => {
-  return axios_instance.get(`${API_BASE_URL}/${id}/`);
-};
-
-/**
- * PUT - aktualizace celé události.
- * 
- * @param {number} id - ID události
- * @param {Object} data - Kompletní data události (nahrazuje všechna existující pole)
- *   - name: {string}
- *   - description: {string}
- *   - start: {string} ISO datetime
- *   - end: {string} ISO datetime
- *   - square: {number} ID existujícího náměstí
- * @returns {Promise<Event>}
- */
- const updateEvent = (id, data) => {
-  return axios_instance.put(`${API_BASE_URL}/${id}/`, data);
+const getEventById = async (id) => {
+  const response = await axios_instance.get(`${API_BASE_URL}/${id}/`);
+  return response.data;
 };
 
 /**
@@ -59,8 +44,9 @@ export const getEventById = (id) => {
  *   - square?: {number}
  * @returns {Promise<Event>}
  */
- const partialUpdateEvent = (id, data) => {
-  return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
+const updateEvent = async (id, data) => {
+  const response = await axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
+  return response.data;
 };
 
 /**
@@ -69,14 +55,13 @@ export const getEventById = (id) => {
  * @param {number} id - ID události
  * @returns {Promise<void>} - HTTP 204 No Content při úspěchu
  */
- const deleteEvent = (id) => {
-  return axios_instance.delete(`${API_BASE_URL}/${id}/`);
+const deleteEvent = async (id) => {
+  await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
 export default {
-  deleteEvent,
   getEvents,
   getEventById,
   updateEvent,
-  partialUpdateEvent
+  deleteEvent,
 };

@@ -13,7 +13,7 @@ const SQUARE_API_URL = '/booking/squares/';
  *   - ordering: řazení podle pole (např. `name`, `-city`, ...)
  * @returns {Promise<Array>} - Pole objektů `Square`
  */
-const getAllSquares = async (params = {}) => {
+export const getSquares = async (params = {}) => {
   const response = await axios_instance.get(SQUARE_API_URL, { params });
   return response.data;
 };
@@ -23,8 +23,8 @@ const getAllSquares = async (params = {}) => {
  * @param {number} id - ID náměstí
  * @returns {Promise<Object>} - Objekt `Square`
  */
-const getSquareById = async (id) => {
-  const response = await axios_instance.get(`${SQUARE_API_URL}${id}/`, { params, withCredentials: true, });
+export const getSquareById = async (id) => {
+  const response = await axios_instance.get(`${SQUARE_API_URL}${id}/`, { params });
   return response.data;
 };
 
@@ -34,8 +34,8 @@ const getSquareById = async (id) => {
  * @param {Object} data - Kompletní objekt náměstí ve formátu dle API (např. `name`, `city`, `width`, `height`, `description`)
  * @returns {Promise<Object>} - Aktualizovaný objekt `Square`
  */
-const updateSquare = async (id, data) => {
-  const response = await axios_instance.put(`${SQUARE_API_URL}${id}/`, data);
+export const updateSquare = async (id, data) => {
+  const response = await axios_instance.patch(`${SQUARE_API_URL}${id}/`, data);
   return response.data;
 };
 
@@ -44,13 +44,13 @@ const updateSquare = async (id, data) => {
  * @param {number} id - ID náměstí
  * @returns {Promise<void>} - Úspěšný DELETE vrací 204 bez obsahu
  */
-const deleteSquare = async (id) => {
+export const deleteSquare = async (id) => {
   const response = await axios_instance.delete(`${SQUARE_API_URL}${id}/`);
   return response.data;
 };
 
-export {
-  getAllSquares,
+export default {
+  getSquares,
   getSquareById,
   updateSquare,
   deleteSquare

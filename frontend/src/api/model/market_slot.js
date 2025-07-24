@@ -45,23 +45,12 @@ const getMarketSlotById = async (id) => {
 };
 
 /**
- * Aktualizuje celé prodejní místo (PUT).
- * @param {number} id - ID prodejního místa k úpravě
- * @param {Object} data - Kompletní objekt prodejního místa ve formátu dle API
- * @returns {Promise<Object>} - Aktualizovaný objekt `MarketSlot`
- */
-const updateMarketSlot = async (id, data) => {
-  const response = await axios_instance.put(`${MARKET_SLOTS_API_URL}${id}/`, data);
-  return response.data;
-};
-
-/**
  * Částečně aktualizuje prodejní místo (PATCH).
  * @param {number} id - ID prodejního místa k úpravě
  * @param {Object} data - Částečný objekt s vlastnostmi k aktualizaci
  * @returns {Promise<Object>} - Aktualizovaný objekt `MarketSlot`
  */
-const patchMarketSlot = async (id, data) => {
+const updateMarketSlot = async (id, data) => {
   const response = await axios_instance.patch(`${MARKET_SLOTS_API_URL}${id}/`, data);
   return response.data;
 };

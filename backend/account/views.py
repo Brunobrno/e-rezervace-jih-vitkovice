@@ -177,7 +177,7 @@ class UserView(viewsets.ModelViewSet):
     filterset_class = UserFilter
 
     # Require authentication and role permission
-    # permission_classes = [OnlyRolesAllowed("cityClerk", "admin")]
+    permission_classes = [IsAuthenticated]
 
     class Meta:
         model = CustomUser

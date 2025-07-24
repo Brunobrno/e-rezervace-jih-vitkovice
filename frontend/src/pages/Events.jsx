@@ -1,101 +1,90 @@
 import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
-import logo from "/img/logo.png";
-import sortBy from "lodash/sortBy";
 import {
   ActionIcon,
   Button,
-  Checkbox,
   MultiSelect,
   Stack,
   TextInput,
-  Anchor,
-  Box,
-  Group,
   Text,
+  Group,
 } from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash } from "@tabler/icons-react";
 import { useDebouncedValue } from "@mantine/hooks";
-import {
-  IconSearch,
-  IconX,
-  IconEye,
-  IconEdit,
-  IconTrash,
-  IconPlus,
-} from "@tabler/icons-react";
-import { DataTable } from "mantine-datatable";
-import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
-import {
-  Container,
-  Nav,
-  Navbar,
-  NavDropdown,
-  Form,
-  Row,
-  Col,
-} from "react-bootstrap";
+import { useEffect, useState, useMemo } from "react";
+import { Container, Row, Col } from "react-bootstrap";
 
-import { getAllSquares } from "../api/model/square";
+import {
+  getAllEvents,
+  getEventById,
+  updateEvent,
+  deleteEvent,
+} from "../api/model/event";
 
 function Events() {
-  const [squares, setSquares] = useState([]);
+  const [events, setEvents] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [query, setQuery] = useState("");
+  const [debouncedQuery] = useDebouncedValue(query, 300);
   const [selectedCities, setSelectedCities] = useState([]);
 
-  // Fetch data from API
+  const fetchEvents = async () => {
+    setFetching(true);
+    try {
+      const params = {};
+      if (debouncedQuery) params.search = debouncedQuery;
+      if (selectedCities.length > 0) params.city = selectedCities;
+      const data = await getAllEvents(params);
+      setEvents(data);
+    } finally {
+      setFetching(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getAllSquares();
-        setSquares(data);
-      } finally {
-        setFetching(false);
-      }
-    };
-    fetchData();
-  }, []);
+    fetchEvents();
+  }, [debouncedQuery, selectedCities]);
 
   const cityOptions = useMemo(() => {
-    const uniqueCities = new Set(squares.map((r) => r.city));
-    return [...uniqueCities];
-  }, [squares]);
+    const cities = new Set(events.map((e) => e.square?.city).filter(Boolean));
+    return [...cities];
+  }, [events]);
 
-  // Define columns
+  const handleShowEvent = (event) => {
+    console.log("Zobrazit detail události", event);
+    // TODO: Implementuj modální zobrazení
+  };
+
+  const handleEditEvent = (event) => {
+    console.log("Editace události", event);
+    // TODO: Implementuj formulář pro editaci
+  };
+
+  const handleDeleteEvent = async (event) => {
+    if (window.confirm(`Opravdu smazat událost: ${event.name}?`)) {
+      await deleteEvent(event.id);
+      fetchEvents();
+    }
+  };
+
   const columns = [
     { accessor: "id", title: "#", sortable: true },
-    { accessor: "street", title: "Ulice", sortable: true },
+    { accessor: "name", title: "Název", sortable: true },
     {
-      accessor: "name",
-      title: "Název",
-      sortable: true,
-      filter: (
-        <TextInput
-          label="Hledat názvy"
-          placeholder="Např. Trh, Koncert..."
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            <ActionIcon
-              size="sm"
-              variant="transparent"
-              c="dimmed"
-              onClick={() => setQuery("")}
-            >
-              <IconX size={14} />
-            </ActionIcon>
-          }
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-        />
-      ),
-      filtering: query !== "",
+      accessor: "description",
+      title: "Popis",
+      render: (row) => row.description || <Text c="dimmed" fs="italic">Bez popisu</Text>,
+    },
+    {
+      accessor: "square",
+      title: "Náměstí",
+      render: (row) => row.square?.name || <Text c="dimmed" fs="italic">Neznámé</Text>,
     },
     {
       accessor: "city",
       title: "Město",
       sortable: true,
+      render: (row) => row.square?.city || "-",
       filter: (
         <MultiSelect
           label="Filtrovat města"
@@ -112,41 +101,27 @@ function Events() {
       filtering: selectedCities.length > 0,
     },
     {
-      accessor: "image",
-      title: "Obrázek",
-      render: (row) =>
-        row.image ? (
-          <img
-            src={row.image}
-            alt={row.name}
-            style={{ width: "100px", height: "auto", borderRadius: "8px" }}
-          />
-        ) : (
-          <Text c="dimmed" fs="italic">
-            Žádný obrázek
-          </Text>
-        ),
+      accessor: "start",
+      title: "Začátek",
+      render: (row) => new Date(row.start).toLocaleString(),
+      sortable: true,
     },
     {
-      accessor: "events",
-      title: "Počet událostí",
-      width: "0%",
-      textAlign: "center",
-      render: (row) => row.events?.length || 0,
+      accessor: "end",
+      title: "Konec",
+      render: (row) => new Date(row.end).toLocaleString(),
       sortable: true,
     },
     {
       accessor: "actions",
       title: "Akce",
-      width: "0%",
-
-      render: (square) => (
+      render: (event) => (
         <Group gap={4} wrap="nowrap">
           <ActionIcon
             size="sm"
             variant="subtle"
             color="green"
-            onClick={() => handleShowEvent(square)}
+            onClick={() => handleShowEvent(event)}
           >
             <IconEye size={16} />
           </ActionIcon>
@@ -154,7 +129,7 @@ function Events() {
             size="sm"
             variant="subtle"
             color="blue"
-            onClick={() => handleEditEvent(square)}
+            onClick={() => handleEditEvent(event)}
           >
             <IconEdit size={16} />
           </ActionIcon>
@@ -162,7 +137,7 @@ function Events() {
             size="sm"
             variant="subtle"
             color="red"
-            onClick={() => handleDeleteEvent(square)}
+            onClick={() => handleDeleteEvent(event)}
           >
             <IconTrash size={16} />
           </ActionIcon>
@@ -171,56 +146,33 @@ function Events() {
     },
   ];
 
-  // Render modal content
   const renderModalContent = (record, closeModal) => (
     <Stack>
-      <Text>
-        <strong>ID:</strong> {record.id}
-      </Text>
-      <Text>
-        <strong>Name:</strong> {record.name}
-      </Text>
-      <Text>
-        <strong>City:</strong> {record.city}
-      </Text>
-      <Text>
-        <strong>Events:</strong> {record.events?.length || 0}
-      </Text>
-
+      <Text><strong>ID:</strong> {record.id}</Text>
+      <Text><strong>Název:</strong> {record.name}</Text>
+      <Text><strong>Popis:</strong> {record.description}</Text>
+      <Text><strong>Město:</strong> {record.square?.city || "-"}</Text>
+      <Text><strong>Od:</strong> {new Date(record.start).toLocaleString()}</Text>
+      <Text><strong>Do:</strong> {new Date(record.end).toLocaleString()}</Text>
       <Group mt="md">
-        <Button variant="outline" onClick={closeModal}>
-          Close
-        </Button>
-        <Button color="blue">Edit</Button>
+        <Button variant="outline" onClick={closeModal}>Zavřít</Button>
+        <Button color="blue">Upravit</Button>
       </Group>
     </Stack>
   );
 
   return (
-    <Container
-      fluid
-      className="p-0 d-flex flex-column"
-      style={{
-        overflowX: "hidden",
-        height: "100vh", // Full viewport height
-      }}
-    >
+    <Container fluid className="p-0 d-flex flex-column" style={{ overflowX: "hidden", height: "100vh" }}>
       <Row className="mx-0 flex-grow-1">
-        {" "}
-        {/* Make row grow to fill space */}
         <Col xs={2} className="px-0 bg-light" style={{ minWidth: 0 }}>
           <Sidebar />
         </Col>
-        <Col
-          xs={10}
-          className="px-0 bg-white d-flex flex-column"
-          style={{ minWidth: 0 }}
-        >
+        <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Table
-            data={squares}
+            data={events}
             columns={columns}
             fetching={fetching}
-            modalTitle="Square Details"
+            modalTitle="Detail události"
             renderModalContent={renderModalContent}
             withTableBorder
             borderRadius="md"

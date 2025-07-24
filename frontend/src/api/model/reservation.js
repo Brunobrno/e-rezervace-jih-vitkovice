@@ -45,17 +45,6 @@ const createReservation = (data) => {
 };
 
 /**
- * PUT - kompletní aktualizace rezervace.
- * 
- * @param {number} id - ID rezervace
- * @param {Object} data - Kompletní data rezervace (všechna pole jako v POST)
- * @returns {Promise<Reservation>}
- */
-const updateReservation = (id, data) => {
-  return axios_instance.put(`${API_BASE_URL}/${id}/`, data);
-};
-
-/**
  * PATCH - částečná aktualizace rezervace.
  * 
  * @param {number} id - ID rezervace
@@ -66,7 +55,7 @@ const updateReservation = (id, data) => {
  *   - cells?: {number[]}
  * @returns {Promise<Reservation>}
  */
-const partialUpdateReservation = (id, data) => {
+const updateReservation = (id, data) => {
   return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
 };
 

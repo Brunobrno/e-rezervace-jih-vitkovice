@@ -16,11 +16,13 @@ import EmailVerificationPage from "./pages/register/EmailVerification";
 import Home from "./pages/Home";
 import ResetPasswordPage from "./pages/PasswordReset";
 import UserSettings from "./pages/Settings";
+import Squares from "./pages/Squares"
+import TablePage from "./pages/Multipurpouse-table"
 
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
-import Events from "./pages/Events";
+import Events from "./pages/Squares";
 
 function App() {
   return (
@@ -36,29 +38,31 @@ function App() {
         // after user registers, they will be redirected from email, to the
         email verification page
         <Route path="/email-verification" element={<EmailVerificationPage />} />
-        <Route
-          path="/email-verification/:uidb64/:token"
-          element={<EmailVerificationPage />}
-        />
+        <Route path="/email-verification/:uidb64/:token" element={<EmailVerificationPage />}/>
+
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route
-          path="/reset-password/:uidb64/:token"
-          element={<ResetPasswordPage />}
-        />
+        <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
+
         <Route path="/home" element={<Home />} />
         <Route
           path="/clerk/create/reservation"
           element={<CreateReservation />}
         />
+
         <Route path="/seller/reservation" element={<SelectReservation />} />
         <Route path="/components" element={<EventsTree />} />
         <Route path="/test" element={<Test />} />
         {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
         <Route element={<RequireAuthLayout />}>
           <Route path="/events" element={<Events />} />
+          <Route path="/squares" element={<Squares />} />
+
+          <Route path="/table/:modelName" element={<TablePage />} />
+
           <Route path="/settings" element={<UserSettings />} />
 
           {/* Admin - tady si můžeš specifikovat roli která má oprávnění */}
+          
           <Route element={<RequireRole roles={["admin"]} />}>
             <Route path="/test" element={<Test />} />
           </Route>
