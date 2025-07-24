@@ -1,6 +1,6 @@
-import axios_instance from './auth';
+import axios_instance from '../auth';
 
-const API_BASE_URL = '/api/booking/events';
+const API_BASE_URL = '/booking/events';
 
 /**
  * GET seznam událostí (Event).
@@ -16,9 +16,10 @@ const API_BASE_URL = '/api/booking/events';
  * 
  * @returns {Promise<Array<Event>>}
  */
-export const getEvents = (params = {}) => {
+const getEvents = (params = {}) => {
   return axios_instance.get(API_BASE_URL + '/', { params });
 };
+
 
 /**
  * GET detail konkrétní události.
@@ -42,7 +43,7 @@ export const getEventById = (id) => {
  *   - square: {number} ID existujícího náměstí
  * @returns {Promise<Event>}
  */
-export const updateEvent = (id, data) => {
+ const updateEvent = (id, data) => {
   return axios_instance.put(`${API_BASE_URL}/${id}/`, data);
 };
 
@@ -58,7 +59,7 @@ export const updateEvent = (id, data) => {
  *   - square?: {number}
  * @returns {Promise<Event>}
  */
-export const partialUpdateEvent = (id, data) => {
+ const partialUpdateEvent = (id, data) => {
   return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
 };
 
@@ -68,6 +69,14 @@ export const partialUpdateEvent = (id, data) => {
  * @param {number} id - ID události
  * @returns {Promise<void>} - HTTP 204 No Content při úspěchu
  */
-export const deleteEvent = (id) => {
+ const deleteEvent = (id) => {
   return axios_instance.delete(`${API_BASE_URL}/${id}/`);
+};
+
+export default {
+  deleteEvent,
+  getEvents,
+  getEventById,
+  updateEvent,
+  partialUpdateEvent
 };

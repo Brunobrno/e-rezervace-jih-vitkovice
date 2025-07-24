@@ -1,6 +1,5 @@
-import { Nav } from "react-bootstrap";
+import { Nav, Modal } from "react-bootstrap";
 import logo from "/img/logo.png";
-import dataFile from "../assets/json/data.json";
 import sortBy from "lodash/sortBy";
 import {
   ActionIcon,
@@ -11,27 +10,59 @@ import {
   TextInput,
   Anchor,
   Box,
+  Group,
+  Text,
 } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
-import { IconSearch, IconX } from "@tabler/icons-react";
+import {
+  IconSearch,
+  IconX,
+  IconEye,
+  IconEdit,
+  IconTrash,
+  IconPlus,
+} from "@tabler/icons-react";
 import { DataTable } from "mantine-datatable";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
+import { getAllSquares } from "../api/model/square";
+
 function EventsTree() {
-  // Stav pro řazení, dotaz a vybraná města
-  // Používáme useState pro uchování stavu komponenty
   const [sortStatus, setSortStatus] = useState({
-    columnAccessor: "name",
+    columnAccessor: "id",
     direction: "asc",
   });
-
 
   const [query, setQuery] = useState("");
   const [selectedCities, setSelectedCities] = useState([]);
   const [debouncedQuery] = useDebouncedValue(query, 200);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+  const [modalTitle, setModalTitle] = useState("");
+  const [events, setEvents] = useState([]);
+  const [squares, setSquares] = useState([]);
+  const [records, setRecords] = useState([]);
+  const [dataFile, setDataFile] = useState([]);
+  const [fetching, setFetching] = useState(true);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getAllSquares();
+        setDataFile(data);
+        setSquares(data); // Initialize squares with fetched data
+      } catch (err) {
+        console.error("Chyba při načítání:", err);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  console.log("Data loaded:", records);
   // Používáme useMemo pro optimalizaci výkonu a zabránění zbytečným přepočtům
   // Vytvoříme unikátní seznam měst z datového souboru
   const cityOptions = useMemo(() => {
@@ -39,140 +70,184 @@ function EventsTree() {
     return [...uniqueCities];
   }, []);
 
-  const [records, setRecords] = useState([]);
+  useEffect(() => {
+    const allEvents = dataFile.flatMap(
+      (square) =>
+        square.events?.map((event) => ({
+          ...event,
+          squareId: square.id,
+          squareName: square.name,
+          city: square.city,
+        })) || []
+    );
+    setEvents(allEvents);
+  }, [dataFile]); // Add dependency
 
   // Inicializujeme záznamy s daty z dataFile
   useEffect(() => {
-    let filtered = dataFile;
+    if (!squares.length) return; // Skip if no data
 
-    // Filtrování záznamů podle dotazu a vybraných měst
+    let filtered = [...squares]; // Use latest squares data
+
+    // Apply filters
     if (debouncedQuery.trim() !== "") {
       filtered = filtered.filter((r) =>
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase())
       );
     }
 
-    // Filtrování záznamů podle vybraných měst
     if (selectedCities.length > 0) {
       filtered = filtered.filter((r) => selectedCities.includes(r.city));
     }
 
-    // Řazení záznamů podle aktuálního stavu řazení
-    // Používáme lodash sortBy pro řazení podle sloupce a směru
-    // Pokud je řazení sestupné, obrátíme pořadí
+    // Apply sorting
     const sorted = sortBy(filtered, sortStatus.columnAccessor);
     setRecords(sortStatus.direction === "desc" ? sorted.reverse() : sorted);
-  }, [sortStatus, debouncedQuery, selectedCities]);
+  }, [sortStatus, debouncedQuery, selectedCities, squares]); // Include squares
 
-  // Definujeme sloupce pro tabulku
-  const squareColumns = [
-    { accessor: "id", title: "#", sortable: true },
-    { accessor: "street", title: "Ulice", sortable: true },
-    {
-      accessor: "name",
-      title: "Název",
-      sortable: true,
-      filter: (
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setModalContent(null);
+  };
+
+  const handleShowEvent = (event) => {
+    setModalTitle("Detaily události");
+    setModalContent(
+      <div>
+        <Text size="sm" fw={700}>
+          Název:
+        </Text>
+        <Text mb="sm">{event.name}</Text>
+
+        <Text size="sm" fw={700}>
+          Popis:
+        </Text>
+        <Text mb="sm">{event.description || "—"}</Text>
+
+        <Text size="sm" fw={700}>
+          Začátek:
+        </Text>
+        <Text mb="sm">{dayjs(event.start).format("DD.MM.YYYY HH:mm")}</Text>
+
+        <Text size="sm" fw={700}>
+          Konec:
+        </Text>
+        <Text mb="sm">{dayjs(event.end).format("DD.MM.YYYY HH:mm")}</Text>
+
+        <Text size="sm" fw={700}>
+          Cena za m²:
+        </Text>
+        <Text mb="sm">{event.price_per_m2} Kč</Text>
+      </div>
+    );
+    setShowModal(true);
+  };
+
+  const handleEditEvent = (event) => {
+    setModalTitle("Upravit událost");
+    setModalContent(
+      <Stack>
+        <TextInput label="Název" defaultValue={event.name} />
+        <TextInput label="Popis" defaultValue={event.description} />
+        <DatePicker label="Začátek" defaultValue={new Date(event.start)} />
+        <DatePicker label="Konec" defaultValue={new Date(event.end)} />
         <TextInput
-          label="Hledat názvy"
-          placeholder="Např. Trh, Koncert..."
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            <ActionIcon
-              size="sm"
-              variant="transparent"
-              c="dimmed"
-              onClick={() => setQuery("")}
-            >
-              <IconX size={14} />
-            </ActionIcon>
-          }
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
+          label="Cena za m²"
+          type="number"
+          defaultValue={event.price_per_m2}
         />
-      ),
-      filtering: query !== "",
-    },
-    {
-      accessor: "city",
-      title: "Město",
-      sortable: true,
-      filter: (
+        <Button mt="md" onClick={handleCloseModal}>
+          Uložit změny
+        </Button>
+      </Stack>
+    );
+    setShowModal(true);
+  };
+
+  const handleDeleteEvent = (event) => {
+    setModalTitle("Smazat událost");
+    setModalContent(
+      <Stack>
+        <Text>Opravdu chcete smazat událost "{event.name}"?</Text>
+        <Group mt="md">
+          <Button variant="outline" onClick={handleCloseModal}>
+            Zrušit
+          </Button>
+          <Button
+            color="red"
+            onClick={() => {
+              // Delete logic here
+              handleCloseModal();
+            }}
+          >
+            Smazat
+          </Button>
+        </Group>
+      </Stack>
+    );
+    setShowModal(true);
+  };
+
+  const handleAddEvent = () => {
+    setModalTitle("Přidat novou událost");
+    setModalContent(
+      <Stack>
+        <TextInput label="Název" placeholder="Název události" />
+        <TextInput label="Popis" placeholder="Popis události" />
+        <DatePicker label="Začátek" />
+        <DatePicker label="Konec" />
+        <TextInput label="Cena za m²" type="number" placeholder="Cena" />
         <MultiSelect
-          label="Filtrovat města"
-          placeholder="Vyber město/města"
-          data={cityOptions}
-          value={selectedCities}
-          onChange={setSelectedCities}
-          clearable
-          searchable
-          leftSection={<IconSearch size={16} />}
-          comboboxProps={{ withinPortal: false }}
+          label="Přiřadit k tržišti"
+          data={squares.map((s) => ({ value: s.id, label: s.name }))}
         />
-      ),
-      filtering: selectedCities.length > 0,
-    },
+        <Button mt="md" onClick={handleCloseModal}>
+          Vytvořit událost
+        </Button>
+      </Stack>
+    );
+    setShowModal(true);
+  };
+  // Definujeme sloupce pro tabulku
+  
 
-    {
-      accessor: "image",
-      title: "Obrázek",
-      render: (row) => (
-        <img
-          src={row.image}
-          alt={row.name}
-          style={{ width: "100px", height: "auto", borderRadius: "8px" }}
-        />
-      ),
-    },
-    {
-      accessor: "event_name",
-      title: "Událost",
-      render: (row) =>
-        row.events?.length > 0 ? (
-          <>
-            {row.events.map((event, index) => (
-              <Anchor
-                key={event.id}
-                href={`/events/${event.id}`}
-                target="_blank"
-                underline="hover"
-              >
-                {event.name}
-                {index < row.events.length - 1 ? ", " : ""}
-              </Anchor>
-            ))}
-          </>
-        ) : (
-          "—"
-        ),
-      sortable: true,
-    },
-  ];
-
-  const eventColumns = [
-    { accessor: "id", title: "#", sortable: true },
-    { accessor: "name", title: "Název", sortable: true },
-    { accessor: "description", title: "Popis", sortable: true },
-    { accessor: "start", title: "Začátek", sortable: true },
-    { accessor: "end", title: "Konec", sortable: true },
-    { accessor: "price_per_m2", title: "Cena za m2", sortable: true },
-    { accessor: "market_slots", title: "Plochy", sortable: true },
-  ];
 
   return (
-    <Box>
-      <DataTable
-        records={records}
-        columns={squareColumns}
-        withTableBorder
-        borderRadius="md"
-        shadow="sm"
-        highlightOnHover
-        verticalAlign="center"
-        sortStatus={sortStatus}
-        onSortStatusChange={setSortStatus}
-      />
-    </Box>
+    <div className="d-flex flex-column h-100"> {/* Flex container */}
+      <Box className="flex-grow-1" style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        minHeight: 0 // Important for overflow
+      }}>
+        <DataTable
+          records={records}
+          columns={squareColumns}
+          withTableBorder
+          borderRadius="md"
+          shadow="sm"
+          highlightOnHover
+          verticalAlign="center"
+          sortStatus={sortStatus}
+          onSortStatusChange={setSortStatus}
+          idAccessor="id"
+          fetching={fetching}
+          height="100%" // Make table fill container
+          scrollAreaProps={{ 
+            style: { 
+              height: '100%',
+              flex: 1 
+            } 
+          }}
+          style={{ flex: 1 }} // Expand to fill space
+        />
+      </Box>
+      <Modal show={showModal} onHide={handleCloseModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{modalTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{modalContent}</Modal.Body>
+      </Modal>
+    </div>
 
     // Cena Int, Nazev String, Souřadnice,
 
