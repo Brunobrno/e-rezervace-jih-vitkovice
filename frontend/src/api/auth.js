@@ -10,6 +10,8 @@ const axios_instance = axios.create({
 axios_instance.defaults.xsrfCookieName = "csrftoken";
 axios_instance.defaults.xsrfHeaderName = "X-CSRFToken";
 
+export default axios_instance;
+
 
 // ✅ Přihlášení
 export const login = async (username, password) => {

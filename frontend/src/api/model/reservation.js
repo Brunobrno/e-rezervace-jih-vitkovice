@@ -1,6 +1,6 @@
-import axios_instance from './auth';
+import axios_instance from '../auth';
 
-const API_BASE_URL = '/api/booking/reservations';
+const API_BASE_URL = '/booking/reservations';
 
 /**
  * GET seznam rezervací.
@@ -14,7 +14,7 @@ const API_BASE_URL = '/api/booking/reservations';
  * 
  * @returns {Promise<Array<Reservation>>}
  */
-export const getReservations = (params = {}) => {
+const getReservations = (params = {}) => {
   return axios_instance.get(`${API_BASE_URL}/`, { params });
 };
 
@@ -24,7 +24,7 @@ export const getReservations = (params = {}) => {
  * @param {number} id - ID rezervace
  * @returns {Promise<Reservation>}
  */
-export const getReservationById = (id) => {
+const getReservationById = (id) => {
   return axios_instance.get(`${API_BASE_URL}/${id}/`);
 };
 
@@ -40,7 +40,7 @@ export const getReservationById = (id) => {
  * 
  * @returns {Promise<Reservation>}
  */
-export const createReservation = (data) => {
+const createReservation = (data) => {
   return axios_instance.post(`${API_BASE_URL}/`, data);
 };
 
@@ -51,7 +51,7 @@ export const createReservation = (data) => {
  * @param {Object} data - Kompletní data rezervace (všechna pole jako v POST)
  * @returns {Promise<Reservation>}
  */
-export const updateReservation = (id, data) => {
+const updateReservation = (id, data) => {
   return axios_instance.put(`${API_BASE_URL}/${id}/`, data);
 };
 
@@ -66,7 +66,7 @@ export const updateReservation = (id, data) => {
  *   - cells?: {number[]}
  * @returns {Promise<Reservation>}
  */
-export const partialUpdateReservation = (id, data) => {
+const partialUpdateReservation = (id, data) => {
   return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
 };
 
@@ -76,6 +76,15 @@ export const partialUpdateReservation = (id, data) => {
  * @param {number} id - ID rezervace
  * @returns {Promise<void>} HTTP 204 při úspěchu
  */
-export const deleteReservation = (id) => {
+const deleteReservation = (id) => {
   return axios_instance.delete(`${API_BASE_URL}/${id}/`);
+};
+
+export default {
+  getReservations,
+  getReservationById,
+  createReservation,
+  updateReservation,
+  partialUpdateReservation,
+  deleteReservation
 };

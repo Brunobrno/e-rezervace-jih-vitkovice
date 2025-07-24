@@ -13,12 +13,19 @@ import EventsTree from "../components/EventsTree";
 
 function Home() {
   return (
-    <Container fluid className="p-0" style={{ overflowX: 'hidden' }}>
-      <Row className="mx-0">
-        <Col xs={2} className="px-0 bg-light w-100" style={{ minWidth: 0 }}>
+     <Container fluid className="p-0 d-flex flex-column" style={{ 
+      overflowX: 'hidden',
+      height: '100vh' // Full viewport height
+    }}>
+      <Row className="mx-0 flex-grow-1"> {/* Make row grow to fill space */}
+        <Col xs={2} className="px-0 bg-light" style={{ minWidth: 0 }}>
           <Sidebar />
         </Col>
-        <Col xs={10} className="px-0 bg-white w-100" style={{ minWidth: 0 }}>
+        <Col 
+          xs={10} 
+          className="px-0 bg-white d-flex flex-column" 
+          style={{ minWidth: 0 }}
+        >
           <EventsTree />
         </Col>
       </Row>

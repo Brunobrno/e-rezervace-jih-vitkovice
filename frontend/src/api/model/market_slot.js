@@ -1,6 +1,6 @@
-import axios_instance from './auth';
+import axios_instance from '../auth';
 
-const MARKET_SLOTS_API_URL = '/api/booking/market-slots/';
+const MARKET_SLOTS_API_URL = '/booking/market-slots/';
 
 /**
  * Získá seznam všech prodejních míst s možností filtrování.
@@ -10,7 +10,7 @@ const MARKET_SLOTS_API_URL = '/api/booking/market-slots/';
  *   - ordering: řazení podle pole (např. `x`, `-y`, ...)
  * @returns {Promise<Array>} - Pole objektů `MarketSlot`
  */
-export const getAllMarketSlots = async (params = {}) => {
+const getAllMarketSlots = async (params = {}) => {
   const response = await axios_instance.get(MARKET_SLOTS_API_URL, { params });
   return response.data;
 };
@@ -29,7 +29,7 @@ export const getAllMarketSlots = async (params = {}) => {
  *   - price_per_m2: cena za m²
  * @returns {Promise<Object>} - Vytvořený objekt `MarketSlot`
  */
-export const createMarketSlot = async (data) => {
+const createMarketSlot = async (data) => {
   const response = await axios_instance.post(MARKET_SLOTS_API_URL, data);
   return response.data;
 };
@@ -39,7 +39,7 @@ export const createMarketSlot = async (data) => {
  * @param {number} id - ID prodejního místa
  * @returns {Promise<Object>} - Objekt `MarketSlot`
  */
-export const getMarketSlotById = async (id) => {
+const getMarketSlotById = async (id) => {
   const response = await axios_instance.get(`${MARKET_SLOTS_API_URL}${id}/`);
   return response.data;
 };
@@ -50,7 +50,7 @@ export const getMarketSlotById = async (id) => {
  * @param {Object} data - Kompletní objekt prodejního místa ve formátu dle API
  * @returns {Promise<Object>} - Aktualizovaný objekt `MarketSlot`
  */
-export const updateMarketSlot = async (id, data) => {
+const updateMarketSlot = async (id, data) => {
   const response = await axios_instance.put(`${MARKET_SLOTS_API_URL}${id}/`, data);
   return response.data;
 };
@@ -61,7 +61,7 @@ export const updateMarketSlot = async (id, data) => {
  * @param {Object} data - Částečný objekt s vlastnostmi k aktualizaci
  * @returns {Promise<Object>} - Aktualizovaný objekt `MarketSlot`
  */
-export const patchMarketSlot = async (id, data) => {
+const patchMarketSlot = async (id, data) => {
   const response = await axios_instance.patch(`${MARKET_SLOTS_API_URL}${id}/`, data);
   return response.data;
 };
@@ -71,7 +71,16 @@ export const patchMarketSlot = async (id, data) => {
  * @param {number} id - ID prodejního místa
  * @returns {Promise<void>} - Úspěšný DELETE vrací 204 bez obsahu
  */
-export const deleteMarketSlot = async (id) => {
+const deleteMarketSlot = async (id) => {
   const response = await axios_instance.delete(`${MARKET_SLOTS_API_URL}${id}/`);
   return response.data;
+};
+
+export default {
+  getAllMarketSlots,
+  createMarketSlot,
+  getMarketSlotById,
+  updateMarketSlot,
+  patchMarketSlot,
+  deleteMarketSlot
 };
