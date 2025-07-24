@@ -53,7 +53,7 @@ function LoginCard() {
             controlId="formBasicEmail"
           >
             <Form.Group className="input-group-prepend">
-              <span class="input-group-text">
+              <span className="input-group-text">
                 <FontAwesomeIcon icon={faEnvelope} />
               </span>
             </Form.Group>
@@ -63,7 +63,7 @@ function LoginCard() {
               placeholder=""
               required
               autoComplete="email"
-              autofocus
+              autoFocus
               name="email"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
@@ -75,7 +75,7 @@ function LoginCard() {
             controlId="formBasicPassword"
           >
             <Form.Group className="input-group-prepend">
-              <span class="input-group-text">
+              <span className="input-group-text">
                 <FontAwesomeIcon icon={faKey} />
               </span>
             </Form.Group>
@@ -85,7 +85,7 @@ function LoginCard() {
               placeholder=""
               required
               autoComplete="current-password"
-              autofocus
+              autoFocus
               name="loginPassword"
               onChange={(e) => setPassword(e.target.value)}
               value={password}
@@ -94,15 +94,15 @@ function LoginCard() {
 
           <Form.Group className="row form-group">
             <Col>
-              <div class="custom-control custom-checkbox">
+              <div className="custom-control custom-checkbox">
                 <input
-                  class="custom-control-input"
+                  className="custom-control-input"
                   type="checkbox"
                   name="remember"
                   id="remember"
                 />
 
-                <label class="custom-control-label" for="remember">
+                <label className="custom-control-label" htmlFor="remember">
                   Zapamatovat si mě
                 </label>
               </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Form, Container, Alert } from "react-bootstrap";
+import { Form, Container, Alert, Col, Row } from "react-bootstrap";
+
 import Button from "react-bootstrap/Button";
 import { apiRequest } from "../api/auth";
 import { useNavigate } from "react-router-dom";
@@ -134,20 +135,32 @@ export default function UserSettings() {
 
   return (
     <Container className="mt-5">
-      <h2 className="mb-4">Nastavení uživatele</h2>
+      <h1 className="mb-4">Nastavení uživatele</h1>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
       <Form onSubmit={handleSave}>
-        {renderField("Jméno", "first_name")}
-        {renderField("Příjmení", "last_name")}
-        {renderField("RČ", "RC")}
-        {renderField("IČ", "ICO")}
-        {renderField("Ulice a č.p.", "street")}
-        {renderField("Město", "city")}
-        {renderField("PSČ", "PSC")}
-        {renderField("Číslo účtu", "bank_account")}
-        {renderField("Telefon", "phone_number", "tel")}
+        <Row>
+          <Col>{renderField("Jméno", "first_name")}</Col>
+          <Col>{renderField("Příjmení", "last_name")}</Col>
+        </Row>
+        <hr />
+        <h3 className="mb-4 text-secondary">Sídlo</h3>
+        <Row>
+          <Col>{renderField("Ulice a č.p.", "street")}</Col>
+          <Col>{renderField("Město", "city")}</Col>
+        </Row>
+        <Row>
+          <Col>{renderField("PSČ", "PSC")}</Col>
+          <Col></Col>
+        </Row>
+        <hr />
+        <Row>
+          <Col>{renderField("Číslo účtu", "bank_account")}</Col>
+          <Col>{renderField("Telefon", "phone_number", "tel")}</Col>
+        </Row>
+        
+        
         {renderField("Email", "email", "email")}
 
         <div className="d-flex justify-content-between align-items-center mt-4">

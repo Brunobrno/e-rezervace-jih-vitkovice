@@ -10,21 +10,34 @@ const axios_instance = axios.create({
 axios_instance.defaults.xsrfCookieName = "csrftoken";
 axios_instance.defaults.xsrfHeaderName = "X-CSRFToken";
 
+export default axios_instance;
 
-// ✅ Přihlášení
-export const login = async (username, password) => {
-  const response = await axios_instance.post(`/account/token/`, { username, password });
-  return response.data;
-};
+// 🔐 Axios response interceptor: automatická obnova při 401
+axios_instance.interceptors.request.use((config) => {
+  const getCookie = (name) => {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  };
 
-// ❌ Odhlášení
-export const logout = async () => {
-  try {
-    await axios_instance.post(`/account/logout/`);
-  } catch (err) {
-    console.error("Logout failed", err);
+  const csrfToken = getCookie("csrftoken");
+  if (csrfToken && ["post", "put", "patch", "delete"].includes(config.method)) {
+    config.headers["X-CSRFToken"] = csrfToken;
   }
-};
+
+  return config;
+});
+
+
 
 // 🔄 Obnova access tokenu pomocí refresh cookie
 export const refreshAccessToken = async () => {
@@ -37,6 +50,54 @@ export const refreshAccessToken = async () => {
     return null;
   }
 };
+
+
+// ✅ Přihlášení
+export const login = async (username, password) => {
+  logout();
+  const response = await axios_instance.post(`/account/token/`, { username, password });
+  return response.data;
+};
+
+
+// ❌ Odhlášení s CSRF tokenem
+export const logout = async () => {
+  try {
+    const getCookie = (name) => {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + "=")) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    };
+
+    const csrfToken = getCookie("csrftoken");
+
+    const response = await axios_instance.post(
+      "/account/logout/",
+      {},
+      {
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+      }
+    );
+
+    return response.data; // např. { detail: "Logout successful" }
+  } catch (err) {
+    console.error("Logout failed", err);
+    throw err;
+  }
+};
+
+
 
 // 📡 Obecný request (např. pro formuláře)
 export const apiRequest = async (method, endpoint, data = {}, config = {}) => {
@@ -58,30 +119,7 @@ export const apiRequest = async (method, endpoint, data = {}, config = {}) => {
 };
 
 
-// 🔐 Axios response interceptor: automatická obnova při 401
-axios_instance.interceptors.response.use(
-  (response) => response, // vše OK
-  async (error) => {
-    const originalRequest = error.config;
 
-    // Pokud máme 401 a ještě jsme se nepokusili obnovit
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      const refreshed = await refreshAccessToken();
-
-      if (refreshed) {
-        return axios_instance(originalRequest);
-      }
-      
-      // Refresh také selhal – redirect/logout
-      logout();
-    }
-
-    // jinak přepošli chybu dál
-    return Promise.reject(error);
-  }
-);
 
 
 
