@@ -1,11 +1,16 @@
-from django.contrib.auth.models import Group
+import re
+from django.utils.text import slugify
+from django.core.validators import MinValueValidator, MaxValueValidator
 from rest_framework import serializers
-from django.contrib.auth import get_user_model, authenticate
+from rest_framework.exceptions import NotFound
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 
 from .permissions import *
 from .email import *
+
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -20,6 +25,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "username",
+            "first_name",
+            "last_name",
             "email",
             "role",
             "account_type",
@@ -36,8 +43,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "GDPR",
             "is_active",
         ]
-        read_only_fields = ["id", "create_time"]
-
+        read_only_fields = ["id", "create_time", "GDPR", "username", "account_type"]
+ 
 
 
 # Token obtaining Default Serializer
@@ -95,25 +102,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'GDPR': {'required': True, 'help_text': 'Souhlas se zpracováním osobních údajů'},
         }
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            first_name=validated_data.get('first_name'),
-            last_name=validated_data.get('last_name'),
-            phone_number=validated_data.get('phone_number'),
-            role='seller',  # automaticky nastavíme roli seller
-            city=validated_data.get('city'),
-            street=validated_data.get('street'),
-            PSC=validated_data.get('PSC'),
-            bank_account=validated_data.get('bank_account'),
-            RC=validated_data.get('RC'),
-            ICO=validated_data.get('ICO'),
-            GDPR=validated_data.get('GDPR'),
-            account_type=validated_data.get('account_type')
-        )
-        return user
-
     def validate_password(self, value):
         if len(value) < 8:
             raise serializers.ValidationError("Heslo musí mít alespoň 8 znaků.")
@@ -147,8 +135,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             counter += 1
         return login
     
-    
-
     def create(self, validated_data):
         password = validated_data.pop("password")
         first_name = validated_data.get("first_name", "")
@@ -166,10 +152,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
 class UserActivationSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
-    var_symbol = serializers.IntegerField()
+    var_symbol = serializers.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(9999999999)])
 
     def save(self, **kwargs):
-        user = User.objects.get(pk=self.validated_data['user_id'])  # bez try/except, nech to padnout pokud neexistuje
+        try:
+            user = User.objects.get(pk=self.validated_data['user_id'])
+        except User.DoesNotExist:
+            raise NotFound("Uživatel s tímto ID neexistuje.")
         user.var_symbol = self.validated_data['var_symbol']
         user.is_active = True
         user.save()

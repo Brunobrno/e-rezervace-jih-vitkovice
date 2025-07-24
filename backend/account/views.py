@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 
@@ -17,8 +17,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-
+from rest_framework_simplejwt.exceptions import TokenError, AuthenticationFailed
 from django_filters.rest_framework import DjangoFilterBackend
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
@@ -41,6 +40,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 )
 class CookieTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -77,6 +77,25 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         )
 
         return response
+    
+    def validate(self, attrs):
+        username = attrs.get("username")
+        password = attrs.get("password")
+
+        # Přihlaš uživatele ručně
+        user = authenticate(request=self.context.get('request'), username=username, password=password)
+
+        if not user:
+            raise AuthenticationFailed("Špatné uživatelské jméno nebo heslo.")
+
+        if not user.is_active:
+            raise AuthenticationFailed("Uživatel je deaktivován.")
+
+        # Nastav validní uživatele (přebere další logiku ze SimpleJWT)
+        self.user = user
+
+        # Vrátí access a refresh token jako obvykle
+        return super().validate(attrs)
     
 @extend_schema(
     tags=["api"],
@@ -126,6 +145,7 @@ class CookieTokenRefreshView(APIView):
         except TokenError:
             return Response({"detail": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
         
+#---------------------------------------------LOGIN/LOGOUT------------------------------------------------
 
 @extend_schema(
     tags=["api"],
@@ -146,7 +166,9 @@ class LogoutView(APIView):
 #--------------------------------------------------------------------------------------------------------------
 
 @extend_schema(
-    tags=["User"]
+    tags=["User"],
+    responses={200: CustomUserSerializer},
+    description="Zobrazí všechny uživatele s možností filtrování a řazení.",
 )
 class UserView(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -155,7 +177,7 @@ class UserView(viewsets.ModelViewSet):
     filterset_class = UserFilter
 
     # Require authentication and role permission
-    permission_classes = [IsAuthenticated, RoleAllowed("cityClerk", "admin")]
+    # permission_classes = [OnlyRolesAllowed("cityClerk", "admin")]
 
     class Meta:
         model = CustomUser
@@ -177,7 +199,31 @@ class UserView(viewsets.ModelViewSet):
             "GDPR": {"help_text": "Souhlas se zpracováním osobních údajů."},
             "is_active": {"help_text": "Stav aktivace uživatele.", "read_only": True},
         }
-   
+
+        def get_permissions(self):
+            if self.action in ['list', 'create']:  # GET / POST /api/account/users/
+                return [OnlyRolesAllowed("cityClerk", "admin")()]
+            
+            elif self.action in ['update', 'partial_update', 'destroy']:  # PUT / PATCH / DELETE /api/account/users/{id}
+                if self.request.user.role in ['cityClerk', 'admin']:
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]
+                elif self.kwargs.get('pk') and str(self.request.user.id) == self.kwargs['pk']:
+                    return [IsAuthenticated()]
+                else:
+                    # fallback - deny access
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]  # or custom DenyAll()
+
+            elif self.action == 'retrieve':  # GET /api/account/users/{id}
+                if self.request.user.role in ['cityClerk', 'admin']:
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]
+                elif self.kwargs.get('pk') and str(self.request.user.id) == self.kwargs['pk']:
+                    return [IsAuthenticated()]
+                else:
+                    return [OnlyRolesAllowed("cityClerk", "admin")()]  # or a custom read-only self-access permission
+
+            return super().get_permissions()
+        
+        
 
 # Get current user data
 @extend_schema(
@@ -197,7 +243,7 @@ class CurrentUserView(APIView):
         return Response(serializer.data)
 
 
-   
+#------------------------------------------------REGISTRACE--------------------------------------------------------------
 
 #1. registration API
 @extend_schema(
@@ -245,6 +291,7 @@ class EmailVerificationView(APIView):
         if account_activation_token.check_token(user, token):
             user.email_verified = True
             user.save()
+            
             return Response({"detail": "E-mail byl úspěšně ověřen. Účet čeká na schválení."})
         else:
             return Response({"error": "Token je neplatný nebo expirovaný."}, status=400)
@@ -257,7 +304,7 @@ class EmailVerificationView(APIView):
     description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
 )
 class UserActivationViewSet(APIView):
-    permission_classes = [permissions.IsAuthenticated, RoleAllowed('cityClerk', 'admin')]
+    permission_classes = [OnlyRolesAllowed('cityClerk', 'admin')]
 
     def patch(self, request, *args, **kwargs):
         serializer = UserActivationSerializer(data=request.data)
@@ -268,7 +315,7 @@ class UserActivationViewSet(APIView):
 
         return Response(serializer.to_representation(user), status=status.HTTP_200_OK)
 
-#--------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------END REGISTRACE-------------------------------------------------------------
 
 #1. PasswordReset + send Email
 @extend_schema(

@@ -7,10 +7,27 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-import uuid
+
+from trznice.models import SoftDeleteModel
+
+from django.contrib.auth.models import UserManager
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Custom User Manager to handle soft deletion
+class CustomUserActiveManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+# Custom User Manager to handle all users, including soft deleted
+class CustomUserAllManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset()
 
 
-class CustomUser(AbstractUser):
+class CustomUser(SoftDeleteModel, AbstractUser):
     groups = models.ManyToManyField(
         Group,
         related_name="customuser_set",  # <- přidáš related_name
@@ -25,7 +42,6 @@ class CustomUser(AbstractUser):
         help_text="Specific permissions for this user.",
         related_query_name="customuser",
     )
-
 
     ROLE_CHOICES = (
         ('admin', 'Administrátor'),
@@ -45,6 +61,7 @@ class CustomUser(AbstractUser):
     email_verified = models.BooleanField(default=False)
 
     phone_number = models.CharField(
+        unique=True,
         max_length=16,
         blank=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Zadejte platné telefonní číslo.")]
@@ -117,8 +134,10 @@ class CustomUser(AbstractUser):
 
     is_active = models.BooleanField(default=False)
 
-    REQUIRED_FIELDS = ['email']
+    objects = CustomUserActiveManager()
+    all_objects = CustomUserAllManager()
 
+    REQUIRED_FIELDS = ['email']
 
 
     def __str__(self):
@@ -138,26 +157,39 @@ class CustomUser(AbstractUser):
             counter += 1
         return login
     
+    def delete(self, *args, **kwargs):
+        self.is_active = False
+
+        self.tickets.all().update(is_deleted=True, deleted_at=timezone.now())
+        self.user_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
+
+        return super().delete(*args, **kwargs)
     
     def save(self, *args, **kwargs):
         is_new = self.pk is None  # check BEFORE saving
 
         if is_new:
+            # self.generate_login() neni treba
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
-                self.is_staff = True
+                # self.is_staff = True
                 self.is_active = True
                 if self.role == 'admin':
+                    self.is_staff = True
                     self.is_superuser = True
+                if self.is_superuser:
+                    self.role = 'admin'
             else:
                 self.is_staff = False
         
-        super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
+
+        # NEMAZAT prozatim to nechame, kdybychom to potrebovali
 
         # Now assign permissions after user exists
         # if is_new and self.role:
         if self.role:
             from account.utils import assign_permissions_based_on_role
-            print(f"Assigning permissions to: {self.email} with role {self.role}")
+            logger.debug(f"Assigning permissions to: {self.email} with role {self.role}")
             assign_permissions_based_on_role(self)
         
         # super().save(*args, **kwargs)  # save once, after prep

@@ -1,0 +1,55 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  django-tests:
+    runs-on: ubuntu-latest
+
+    env:
+      USE_PRODUCTION_DB: ${{ secrets.USE_PRODUCTION_DB }}
+      DEBUG: ${{ secrets.DEBUG }}
+
+      DATABASE_ENGINE: ${{ secrets.DATABASE_ENGINE }}
+      DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+      DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+      DATABASE_USER: ${{ secrets.DATABASE_USER }}
+      DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+
+      EMAIL_PORT_DEV: ${{ secrets.EMAIL_PORT_DEV }}
+      EMAIL_HOST_DEV: ${{ secrets.EMAIL_HOST_DEV }}
+      EMAIL_USER_DEV: ${{ secrets.EMAIL_USER_DEV }}
+      EMAIL_USER_PASSWORD_DEV: ${{ secrets.EMAIL_USER_PASSWORD_DEV }}
+      DEFAULT_FROM_EMAIL_DEV: ${{ secrets.DEFAULT_FROM_EMAIL_DEV }}
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      working-directory: backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run migrations
+      working-directory: backend
+      run: python manage.py migrate
+
+    - name: Run DB populating script
+      working-directory: backend
+      run: python populate_db.py
+
+    - name: Run tests
+      working-directory: backend
+      run: python manage.py test

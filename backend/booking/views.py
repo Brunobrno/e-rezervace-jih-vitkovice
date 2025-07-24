@@ -37,7 +37,7 @@ class SquareViewSet(viewsets.ModelViewSet):
     ]
 
 
-    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
+    permission_classes = [OnlyRolesAllowed("admin", "squareManager")]
 
 
 @extend_schema(
@@ -69,7 +69,7 @@ class EventViewSet(viewsets.ModelViewSet):
         "square__street",            # ulice
     ]
 
-    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager")]
+    permission_classes = [RoleAllowed("admin", "squareManager")]
 
 
 @extend_schema(
@@ -83,7 +83,7 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     filterset_fields = ["event", "status"]
     ordering_fields = ["price_per_m2", "x", "y"]
 
-    permission_classes = [IsAuthenticated, RoleAllowed("admin", "squareManager", "seller")]
+    permission_classes = [RoleAllowed("admin", "squareManager")]
 
 
 @extend_schema(
@@ -115,6 +115,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
         "user__first_name",
         "user__last_name",
     ]
+    permission_classes = [RoleAllowed("admin", "squareManager", "seller")]
 
     def get_queryset(self):
         qs = Reservation.objects.select_related("event", "marketSlot", "user").order_by("-created_at")

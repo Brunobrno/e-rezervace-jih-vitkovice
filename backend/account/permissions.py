@@ -45,8 +45,21 @@ def RoleAllowed(*roles):
 
     return SafeOrRolePermission
 
+# FIXME: je tohle nutné???
+def OnlyRolesAllowed(*roles):
+    class SafeOrRolePermission(BasePermission):
+        """
+        Allows all methods only for users with specific roles.
+        """
 
+        def has_permission(self, request, view):
+            # Otherwise, check the user's role
+            user = request.user
+            return user and user.is_authenticated and getattr(user, "role", None) in roles
 
+    return SafeOrRolePermission
+
+  
 # For Settings.py
 class AdminOnly(BasePermission):
     """ Allows access only to users with the 'admin' role.
@@ -56,3 +69,4 @@ class AdminOnly(BasePermission):
     """
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'admin'
+

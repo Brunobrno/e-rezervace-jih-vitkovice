@@ -17,7 +17,7 @@ import {
 
 import React, { use, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API_URL from "../api/auth";
+import { API_URL } from "../api/auth";
 
 function RegisterCard() {
   const [isFirm, setIsFirm] = useState(false); // false = Individual, true = Company

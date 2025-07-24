@@ -1,9 +1,13 @@
+from decimal import Decimal
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.conf import settings
-from decimal import Decimal
 from django.db.models import Max
+from django.utils import timezone
+
+from trznice.models import SoftDeleteModel
+
 
 CHOICE_SQUARES = [
     {
@@ -16,7 +20,7 @@ CHOICE_SQUARES = [
 ]
 
 #náměstí
-class Square(models.Model):
+class Square(SoftDeleteModel):
     name = models.CharField(max_length=255, default="", null=False)
 
     description = models.TextField(null=True, blank=True)
@@ -42,11 +46,29 @@ class Square(models.Model):
 
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
+    def clean(self):
+        if self.width <= 0 :
+            raise ValidationError("Šířka náměstí nemůže být menší nebo rovna nule.")
+                
+        if self.height <= 0:
+            raise ValidationError("Výška náměstí nemůže být menší nebo rovna nule.")
+        
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
+    
+    def delete(self, *args, **kwargs):
+        for event in self.square_events.all():
+            event.delete()  # ✅ This triggers Event.delete()
+        super().delete(*args, **kwargs)
 
 
-class Event(models.Model):
+class Event(SoftDeleteModel):
     """Celé náměstí
 
     Args:
@@ -56,7 +78,7 @@ class Event(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
 
-    square = models.ForeignKey(Square, on_delete=models.CASCADE, related_name="event_on_sqare", null=True)
+    square = models.ForeignKey(Square, on_delete=models.CASCADE, related_name="square_events", null=True)
 
     start = models.DateTimeField()
     end = models.DateTimeField()
@@ -65,6 +87,7 @@ class Event(models.Model):
 
     
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
+
 
     def clean(self):
         # Zkontroluj, že začátek je před koncem
@@ -79,7 +102,7 @@ class Event(models.Model):
         )
         if overlapping.exists():
             raise ValidationError("V tomto termínu už na daném náměstí probíhá jiná událost.")
-
+        
         # Zavolej rodičovskou validaci (volitelné, pokud nepoužíváš dědičnost)
         return super().clean()
 
@@ -89,9 +112,18 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def delete(self, *args, **kwargs):
 
-class MarketSlot(models.Model):
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="marketSlot_event")
+        self.event_marketSlots.all().update(is_deleted=True, deleted_at=timezone.now())
+        self.event_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
+        self.event_products.all().update(is_deleted=True, deleted_at=timezone.now())
+
+        return super().delete(*args, **kwargs)
+
+
+class MarketSlot(SoftDeleteModel):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_marketSlots")
 
     STATUS_CHOICES = [
         ("empty", "Nezakoupeno"),
@@ -118,8 +150,12 @@ class MarketSlot(models.Model):
         help_text="Cena za m² pro toto prodejní místo. Neuvádět, pokud chcete nechat výchozí cenu za m² na tomto Eventu."
     )
 
+
     def save(self, *args, **kwargs):
         # If price_per_m2 is 0, use the event default
+        if self.base_size <= 0:
+            raise ValidationError("Základní velikost prodejního místa musí být větší než nula.")
+
         if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
             self.price_per_m2 = self.event.price_per_m2
 
@@ -133,17 +169,23 @@ class MarketSlot(models.Model):
     def __str__(self):
         return f"Prodejní místo {self.number} na {self.event}"
     
+    def delete(self, *args, **kwargs):
+
+        self.marketslot_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
+
+        return super().delete(*args, **kwargs)
+    
 
 
-class Reservation(models.Model):
+class Reservation(SoftDeleteModel):
     STATUS_CHOICES = [
         ("reserved", "Zarezervováno"),
         ("cancelled", "Zrušeno"),
     ]
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservation_event")
-    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="reservations_marketSlot", null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reservations_user")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_reservations")
+    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="marketslot_reservations", null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_reservations")
     
     used_extension = models.FloatField(default=0 ,help_text="Použité rozšíření (m2)", validators=[MinValueValidator(0.0)])
     
@@ -155,6 +197,7 @@ class Reservation(models.Model):
     note = models.TextField(blank=True, null=True)
 
     final_price = models.DecimalField(blank=True, null=True, default=0, max_digits=8, decimal_places=2, validators=[MinValueValidator(0)])
+
 
     def clean(self):
         if self.marketSlot:
@@ -185,10 +228,12 @@ class Reservation(models.Model):
 
     def save(self, *args, **kwargs):
         self.clean()
-        self.final_price = self.marketSlot.price_per_m2 * (
-        Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
-    )
+        if (self.marketSlot):
+            self.final_price = self.marketSlot.price_per_m2 * (
+            Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
+        )
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Rezervace {self.user} na event {self.event.name}" 
+        return f"Rezervace {self.user} na event {self.event.name}"
+    

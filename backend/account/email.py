@@ -3,6 +3,9 @@ from django.utils.encoding import force_bytes
 from django.urls import reverse
 from django.core.mail import send_mail
 from .tokens import *
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 from django.conf import settings
 from rest_framework.response import Response
@@ -46,27 +49,41 @@ def send_email_verification(user):
     )
 
 
+def send_email_clerk_add_var_symbol(user):
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = account_activation_token.make_token(user)
+    # url = f"http://localhost:5173/clerk/add-var-symbol/{uid}/" # NEVIM
+    url = f"URL"
+    message = f"Byl vytvořen nový uživatel:\n {user.firstname} {user.secondname} {user.email} .\n Doplňte variabilní symbol {url} ."
 
-# This function sends an email to the user when their registration is accepted by a clerk.
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+
+    
+    send_email_with_context(
+        recipients=user.email,
+        subject="Doplnění variabilního symbolu",
+        message=message
+    )
+
 def send_email_clerk_accepted(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
 
     message = f"Úředník potvrdil vaší registraci. Můžete se přihlásit."
 
+
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
-
-
+        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+    
     send_email_with_context(
         recipients=user.email,
         subject="Úředník potvrdil váší registraci",
-        message=f""
+        message=message
     )
+    
+    
 
-
-
-# This function is a general-purpose email sender that can be used to send emails with a specific context.
 def send_email_with_context(recipients, subject, message):
     """
     General function to send emails with a specific context.
@@ -85,7 +102,7 @@ def send_email_with_context(recipients, subject, message):
         return True
     except Exception as e:
         if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-            print(f"email se neodeslal... DEBUG: {e}")
+            logger.error(f"email se neodeslal... DEBUG: {e}")
             pass
         else:
             return Response({"error": f"E-mail se neodeslal, důvod: {e}"}, status=500)
