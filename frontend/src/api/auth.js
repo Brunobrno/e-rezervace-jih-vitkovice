@@ -13,6 +13,7 @@ axios_instance.defaults.xsrfHeaderName = "X-CSRFToken";
 
 // ✅ Přihlášení
 export const login = async (username, password) => {
+  logout();
   const response = await axios_instance.post(`/account/token/`, { username, password });
   return response.data;
 };
@@ -20,11 +21,14 @@ export const login = async (username, password) => {
 // ❌ Odhlášení
 export const logout = async () => {
   try {
-    await axios_instance.post(`/account/logout/`);
+    const response = await axios_instance.post('/account/logout/');
+    return response.data; // např. { detail: "Logout successful" }
   } catch (err) {
     console.error("Logout failed", err);
+    throw err;
   }
 };
+
 
 // 🔄 Obnova access tokenu pomocí refresh cookie
 export const refreshAccessToken = async () => {
