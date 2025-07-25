@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import Event, Reservation, MarketSlot, Square
 
+from .models import Event, Reservation, MarketSlot, Square
+from .forms import ReservationAdminForm
 from trznice.admin import custom_admin_site
 
 class SquareAdmin(admin.ModelAdmin):
@@ -54,12 +55,15 @@ custom_admin_site.register(Event, EventAdmin)
 
 # @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
+    form = ReservationAdminForm
+
     list_display = ("id", "event", "user", "reserved_from", "reserved_to", "status", "created_at", "is_deleted")
     list_filter = ("status", "user", "event", "is_deleted")
     search_fields = ("user__username", "user__email", "event__name", "note")
     ordering = ("-created_at",)
+    filter_horizontal = ['event_products']  # adds a nice widget for selection
 
-    base_fields = ['event', 'marketSlot', 'user', 'status', 'used_extension', 'final_price', 'reserved_to', 'reserved_from', 'note'] 
+    base_fields = ['event', 'marketSlot', 'user', 'status', 'used_extension', 'event_products', 'reserved_to', 'reserved_from', 'final_price', 'note'] 
 
     def get_fields(self, request, obj=None):
         fields = self.base_fields.copy()
@@ -85,6 +89,8 @@ class MarketSlotAdmin(admin.ModelAdmin):
     ordering = ("event", "status")
 
     base_fields = ['event', 'status', 'number', 'base_size', 'available_extension', 'price_per_m2', 'width', 'height', 'x', 'y'] 
+    
+    readonly_fields = ("id", "number")  # zde
 
     def get_fields(self, request, obj=None):
         fields = self.base_fields.copy()

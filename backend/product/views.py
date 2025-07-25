@@ -28,8 +28,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     description="Propojení produktů s událostmi. Zde se nastavují data prodeje konkrétního produktu na konkrétní události."
 )
 class EventProductViewSet(viewsets.ModelViewSet):
-
-    queryset = EventProduct.objects.select_related("product", "event").all().order_by("start_selling_date")
+    # queryset = EventProduct.objects.select_related("product", "event").all().order_by("start_selling_date")
+    queryset = EventProduct.objects.select_related("product").order_by("start_selling_date")
     serializer_class = EventProductSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["product", "event"]
@@ -37,8 +37,3 @@ class EventProductViewSet(viewsets.ModelViewSet):
     search_fields = ["product__name", "event__name"]
 
     permission_classes = [RoleAllowed("admin", "squareManager")]
-
-    # def get_queryset(self):
-    #     qs = EventProduct.objects.select_related("product", "event").order_by("start_selling_date")
-    #     # print("QuerySet count:", qs.count())  # Should not be zero
-    #     return qs

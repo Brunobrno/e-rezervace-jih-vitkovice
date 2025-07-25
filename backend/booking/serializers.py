@@ -1,7 +1,7 @@
 from rest_framework import serializers
+
 from .models import Event, MarketSlot, Reservation, Square
-
-
+from  product.serializers import EventProductSerializer
 
 class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,22 +24,66 @@ class ReservationSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        if data["reserved_from"] >= data["reserved_to"]:
+        event = data.get("event")
+        market_slot = data.get("marketSlot")
+        user = data.get("user")
+        reserved_from = data.get("reserved_from")
+        reserved_to = data.get("reserved_to")
+        used_extension = data.get("used_extension", 0)
+
+        if reserved_from >= reserved_to:
             raise serializers.ValidationError("Datum začátku rezervace musí být dříve než její konec.")
+
+        duration_days = (reserved_to - reserved_from).days
+        if duration_days not in (1, 7, 30):
+            raise serializers.ValidationError("Rezervace musí být na přesně 1, 7, nebo 30 dní.")
+
+        if reserved_from < event.start or reserved_to > event.end:
+            raise serializers.ValidationError("Rezervace musí být v rámci trvání akce.")
+
+        if market_slot:
+            if market_slot.event != event:
+                raise serializers.ValidationError("Prodejní místo nepatří do dané akce.")
+            if used_extension > market_slot.available_extension:
+                raise serializers.ValidationError("Požadované rozšíření překračuje dostupné rozšíření.")
+            overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
+                event=event,
+                marketSlot=market_slot,
+                reserved_from__lt=reserved_to,
+                reserved_to__gt=reserved_from,
+                # status="reserved"
+            )
+        # else:
+        #     overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
+        #         event=event,
+        #         marketSlot__isnull=True,
+        #         reserved_from__lt=reserved_to,
+        #         reserved_to__gt=reserved_from,
+        #         # status="reserved"
+        #     )
+
+        if overlapping.exists():
+            raise serializers.ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
+
+        if user.user_reservations.filter(status="reserved").count() >= 5:
+            raise serializers.ValidationError("Uživatel už má 5 aktivních rezervací.")
+
         return data
 
 class MarketSlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketSlot
         fields = [
-            "id", "event", "status",
+            "id", "event", "number", "status",
             "base_size", "available_extension",
             "x", "y", "width", "height",
             "price_per_m2"
         ]
-        read_only_fields = ["id"]
+    
+        read_only_fields = ["id", "number"]
         extra_kwargs = {
             "event": {"help_text": "ID akce (Event), ke které toto místo patří", "required": True},
+            "number": {"help_text": "Pořadové číslo prodejního místa u Akce, ke které toto místo patří", "required": False},
             "status": {"help_text": "Stav prodejního místa", "required": False},
             "base_size": {"help_text": "Základní velikost (m²)", "required": True},
             "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": True},
@@ -50,13 +94,39 @@ class MarketSlotSerializer(serializers.ModelSerializer):
             "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": True},
         }
 
+    def validate_base_size(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Základní velikost musí být větší než nula.")
+        return value
+
+    def validate(self, data):
+        if data.get("width", 0) <= 0 or data.get("height", 0) <= 0:
+            raise serializers.ValidationError("Šířka a výška místa musí být větší než nula.")
+        return data
+
+
+
+
+
+class SquareShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Square
+        fields = ["id", "name"]
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "name": {"read_only": True, "help_text": "Název náměstí"}
+        }
+
 class EventSerializer(serializers.ModelSerializer):
+    square = SquareShortSerializer(read_only=True)
+
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
+    event_products = EventProductSerializer(many=True, read_only=True)
 
     class Meta:
         model = Event
         fields = [
-            "id", "name", "description", "start", "end","price_per_m2","image", "market_slots"
+            "id", "name", "description", "start", "end", "price_per_m2", "image", "market_slots", "event_products", "square"
         ]
         read_only_fields = ["id"]
         extra_kwargs = {
@@ -65,23 +135,25 @@ class EventSerializer(serializers.ModelSerializer):
             "start": {"help_text": "Datum a čas začátku události", "required": True},
             "end": {"help_text": "Datum a čas konce události", "required": True},
             "price_per_m2": {"help_text": "Cena za m² pro rezervaci", "required": True},
-            "image": {"help_text": "Obrázek nebo plán náměstí", "required": False},
+            "image": {"help_text": "Obrázek nebo plán náměstí", "required": False, "allow_null": True},
 
             "market_slots": {"help_text": "Seznam prodejních míst vytvořených v rámci této události", "required": False},
+            "event_products": {"help_text": "Seznam povolených zboží k prodeji v rámci této události", "required": False},
+
+            "square": {"help_text": "Náměstí, na kterém se akce koná (jen ke čtení)", "required": False},
         }
 
 
 class SquareSerializer(serializers.ModelSerializer):
-    events = EventSerializer(many=True, read_only=True, source="square_events")
 
     class Meta:
         model = Square
         fields = [
             "id", "name", "description", "street", "city", "psc",
             "width", "height", "grid_rows", "grid_cols", "cellsize",
-            "image", "events"
+            "image"
         ]
-        read_only_fields = ["id", "events"]
+        read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"help_text": "Název náměstí", "required": True},
             "description": {"help_text": "Popis náměstí", "required": False},
