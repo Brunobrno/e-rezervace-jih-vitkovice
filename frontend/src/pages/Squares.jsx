@@ -37,7 +37,7 @@ import {
   Col,
 } from "react-bootstrap";
 
-import { getSquares } from "../api/model/square";
+import { getAllSquares } from "../api/model/square";
 
 function Squares() {
   const [squares, setSquares] = useState([]);
@@ -49,7 +49,7 @@ function Squares() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getSquares();
+        const data = await getAllSquares();
         setSquares(data);
       } finally {
         setFetching(false);

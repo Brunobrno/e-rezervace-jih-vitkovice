@@ -23,6 +23,7 @@ import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
 import Events from "./pages/Squares";
+import Squares from "./pages/Squares";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
         <Route path="/test" element={<Test />} />
         {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
         <Route element={<RequireAuthLayout />}>
+          <Route path="/squares" element={<Squares />} />
           <Route path="/events" element={<Events />} />
           <Route path="/squares" element={<Squares />} />
 

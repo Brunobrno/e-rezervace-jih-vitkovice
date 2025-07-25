@@ -64,4 +64,5 @@ export default {
   getEventById,
   updateEvent,
   deleteEvent,
+  partialUpdateEvent,
 };

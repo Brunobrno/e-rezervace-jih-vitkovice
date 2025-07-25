@@ -15,11 +15,27 @@ import { useEffect, useState, useMemo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 
 import {
-  getAllEvents,
-  getEventById,
-  updateEvent,
-  deleteEvent,
-} from "../api/model/event";
+  IconSearch,
+  IconX,
+  IconEye,
+  IconEdit,
+  IconTrash,
+  IconPlus,
+} from "@tabler/icons-react";
+import { DataTable } from "mantine-datatable";
+import dayjs from "dayjs";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Container,
+  Nav,
+  Navbar,
+  NavDropdown,
+  Form,
+  Row,
+  Col,
+} from "react-bootstrap";
+
+import { getEvents } from "../api/model/event";
 
 function Events() {
   const [events, setEvents] = useState([]);
@@ -42,8 +58,16 @@ function Events() {
   };
 
   useEffect(() => {
-    fetchEvents();
-  }, [debouncedQuery, selectedCities]);
+    const fetchData = async () => {
+      try {
+        const data = await getEvents();
+        setEvents(data);
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const cityOptions = useMemo(() => {
     const cities = new Set(events.map((e) => e.square?.city).filter(Boolean));
