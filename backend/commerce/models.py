@@ -53,17 +53,19 @@ class Order(SoftDeleteModel):
 
         # Safely get product and event objects for error messages and validation
         try:
-            product_obj = Reservation.objects.get(pk=self.reservation_id)
+            reservation_obj = Reservation.objects.get(pk=self.reservation_id)
         except Reservation.DoesNotExist:
             raise ValidationError("Neplatné ID Rezervace.")
 
         try:
-            event_obj = CustomUser.objects.get(pk=self.event_id)
+            user_obj = CustomUser.objects.get(pk=self.user_id)
+            if reservation_obj.user != user_obj:
+                raise ValidationError("Tato rezervace naleží jinému Uživatelovi.")
         except CustomUser.DoesNotExist:
             raise ValidationError("Neplatné ID Uživatele.")
 
         # Overlapping sales window check
-        overlapping = Reservation.objects.exclude(id=self.id).filter(
+        overlapping = Order.objects.exclude(id=self.id).filter(
             reservation_id=self.reservation_id,
         )
         if overlapping.exists():
@@ -83,12 +85,8 @@ class Order(SoftDeleteModel):
         if self.price_to_pay or self.price_to_pay == 0:
             if self.price_to_pay < 0:
                 errors["price_to_pay"] = "Cena musí být větší než 0."
-            if self.price_to_pay == 0:
+            if self.price_to_pay == 0 and self.reservation:
                 self.price_to_pay = self.reservation.final_price
-
-        # Prevent user from creating an order if reservation already has one (redundant if enforced at DB level)
-        if self.pk is None and hasattr(self.reservation, "order"):
-            errors["reservation"] = "Tato rezervace již má přiřazenou objednávku."
 
         if errors:
             raise ValidationError(errors)

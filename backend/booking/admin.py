@@ -5,7 +5,7 @@ from .forms import ReservationAdminForm
 from trznice.admin import custom_admin_site
 
 class SquareAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "description", "street", "city", "width", "height", "is_deleted")
+    list_display = ("id", "name", "description", "street", "city", "width", "height")
     list_filter = ("name", "is_deleted")
     search_fields = ("name", "description")
     ordering = ("name",)

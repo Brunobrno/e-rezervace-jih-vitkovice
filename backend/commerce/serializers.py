@@ -36,7 +36,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "price_to_pay",
             "payed_at",
         ]
-        read_only_fields = ["id", "created_at", "order_number"]
+        read_only_fields = ["id", "created_at", "order_number", "payed_at"]
         
         extra_kwargs = {
             "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": True},
