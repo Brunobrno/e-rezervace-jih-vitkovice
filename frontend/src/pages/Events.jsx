@@ -11,7 +11,14 @@ import {
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useState, useMemo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import { 
+  Container, 
+  Row, 
+  Col,
+  Nav,
+  Navbar,
+  NavDropdown,
+  Form, } from "react-bootstrap";
 import {
   IconSearch,
   IconX,
@@ -23,15 +30,6 @@ import {
 
 import { DataTable } from "mantine-datatable";
 import dayjs from "dayjs";
-import {
-  Container,
-  Nav,
-  Navbar,
-  NavDropdown,
-  Form,
-  Row,
-  Col,
-} from "react-bootstrap";
 
 import { getEvents } from "../api/model/event";
 
