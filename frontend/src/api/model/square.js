@@ -29,7 +29,7 @@ export const getSquareById = async (id) => {
 };
 
 /**
- * Aktualizuje celé náměstí (PUT).
+ * Aktualizuje celé náměstí (PATCH).
  * @param {number} id - ID náměstí k úpravě
  * @param {Object} data - Kompletní objekt náměstí ve formátu dle API (např. `name`, `city`, `width`, `height`, `description`)
  * @returns {Promise<Object>} - Aktualizovaný objekt `Square`

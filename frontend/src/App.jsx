@@ -16,13 +16,11 @@ import EmailVerificationPage from "./pages/register/EmailVerification";
 import Home from "./pages/Home";
 import ResetPasswordPage from "./pages/PasswordReset";
 import UserSettings from "./pages/Settings";
-import Squares from "./pages/Squares"
-import TablePage from "./pages/Multipurpouse-table(deprecated)"
 
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
-import Events from "./pages/Squares";
+import Events from "./pages/Events";
 import Squares from "./pages/Squares";
 
 function App() {
