@@ -1,6 +1,8 @@
 import axios_instance from '../auth';
 
-const API_BASE_URL = '/booking/reservations';
+//TODO: přepsat dokumentaci na orders model 
+
+const API_BASE_URL = '/commerce/orders';
 
 /**
  * GET seznam rezervací.

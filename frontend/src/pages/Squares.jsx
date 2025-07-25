@@ -2,6 +2,7 @@ import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
 import logo from "/img/logo.png";
 import sortBy from "lodash/sortBy";
+import { getSquares } from "../api/model/square";
 import {
   ActionIcon,
   Button,
@@ -37,7 +38,7 @@ import {
   Col,
 } from "react-bootstrap";
 
-import { getSquares } from "../api/model/square";
+
 
 function Squares() {
   const [squares, setSquares] = useState([]);

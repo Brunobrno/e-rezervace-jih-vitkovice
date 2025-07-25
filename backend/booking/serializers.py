@@ -1,21 +1,44 @@
 from rest_framework import serializers
 
 from .models import Event, MarketSlot, Reservation, Square
+from account.models import CustomUser
 from  product.serializers import EventProductSerializer
 
+class EventShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Square
+        fields = ["id", "name"]
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "name": {"read_only": True, "help_text": "Název náměstí"}
+        }
+
+class UserShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["id", "username"]
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "username": {"read_only": True, "help_text": "username uživatele"}
+        }
+
 class ReservationSerializer(serializers.ModelSerializer):
+    event = EventShortSerializer(read_only=True)
+    user = UserShortSerializer(read_only=True)
+
     class Meta:
         model = Reservation
         fields = [
-            "id", "event", "marketSlot", "user",
+            "id", "marketSlot",
             "used_extension", "reserved_from", "reserved_to",
-            "created_at", "status", "note", "final_price"
+            "created_at", "status", "note", "final_price",
+            "event", "user"
         ]
         read_only_fields = ["id", "created_at", "final_price"]
         extra_kwargs = {
-            "event": {"help_text": "ID akce (Event), ke které rezervace patří", "required": True},
+            "event": {"help_text": "ID a název akce (Event), ke které rezervace patří", "required": True},
             "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False},
-            "user": {"help_text": "ID uživatele, který rezervaci vytváří", "required": True},
+            "user": {"help_text": "ID a název uživatele, který rezervaci vytváří", "required": True},
             "used_extension": {"help_text": "Velikost rozšíření v m², které chce uživatel využít", "required": True},
             "reserved_from": {"help_text": "Datum a čas začátku rezervace", "required": True},
             "reserved_to": {"help_text": "Datum a čas konce rezervace", "required": True},
@@ -104,14 +127,29 @@ class MarketSlotSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Šířka a výška místa musí být větší než nula.")
         return data
 
+
+
+
+
+class SquareShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Square
+        fields = ["id", "name"]
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "name": {"read_only": True, "help_text": "Název náměstí"}
+        }
+
 class EventSerializer(serializers.ModelSerializer):
+    square = SquareShortSerializer(read_only=True)
+
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
     event_products = EventProductSerializer(many=True, read_only=True)
 
     class Meta:
         model = Event
         fields = [
-            "id", "name", "description", "start", "end", "price_per_m2", "image", "market_slots", "event_products"
+            "id", "name", "description", "start", "end", "price_per_m2", "image", "market_slots", "event_products", "square"
         ]
         read_only_fields = ["id"]
         extra_kwargs = {
@@ -124,20 +162,21 @@ class EventSerializer(serializers.ModelSerializer):
 
             "market_slots": {"help_text": "Seznam prodejních míst vytvořených v rámci této události", "required": False},
             "event_products": {"help_text": "Seznam povolených zboží k prodeji v rámci této události", "required": False},
+
+            "square": {"help_text": "Náměstí, na kterém se akce koná (jen ke čtení)", "required": False},
         }
 
 
 class SquareSerializer(serializers.ModelSerializer):
-    events = EventSerializer(many=True, read_only=True, source="square_events")
 
     class Meta:
         model = Square
         fields = [
             "id", "name", "description", "street", "city", "psc",
             "width", "height", "grid_rows", "grid_cols", "cellsize",
-            "image", "events"
+            "image"
         ]
-        read_only_fields = ["id", "events"]
+        read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"help_text": "Název náměstí", "required": True},
             "description": {"help_text": "Popis náměstí", "required": False},
@@ -150,6 +189,4 @@ class SquareSerializer(serializers.ModelSerializer):
             "grid_cols": {"help_text": "Počet sloupců gridu", "required": True},
             "cellsize": {"help_text": "Velikost buňky gridu v pixelech", "required": True},
             "image": {"help_text": "Obrázek / mapa náměstí", "required": False},
-
-            "events": {"help_text": "Seznam Akcí, které se konají na tomto naměstí.", "required": False},
         }
