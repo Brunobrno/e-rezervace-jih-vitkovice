@@ -47,8 +47,6 @@ function Table({
   });
   
   const [records, setRecords] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
   const [query, setQuery] = useState(initialQuery);
   const [debouncedQuery] = useDebouncedValue(query, 200);
   const [filters, setFilters] = useState({});
@@ -95,16 +93,6 @@ function Table({
     
     setRecords(sortedRecords);
   }, [data, sortStatus, debouncedQuery, filters]);
-
-  const handleOpenModal = (record) => {
-    setSelectedRecord(record);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedRecord(null);
-  };
 
   // Enhanced columns with actions
   const enhancedColumns = [...columns];
@@ -153,20 +141,6 @@ function Table({
         onRowClick={withActionsColumn ? undefined : handleOpenModal}
         {...props}
       />
-      
-      <Modal 
-        opened={isModalOpen} 
-        onClose={handleCloseModal}
-        title={modalTitle}
-        size="lg"
-        centered
-      >
-        {selectedRecord && renderModalContent ? (
-          renderModalContent(selectedRecord, handleCloseModal)
-        ) : (
-          <Text>No details available</Text>
-        )}
-      </Modal>
     </Box>
   );
 }
