@@ -27,7 +27,7 @@ import { DataTable } from "mantine-datatable";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
-import { getSquares } from '../api/model/square';
+import { getSquares }  from '../api/model/square';
 
 function EventsTree() {
   const [sortStatus, setSortStatus] = useState({
@@ -50,7 +50,7 @@ function EventsTree() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getAllSquares();
+        const data = await getSquares();
         setDataFile(data);
         setSquares(data); // Initialize squares with fetched data
       } catch (err) {

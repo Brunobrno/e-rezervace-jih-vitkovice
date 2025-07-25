@@ -2,6 +2,7 @@ import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
 import logo from "/img/logo.png";
 import sortBy from "lodash/sortBy";
+import { getSquares } from "../api/model/square";
 import {
   ActionIcon,
   Button,
@@ -37,7 +38,7 @@ import {
   Col,
 } from "react-bootstrap";
 
-import { getAllSquares } from "../api/model/square";
+
 
 function Squares() {
   const [squares, setSquares] = useState([]);
@@ -49,7 +50,7 @@ function Squares() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getAllSquares();
+        const data = await getSquares();
         setSquares(data);
       } finally {
         setFetching(false);

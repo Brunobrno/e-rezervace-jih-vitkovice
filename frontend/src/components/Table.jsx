@@ -27,7 +27,6 @@ import { DataTable } from "mantine-datatable";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
-import { getSquares } from "../api/model/square";
 
 function Table({
   data = [],
