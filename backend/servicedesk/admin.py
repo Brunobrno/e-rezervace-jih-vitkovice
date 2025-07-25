@@ -9,7 +9,9 @@ class ServiceTicketAdmin(admin.ModelAdmin):
     search_fields = ("title", "description", "user__username", "user__email")
     ordering = ("-created_at",)
 
+    readonly_fields = ['created_at']
     base_fields = ['title', 'category', 'description', 'user', 'status', 'urgency', 'created_at']
+
 
     def get_fields(self, request, obj=None):
         fields = self.base_fields.copy()

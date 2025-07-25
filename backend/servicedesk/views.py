@@ -17,7 +17,8 @@ from rest_framework.permissions import IsAuthenticated
     description="Správa uživatelských požadavků – vytvoření, úprava a výpis. Filtrování podle stavu, urgence, uživatele atd."
 )
 class ServiceTicketViewSet(viewsets.ModelViewSet):
-    queryset = ServiceTicket.objects.select_related("user").all().order_by("-created_at")
+    # queryset = ServiceTicket.objects.select_related("user").all().order_by("-created_at")
+    queryset = ServiceTicket.objects.all().order_by("-created_at")
     serializer_class = ServiceTicketSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = ServiceTicketFilter
@@ -28,9 +29,11 @@ class ServiceTicketViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role in ["admin", "cityClerk"]:  # Adjust as needed for staff roles
-            return ServiceTicket.objects.select_related("user").all().order_by("-created_at")
+            # return ServiceTicket.objects.select_related("user").all().order_by("-created_at")
+            return ServiceTicket.objects.all().order_by("-created_at")
         else:
-            return ServiceTicket.objects.select_related("user").filter(user=user).order_by("-created_at")
+            # return ServiceTicket.objects.select_related("user").filter(user=user).order_by("-created_at")
+            return ServiceTicket.objects.filter(user=user).order_by("-created_at")
 
     def get_object(self):
         obj = super().get_object()

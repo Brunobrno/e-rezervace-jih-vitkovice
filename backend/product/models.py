@@ -6,8 +6,8 @@ from trznice.models import SoftDeleteModel
 from booking.models import Event
 
 class Product(SoftDeleteModel):
-    name = models.CharField(max_length=255)
-    code = models.PositiveIntegerField()
+    name = models.CharField(max_length=255, verbose_name="Název produktu")
+    code = models.PositiveIntegerField(unique=True, verbose_name="Unitatní kód produktu")
 
     def __str__(self):
         return f"{self.name} : {self.code}"
@@ -26,24 +26,37 @@ class EventProduct(SoftDeleteModel):
     end_selling_date = models.DateTimeField()
 
     def clean(self):
-        # Basic presence check (could be omitted if always required via form or not null)
-        if not self.product or not self.event:
-            return
+        if not self.product_id or not self.event_id:
+            raise ValidationError("Zadejte Akci a Produkt.")
 
-        # Check for overlapping dates
+        # Safely get product and event objects for error messages and validation
+        try:
+            product_obj = Product.objects.get(pk=self.product_id)
+        except Product.DoesNotExist:
+            raise ValidationError("Neplatné ID Zboží (Produktu).")
+
+        try:
+            event_obj = Event.objects.get(pk=self.event_id)
+        except Event.DoesNotExist:
+            raise ValidationError("Neplatné ID Akce (Eventu).")
+
+        # Overlapping sales window check
         overlapping = EventProduct.objects.exclude(id=self.id).filter(
-            event=self.event,
-            product=self.product,
+            event_id=self.event_id,
+            product_id=self.product_id,
             start_selling_date__lt=self.end_selling_date,
             end_selling_date__gt=self.start_selling_date,
         )
-
         if overlapping.exists():
             raise ValidationError("Toto zboží už se prodává v tomto období na této akci.")
 
-        # Check if sale period is within the event bounds
-        if self.event and (self.start_selling_date < self.event.start or self.end_selling_date > self.event.end):
+        # Ensure sale window is inside event bounds
+        if self.start_selling_date < event_obj.start or self.end_selling_date > event_obj.end:
             raise ValidationError("Prodej zboží musí být v rámci trvání akce.")
+
+        # Ensure product+event pair is unique
+        if EventProduct.objects.exclude(pk=self.pk).filter(product_id=self.product_id, event_id=self.event_id).exists():
+            raise ValidationError(f"V rámci akce {event_obj} už je {product_obj} zaregistrováno.")
 
     def save(self, *args, **kwargs):
         self.full_clean()  # This includes clean_fields() + clean() + validate_unique()
