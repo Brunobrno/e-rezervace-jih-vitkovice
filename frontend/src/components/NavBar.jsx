@@ -66,9 +66,6 @@ function NavBar(){
                 <Nav.Link onClick={handleLogout}>
                   <FontAwesomeIcon icon={faRightFromBracket} /> 
                 </Nav.Link>
-                <Nav.Link as={Link} to="/settings"  className="text-secondary">
-                  <FontAwesomeIcon icon={faGear} className="me-2" />
-                </Nav.Link>
                 
               </>
             ) : (

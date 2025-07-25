@@ -42,7 +42,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
 
-        <Route path="/home" element={<Home />} />
+        
         <Route
           path="/clerk/create/reservation"
           element={<CreateReservation />}
@@ -51,8 +51,13 @@ function App() {
         <Route path="/seller/reservation" element={<SelectReservation />} />
         <Route path="/components" element={<EventsTree />} />
         <Route path="/test" element={<Test />} />
+
+        
         {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
         <Route element={<RequireAuthLayout />}>
+
+          <Route path="/home" element={<Home />} />
+
           <Route path="/squares" element={<Squares />} />
           <Route path="/events" element={<Events />} />
 
