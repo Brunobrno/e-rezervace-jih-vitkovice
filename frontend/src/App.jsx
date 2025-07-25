@@ -17,7 +17,7 @@ import Home from "./pages/Home";
 import ResetPasswordPage from "./pages/PasswordReset";
 import UserSettings from "./pages/Settings";
 import Squares from "./pages/Squares"
-import TablePage from "./pages/Multipurpouse-table"
+import TablePage from "./pages/Multipurpouse-table(deprecated)"
 
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
@@ -57,13 +57,12 @@ function App() {
           <Route path="/events" element={<Events />} />
           <Route path="/squares" element={<Squares />} />
 
-          <Route path="/table/:modelName" element={<TablePage />} />
-
           <Route path="/settings" element={<UserSettings />} />
 
           {/* Admin - tady si můžeš specifikovat roli která má oprávnění */}
           
           <Route element={<RequireRole roles={["admin"]} />}>
+
             <Route path="/test" element={<Test />} />
           </Route>
         </Route>
