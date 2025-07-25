@@ -23,7 +23,7 @@ from account.permissions import *
     )
 )
 class SquareViewSet(viewsets.ModelViewSet):
-    queryset = Square.objects.all().order_by("name")
+    queryset = Square.objects.prefetch_related("square_events").all().order_by("name")
     serializer_class = SquareSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["city", "psc", "width", "height"]
@@ -35,7 +35,6 @@ class SquareViewSet(viewsets.ModelViewSet):
         "city",         # město
         # "psc" je číslo, obvykle do search_fields nepatří, ale můžeš ho filtrovat přes filterset_fields
     ]
-
 
     permission_classes = [OnlyRolesAllowed("admin", "squareManager")]
 
@@ -55,7 +54,7 @@ class SquareViewSet(viewsets.ModelViewSet):
     )
 )
 class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all().order_by("start")
+    queryset = Event.objects.prefetch_related("event_marketSlots", "event_products").all().order_by("start")
     serializer_class = EventSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = EventFilter
@@ -77,7 +76,8 @@ class EventViewSet(viewsets.ModelViewSet):
     description="Vytváření, aktualizace a mazání konkrétních prodejních míst pro události."
 )
 class MarketSlotViewSet(viewsets.ModelViewSet):
-    queryset = MarketSlot.objects.select_related("event").all().order_by("event")
+    # queryset = MarketSlot.objects.select_related("event").all().order_by("event")
+    queryset = MarketSlot.objects.all().order_by("event")
     serializer_class = MarketSlotSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["event", "status"]
@@ -101,7 +101,8 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     )
 )
 class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.select_related("event", "marketSlot", "user").all().order_by("-created_at")
+    # queryset = Reservation.objects.select_related("event", "marketSlot", "user").all().order_by("-created_at")
+    queryset = Reservation.objects.all().order_by("-created_at")
     serializer_class = ReservationSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = ReservationFilter
@@ -118,9 +119,10 @@ class ReservationViewSet(viewsets.ModelViewSet):
     permission_classes = [RoleAllowed("admin", "squareManager", "seller")]
 
     def get_queryset(self):
-        qs = Reservation.objects.select_related("event", "marketSlot", "user").order_by("-created_at")
+        # queryset = Reservation.objects.select_related("event", "marketSlot", "user").prefetch_related("event_products").order_by("-created_at")
+        queryset = Reservation.objects.all().order_by("-created_at")
         user = self.request.user
         if hasattr(user, "role") and user.role == "seller":
-            return qs.filter(user=user)
-        return qs
+            return queryset.filter(user=user)
+        return queryset
 

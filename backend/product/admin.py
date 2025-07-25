@@ -10,13 +10,19 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ("name", "code")
     ordering = ("name",)
 
-    fields = ['name', 'code']
+    base_fields = ['name', 'code']
 
+
+    def get_fields(self, request, obj=None):
+        fields = self.base_fields.copy()
+        if request.user.role == "admin":
+            fields += ['is_deleted', 'deleted_at']
+        return fields
+    
     def get_queryset(self, request):
         # Use the all_objects manager to show even soft-deleted entries
         if request.user.role == "admin":
             qs = self.model.all_objects.all()
-            self.fields += ['is_deleted', 'deleted_at']
         else:
             qs = self.model.objects.all()
         return qs
@@ -35,13 +41,18 @@ class EventProductAdmin(admin.ModelAdmin):
     search_fields = ("product__name", "event__name")
     ordering = ("-start_selling_date",)
 
-    fieds = ['product', 'event', 'start_selling_date', 'end_selling_date']
+    base_fields = ['product', 'event', 'start_selling_date', 'end_selling_date']
 
+    def get_fields(self, request, obj=None):
+        fields = self.base_fields.copy()
+        if request.user.role == "admin":
+            fields += ['is_deleted', 'deleted_at']
+        return fields
+    
     def get_queryset(self, request):
         # Use the all_objects manager to show even soft-deleted entries
         if request.user.role == "admin":
             qs = self.model.all_objects.all()
-            self.fields += ['is_deleted', 'deleted_at']
         else:
             qs = self.model.objects.all()
         return qs
