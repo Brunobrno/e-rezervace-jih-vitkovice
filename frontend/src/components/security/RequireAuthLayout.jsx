@@ -13,21 +13,22 @@ export default function RequireAuthLayout() {
     const check = async () => {
       try {
         const currentUser = await getCurrentUser();
+        console.log(currentUser);
         if (!currentUser) {
-          navigate("/login", { state: { from: location.pathname } });
+          navigate("/login", { state: { from: location.pathname }, replace: true });
           return;
         }
         setUser(currentUser);
-        setChecking(false);
       } catch {
-        navigate("/login", { state: { from: location.pathname } });
+        navigate("/login", { state: { from: location.pathname }, replace: true });
+      } finally {
+        setChecking(false);
       }
     };
     check();
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   if (checking) return <p>🔒 Ověřuji přihlášení...</p>;
 
-  // Předáme user do children přes context nebo props outlet
   return <Outlet context={{ user }} />;
 }
