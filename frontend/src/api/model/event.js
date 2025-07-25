@@ -16,7 +16,7 @@ const API_BASE_URL = '/booking/events';
  * 
  * @returns {Promise<Array<Event>>}
  */
-const getEvents = async (params = {}) => {
+export const getEvents = async (params = {}) => {
   const response = await axios_instance.get(API_BASE_URL + '/', { params });
   return response.data;
 };
@@ -27,7 +27,7 @@ const getEvents = async (params = {}) => {
  * @param {number} id - ID události
  * @returns {Promise<Event>}
  */
-const getEventById = async (id) => {
+export const getEventById = async (id) => {
   const response = await axios_instance.get(`${API_BASE_URL}/${id}/`);
   return response.data;
 };
@@ -44,7 +44,7 @@ const getEventById = async (id) => {
  *   - square?: {number}
  * @returns {Promise<Event>}
  */
-const updateEvent = async (id, data) => {
+export const updateEvent = async (id, data) => {
   const response = await axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
   return response.data;
 };
@@ -55,13 +55,7 @@ const updateEvent = async (id, data) => {
  * @param {number} id - ID události
  * @returns {Promise<void>} - HTTP 204 No Content při úspěchu
  */
-const deleteEvent = async (id) => {
+export const deleteEvent = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
-export default {
-  getEvents,
-  getEventById,
-  updateEvent,
-  deleteEvent,
-};
