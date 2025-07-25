@@ -26,6 +26,7 @@ import RequireAuthLayout from "./components/security/RequireAuthLayout";
 import Events from "./pages/Squares";
 =======
 import Squares from "./pages/Squares";
+import Squares from "./pages/Squares";
 import Events from "./pages/Events";
 >>>>>>> Stashed changes
 

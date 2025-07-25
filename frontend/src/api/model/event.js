@@ -67,5 +67,5 @@ export default {
   deleteEvent,
 =======
   partialUpdateEvent,
->>>>>>> Stashed changes
+>>>>>>> Stashed changes,
 };

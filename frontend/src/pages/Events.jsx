@@ -16,14 +16,27 @@ import { Container, Row, Col } from "react-bootstrap";
 
 <<<<<<< Updated upstream
 import {
-  getAllEvents,
-  getEventById,
-  updateEvent,
-  deleteEvent,
-} from "../api/model/event";
-=======
+  IconSearch,
+  IconX,
+  IconEye,
+  IconEdit,
+  IconTrash,
+  IconPlus,
+} from "@tabler/icons-react";
+import { DataTable } from "mantine-datatable";
+import dayjs from "dayjs";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Container,
+  Nav,
+  Navbar,
+  NavDropdown,
+  Form,
+  Row,
+  Col,
+} from "react-bootstrap";
+
 import { getEvents } from "../api/model/event";
->>>>>>> Stashed changes
 
 function Events() {
   const [events, setEvents] = useState([]);
