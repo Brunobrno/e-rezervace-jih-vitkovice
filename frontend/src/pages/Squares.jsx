@@ -37,7 +37,11 @@ import {
   Col,
 } from "react-bootstrap";
 
+<<<<<<< Updated upstream
 import { getSquares } from "../api/model/square";
+=======
+import { getAllSquares } from "../api/model/square";
+>>>>>>> Stashed changes
 
 function Squares() {
   const [squares, setSquares] = useState([]);
@@ -49,7 +53,11 @@ function Squares() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+<<<<<<< Updated upstream
         const data = await getSquares();
+=======
+        const data = await getAllSquares();
+>>>>>>> Stashed changes
         setSquares(data);
       } finally {
         setFetching(false);

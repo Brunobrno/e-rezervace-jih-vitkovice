@@ -63,5 +63,9 @@ export default {
   getEvents,
   getEventById,
   updateEvent,
+<<<<<<< Updated upstream
   deleteEvent,
+=======
+  partialUpdateEvent,
+>>>>>>> Stashed changes
 };
