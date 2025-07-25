@@ -89,12 +89,12 @@ function Reservations() {
     {
       accessor: "event",
       title: "Událost",
-      render: (row) => `Událost #${row.event}`,
+      render: (row) => row.event.name || "Neznámá událost",
     },
     {
       accessor: "user",
       title: "Uživatel",
-      render: (row) => `Uživatel #${row.user}`,
+      render: (row) => row.user.username || "Neznámý",
     },
     {
       accessor: "reserved_from",
