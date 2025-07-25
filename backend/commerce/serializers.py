@@ -1,0 +1,92 @@
+from rest_framework import serializers
+
+from trznice.utils import RoundedDateTimeField
+from account.serializers import CustomUserSerializer
+from booking.serializers import ReservationSerializer
+from account.models import CustomUser
+from booking.models import Reservation
+from .models import Order
+
+class OrderSerializer(serializers.ModelSerializer):
+    created_at = RoundedDateTimeField()
+    payed_at = RoundedDateTimeField()
+
+    user = CustomUserSerializer(read_only=True)
+    reservation = ReservationSerializer(read_only=True)
+
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(), source="user", write_only=True
+    )
+    reservation_id = serializers.PrimaryKeyRelatedField(
+        queryset=Reservation.objects.all(), source="reservation", write_only=True
+    )
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "order_number",
+            "user",             # nested read-only
+            "user_id",          # required in POST/PUT
+            "reservation",      # nested read-only
+            "reservation_id",   # required in POST/PUT
+            "created_at",
+            "status",
+            "note",
+            "price_to_pay",
+            "payed_at",
+        ]
+        read_only_fields = ["id", "created_at", "order_number"]
+        
+        extra_kwargs = {
+            "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": True},
+            "reservation_id": {"help_text": "ID rezervace, ke které se objednávka vztahuje", "required": True},
+            "status": {"help_text": "Stav objednávky (např. new / paid / cancelled)", "required": False},
+            "note": {"help_text": "Poznámka k objednávce (volitelné)", "required": False},
+            "price_to_pay": {"help_text": "Celková cena, kterou má uživatel zaplatit. Pokud není zadána, převezme se z rezervace.", "required": False},
+            "payed_at": {"help_text": "Datum a čas, kdy byla objednávka zaplacena", "required": False},
+        }
+
+    def validate(self, data):
+        if "status" in data and data["status"] not in dict(Order.STATUS_CHOICES):
+            raise serializers.ValidationError({"status": "Neplatný stav objednávky."})
+        
+        status = data.get("status", getattr(self.instance, "status", "pending"))
+        payed_at = data.get("payed_at", getattr(self.instance, "payed_at", None))
+        reservation = data.get("reservation", getattr(self.instance, "reservation", None))
+        price = data.get("price_to_pay", getattr(self.instance, "price_to_pay", 0))
+
+        errors = {}
+
+        if status == "payed" and not payed_at:
+            errors["payed_at"] = "Musíte zadat datum a čas zaplacení, pokud je objednávka zaplacena."
+
+        if status != "payed" and payed_at:
+            errors["payed_at"] = "Datum zaplacení může být uvedeno pouze u zaplacených objednávek."
+
+        if price is not None and price < 0:
+            errors["price_to_pay"] = "Cena musí být větší nebo rovna 0."
+
+        if reservation:
+            if self.instance is None and hasattr(reservation, "order"):
+                errors["reservation"] = "Tato rezervace již má přiřazenou objednávku."
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
+
+    def create(self, validated_data):
+        # Automatically fill in the final price if not provided
+        if validated_data.get("price_to_pay") == 0 and validated_data.get("reservation"):
+            validated_data["price_to_pay"] = validated_data["reservation"].final_price
+
+        validated_data["user"] = validated_data.pop("user_id", validated_data.get("user"))
+        validated_data["reservation"] = validated_data.pop("reservation_id", validated_data.get("reservation"))
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if validated_data.get("price_to_pay") == 0 and instance.reservation:
+            validated_data["price_to_pay"] = instance.reservation.final_price
+        return super().update(instance, validated_data)

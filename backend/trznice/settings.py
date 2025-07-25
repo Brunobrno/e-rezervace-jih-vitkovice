@@ -35,6 +35,17 @@ print(f"FRONTEND_URL: {FRONTEND_URL}\nFRONTEND_URL_DEV: {FRONTEND_URL_DEV}\n")
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+# Pavel
+# from django.conf.locale.en import formats as en_formats
+
+DATETIME_INPUT_FORMATS = [
+    "%Y-%m-%d",              # '2025-07-25'
+    "%Y-%m-%d %H:%M",        # '2025-07-25 14:30'
+    "%Y-%m-%d %H:%M:%S",     # '2025-07-25 14:30:59'
+    "%Y-%m-%dT%H:%M",        # '2025-07-25T14:30'
+    "%Y-%m-%dT%H:%M:%S",     # '2025-07-25T14:30:59'
+]
+
 LANGUAGE_CODE = 'cs'
 
 TIME_ZONE = 'Europe/Prague'
@@ -242,6 +253,7 @@ else:
 
 
 REST_FRAMEWORK = {
+    "DATETIME_FORMAT": "%Y-%m-%d %H:%M", # Pavel
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'account.tokens.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
@@ -263,7 +275,8 @@ MY_CREATED_APPS = [
     'account',
     'booking',
     'product',
-    'servicedesk'
+    'servicedesk',
+    'commerce'
 ]
 
 INSTALLED_APPS = [

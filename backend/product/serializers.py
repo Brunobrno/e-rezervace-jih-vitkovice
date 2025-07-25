@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from trznice.utils import RoundedDateTimeField
 from .models import Product, EventProduct
 from booking.models import Event
 # from booking.serializers import EventSerializer
@@ -39,6 +40,9 @@ class EventProductSerializer(serializers.ModelSerializer):
         queryset=Product.objects.all(), write_only=True
     )
 
+    start_selling_date = RoundedDateTimeField()
+    end_selling_date = RoundedDateTimeField()
+
     class Meta:
         model = EventProduct
         fields = [
@@ -52,8 +56,8 @@ class EventProductSerializer(serializers.ModelSerializer):
 
         read_only_fields = ["id", "product"]
         extra_kwargs = {
-            "product": {"help_text": "ID produktu, který se bude prodávat na akci", "required": True},
-            "event": {"help_text": "ID akce (Event), na které se produkt bude prodávat", "required": True},
+            "product_id": {"help_text": "ID produktu, který se bude prodávat na akci", "required": True},
+            "event_id": {"help_text": "ID akce (Event), na které se produkt bude prodávat", "required": True},
             "start_selling_date": {"help_text": "Datum a čas začátku prodeje", "required": True},
             "end_selling_date": {"help_text": "Datum a čas konce prodeje", "required": True},
         }
