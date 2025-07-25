@@ -23,6 +23,7 @@ import RequireAuthLayout from "./components/security/RequireAuthLayout";
 import Events from "./pages/Events";
 import Squares from "./pages/Squares";
 import Reservations from "./pages/Reservations";
+import Ticket from "./pages/Ticket";
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
         
         {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
         <Route element={<RequireAuthLayout />}>
+          <Route path="/tickets" element={<Ticket />} />
 
           <Route path="/home" element={<Home />} />
 

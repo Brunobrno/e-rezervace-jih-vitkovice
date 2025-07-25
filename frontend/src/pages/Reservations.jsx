@@ -31,7 +31,7 @@ function Reservations() {
     try {
       const params = { search: query };
       const data = await getReservations(params);
-      setReservations(data.data);
+      setReservations(data);
     } finally {
       setFetching(false);
     }

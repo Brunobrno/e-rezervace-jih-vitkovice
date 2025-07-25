@@ -1,6 +1,6 @@
 import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRightFromBracket, faUser, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faRightFromBracket, faUser, faTicket } from '@fortawesome/free-solid-svg-icons';
 
 import React, { useState, useEffect } from 'react';
 import logo from '/img/logo.png';
@@ -53,9 +53,9 @@ function NavBar(){
           <Nav className="navbar-nav ml-auto text-uppercase">
             {user != undefined && user != false ? (
               <> 
-                
-                <Nav.Link as={Link} to="/test">
-                  TestLink
+                <Nav.Link as={Link} to="/tickets">
+                  <FontAwesomeIcon icon={faTicket} className="mr-2" />
+                  Tikety
                 </Nav.Link>
                 <div className="vr m-2" style={{ width: '2px',background: '#003a6b' }} />
                 <Nav.Link disabled as={Link} to="/settings"  className="text-secondary">
