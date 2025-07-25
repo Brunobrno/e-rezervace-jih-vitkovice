@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 
 from trznice.models import SoftDeleteModel
 from booking.models import Event
+from trznice.utils import truncate_to_minutes
 
 class Product(SoftDeleteModel):
     name = models.CharField(max_length=255, verbose_name="Název produktu")
@@ -26,6 +27,13 @@ class EventProduct(SoftDeleteModel):
     end_selling_date = models.DateTimeField()
 
     def clean(self):
+        if not (self.start_selling_date and self.end_selling_date):
+            raise ValidationError("Datum začátku a konce musí být neprázné.")
+        
+        # Vynecháme sekunky, mikrosecundy atd.
+        self.start_selling_date = truncate_to_minutes(self.start_selling_date)
+        self.end_selling_date = truncate_to_minutes(self.end_selling_date)
+
         if not self.product_id or not self.event_id:
             raise ValidationError("Zadejte Akci a Produkt.")
 

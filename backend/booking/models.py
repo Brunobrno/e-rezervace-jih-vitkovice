@@ -7,7 +7,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from trznice.models import SoftDeleteModel
-
+from trznice.utils import truncate_to_minutes
 
 #náměstí
 class Square(SoftDeleteModel):
@@ -43,6 +43,15 @@ class Square(SoftDeleteModel):
                 
         if self.height <= 0:
             raise ValidationError("Výška náměstí nemůže být menší nebo rovna nule.")
+        
+        if self.grid_rows <= 0:
+            raise ValidationError("Počet řádků mapy nemůže být menší nebo rovna nule.")
+        
+        if self.grid_cols <= 0:
+            raise ValidationError("Počet sloupců mapy nemůže být menší nebo rovna nule.")
+        
+        if self.cellsize <= 0:
+            raise ValidationError("Velikost mapové buňky nemůže být menší nebo rovna nule.")
         
         return super().clean()
 
@@ -81,6 +90,13 @@ class Event(SoftDeleteModel):
 
 
     def clean(self):
+        if not (self.start and self.end):
+            raise ValidationError("Datum začátku a konce musí být neprázné.")
+        
+        # Vynecháme sekunky, mikrosecundy atd.
+        self.start = truncate_to_minutes(self.start)
+        self.end = truncate_to_minutes(self.end)
+
         # Zkontroluj, že začátek je před koncem
         if self.start >= self.end:
             raise ValidationError("Datum začátku musí být před datem konce.")
@@ -202,6 +218,10 @@ class Reservation(SoftDeleteModel):
     def clean(self):
         if not self.reserved_from or not self.reserved_to:
             raise ValidationError("Čas rezervace nemůže být prázdný.")
+
+        # Vynecháme sekunky, mikrosecundy atd.
+        self.reserved_from = truncate_to_minutes(self.reserved_from)
+        self.reserved_to = truncate_to_minutes(self.reserved_to)
         
         if self.reserved_from >= self.reserved_to:
             raise ValidationError("Datum začátku rezervace musí být před datem konce.")
@@ -257,7 +277,7 @@ class Reservation(SoftDeleteModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         if (self.marketSlot):
-            duration = (self.reserved_from - self.reserved_to).days
+            duration = (self.reserved_to - self.reserved_from).days
             self.final_price = duration * (self.marketSlot.price_per_m2 * (
             Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
         ))
