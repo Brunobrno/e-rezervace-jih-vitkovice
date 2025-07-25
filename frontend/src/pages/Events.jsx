@@ -14,7 +14,6 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useState, useMemo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 
-<<<<<<< Updated upstream
 import {
   IconSearch,
   IconX,
@@ -59,10 +58,6 @@ function Events() {
   };
 
   useEffect(() => {
-<<<<<<< Updated upstream
-    fetchEvents();
-  }, [debouncedQuery, selectedCities]);
-=======
     const fetchData = async () => {
       try {
         const data = await getEvents();
@@ -73,7 +68,6 @@ function Events() {
     };
     fetchData();
   }, []);
->>>>>>> Stashed changes
 
   const cityOptions = useMemo(() => {
     const cities = new Set(events.map((e) => e.square?.city).filter(Boolean));

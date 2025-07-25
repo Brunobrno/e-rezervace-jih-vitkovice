@@ -22,13 +22,8 @@ import TablePage from "./pages/Multipurpouse-table"
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
-<<<<<<< Updated upstream
 import Events from "./pages/Squares";
-=======
 import Squares from "./pages/Squares";
-import Squares from "./pages/Squares";
-import Events from "./pages/Events";
->>>>>>> Stashed changes
 
 function App() {
   return (
