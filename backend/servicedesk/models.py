@@ -29,11 +29,11 @@ class ServiceTicket(SoftDeleteModel):
 
     title = models.CharField(max_length=255, verbose_name="Název")
     description = models.TextField(verbose_name="Popis problému", null=True, blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Zadavatel", related_name="tickets")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", verbose_name="Stav", null=True, blank=True)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="tech", verbose_name="Kategorie", null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Datum")
-    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default="medium", verbose_name="Urgence", null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Zadavatel", related_name="tickets", null=False, blank=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", verbose_name="Stav", blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="tech", verbose_name="Kategorie", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Datum", editable=False)
+    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default="medium", verbose_name="Urgence",     blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"
