@@ -89,7 +89,7 @@ export const logout = async () => {
         },
       }
     );
-
+    console.log(response.data);
     return response.data; // např. { detail: "Logout successful" }
   } catch (err) {
     console.error("Logout failed", err);

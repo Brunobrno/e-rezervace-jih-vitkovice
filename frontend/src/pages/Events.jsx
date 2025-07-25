@@ -1,40 +1,37 @@
 import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
+import { getEvents, deleteEvent } from "../api/model/event";
+import { IconEye, IconEdit, IconTrash } from "@tabler/icons-react";
+import { useEffect, useMemo, useState } from "react";
+import { Container, Row, Col } from "react-bootstrap";
 import {
   ActionIcon,
   Button,
+  Checkbox,
   MultiSelect,
   Stack,
   TextInput,
-  Text,
+  Anchor,
+  Box,
   Group,
+  Text,
+  Modal,
 } from "@mantine/core";
-import { IconSearch, IconX, IconEye, IconEdit, IconTrash } from "@tabler/icons-react";
-import { useDebouncedValue } from "@mantine/hooks";
-import { useEffect, useState, useMemo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
 
-import {
-  getAllEvents,
-  getEventById,
-  updateEvent,
-  deleteEvent,
-} from "../api/model/event";
 
 function Events() {
   const [events, setEvents] = useState([]);
   const [fetching, setFetching] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState("view"); // 'view', 'edit', 'delete'
   const [query, setQuery] = useState("");
-  const [debouncedQuery] = useDebouncedValue(query, 300);
-  const [selectedCities, setSelectedCities] = useState([]);
 
   const fetchEvents = async () => {
     setFetching(true);
     try {
-      const params = {};
-      if (debouncedQuery) params.search = debouncedQuery;
-      if (selectedCities.length > 0) params.city = selectedCities;
-      const data = await getAllEvents(params);
+      const params = { search: query };
+      const data = await getEvents(params);
       setEvents(data);
     } finally {
       setFetching(false);
@@ -43,26 +40,31 @@ function Events() {
 
   useEffect(() => {
     fetchEvents();
-  }, [debouncedQuery, selectedCities]);
-
-  const cityOptions = useMemo(() => {
-    const cities = new Set(events.map((e) => e.square?.city).filter(Boolean));
-    return [...cities];
-  }, [events]);
+  }, [query]);
 
   const handleShowEvent = (event) => {
-    console.log("Zobrazit detail události", event);
-    // TODO: Implementuj modální zobrazení
+    setSelectedEvent(event);
+    setModalType("view");
+    setShowModal(true);
   };
 
   const handleEditEvent = (event) => {
-    console.log("Editace události", event);
-    // TODO: Implementuj formulář pro editaci
+    setSelectedEvent(event);
+    setModalType("edit");
+    setShowModal(true);
   };
 
   const handleDeleteEvent = async (event) => {
     if (window.confirm(`Opravdu smazat událost: ${event.name}?`)) {
       await deleteEvent(event.id);
+      fetchEvents();
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedEvent) {
+      await deleteEvent(selectedEvent.id);
+      setShowModal(false);
       fetchEvents();
     }
   };
@@ -73,32 +75,22 @@ function Events() {
     {
       accessor: "description",
       title: "Popis",
-      render: (row) => row.description || <Text c="dimmed" fs="italic">Bez popisu</Text>,
+      render: (row) =>
+        row.description || (
+          <Text c="dimmed" fs="italic">
+            Bez popisu
+          </Text>
+        ),
     },
     {
       accessor: "square",
       title: "Náměstí",
-      render: (row) => row.square?.name || <Text c="dimmed" fs="italic">Neznámé</Text>,
-    },
-    {
-      accessor: "city",
-      title: "Město",
-      sortable: true,
-      render: (row) => row.square?.city || "-",
-      filter: (
-        <MultiSelect
-          label="Filtrovat města"
-          placeholder="Vyber město/města"
-          data={cityOptions}
-          value={selectedCities}
-          onChange={setSelectedCities}
-          clearable
-          searchable
-          leftSection={<IconSearch size={16} />}
-          comboboxProps={{ withinPortal: false }}
-        />
-      ),
-      filtering: selectedCities.length > 0,
+      render: (row) =>
+        row.square?.name || (
+          <Text c="dimmed" fs="italic">
+            Neznámé
+          </Text>
+        ),
     },
     {
       accessor: "start",
@@ -146,39 +138,155 @@ function Events() {
     },
   ];
 
-  const renderModalContent = (record, closeModal) => (
-    <Stack>
-      <Text><strong>ID:</strong> {record.id}</Text>
-      <Text><strong>Název:</strong> {record.name}</Text>
-      <Text><strong>Popis:</strong> {record.description}</Text>
-      <Text><strong>Město:</strong> {record.square?.city || "-"}</Text>
-      <Text><strong>Od:</strong> {new Date(record.start).toLocaleString()}</Text>
-      <Text><strong>Do:</strong> {new Date(record.end).toLocaleString()}</Text>
-      <Group mt="md">
-        <Button variant="outline" onClick={closeModal}>Zavřít</Button>
-        <Button color="blue">Upravit</Button>
-      </Group>
-    </Stack>
-  );
+  const renderModalContent = () => {
+    if (!selectedEvent) return <Text>Událost nebyla nalezena</Text>;
+
+    switch (modalType) {
+      case "view":
+        return (
+          <Stack>
+            <Text>
+              <strong>ID:</strong> {selectedEvent.id}
+            </Text>
+            <Text>
+              <strong>Název:</strong> {selectedEvent.name}
+            </Text>
+            <Text>
+              <strong>Popis:</strong> {selectedEvent.description || "—"}
+            </Text>
+            <Text>
+              <strong>Náměstí:</strong>{" "}
+              {selectedEvent.square?.name || "Neznámé"}
+            </Text>
+            <Text>
+              <strong>Město:</strong> {selectedEvent.square?.city || "—"}
+            </Text>
+            <Text>
+              <strong>Začátek:</strong>{" "}
+              {new Date(selectedEvent.start).toLocaleString()}
+            </Text>
+            <Text>
+              <strong>Konec:</strong>{" "}
+              {new Date(selectedEvent.end).toLocaleString()}
+            </Text>
+            <Group mt="md">
+              <Button variant="outline" onClick={() => setShowModal(false)}>
+                Zavřít
+              </Button>
+              <Button onClick={() => handleEditEvent(selectedEvent)}>
+                Upravit
+              </Button>
+            </Group>
+          </Stack>
+        );
+
+      case "edit":
+        return (
+          <Stack>
+            <TextInput
+              label="Název"
+              defaultValue={selectedEvent.name}
+              mb="sm"
+            />
+            <TextInput
+              label="Popis"
+              defaultValue={selectedEvent.description}
+              mb="sm"
+            />
+            <TextInput
+              label="Začátek"
+              defaultValue={new Date(selectedEvent.start).toLocaleString()}
+              disabled
+              mb="sm"
+            />
+            <TextInput
+              label="Konec"
+              defaultValue={new Date(selectedEvent.end).toLocaleString()}
+              disabled
+              mb="sm"
+            />
+            <Group mt="md">
+              <Button variant="outline" onClick={() => setShowModal(false)}>
+                Zrušit
+              </Button>
+              <Button color="blue" onClick={() => setShowModal(false)}>
+                Uložit změny
+              </Button>
+            </Group>
+          </Stack>
+        );
+
+      case "delete":
+        return (
+          <Stack>
+            <Text>Opravdu chcete smazat událost "{selectedEvent.name}"?</Text>
+            <Group mt="md">
+              <Button variant="outline" onClick={() => setShowModal(false)}>
+                Zrušit
+              </Button>
+              <Button color="red" onClick={handleConfirmDelete}>
+                Smazat
+              </Button>
+            </Group>
+          </Stack>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getModalTitle = () => {
+    if (!selectedEvent) return "Detail události";
+
+    switch (modalType) {
+      case "view":
+        return `Detail: ${selectedEvent.name}`;
+      case "edit":
+        return `Upravit: ${selectedEvent.name}`;
+      case "delete":
+        return `Smazat událost`;
+      default:
+        return "Detail události";
+    }
+  };
 
   return (
-    <Container fluid className="p-0 d-flex flex-column" style={{ overflowX: "hidden", height: "100vh" }}>
+    <Container
+      fluid
+      className="p-0 d-flex flex-column"
+      style={{ overflowX: "hidden", height: "100vh" }}
+    >
       <Row className="mx-0 flex-grow-1">
         <Col xs={2} className="px-0 bg-light" style={{ minWidth: 0 }}>
           <Sidebar />
         </Col>
-        <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
+        <Col
+          xs={10}
+          className="px-0 bg-white d-flex flex-column"
+          style={{ minWidth: 0 }}
+        >
           <Table
             data={events}
             columns={columns}
             fetching={fetching}
-            modalTitle="Detail události"
-            renderModalContent={renderModalContent}
             withTableBorder
             borderRadius="md"
             highlightOnHover
             verticalAlign="center"
+            onQueryChange={setQuery}
           />
+
+          {/* Custom Modal for Events */}
+          <Modal
+            opened={showModal}
+            onClose={() => setShowModal(false)}
+            title={getModalTitle()}
+            size="lg"
+            centered
+          >
+            {renderModalContent()}
+          </Modal>
         </Col>
       </Row>
     </Container>

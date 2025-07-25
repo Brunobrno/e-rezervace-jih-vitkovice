@@ -16,13 +16,14 @@ import EmailVerificationPage from "./pages/register/EmailVerification";
 import Home from "./pages/Home";
 import ResetPasswordPage from "./pages/PasswordReset";
 import UserSettings from "./pages/Settings";
-import Squares from "./pages/Squares"
-import TablePage from "./pages/Multipurpouse-table"
 
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
-import Events from "./pages/Squares";
+import Events from "./pages/Events";
+import Squares from "./pages/Squares";
+import Reservations from "./pages/Reservations";
+import Ticket from "./pages/Ticket";
 
 function App() {
   return (
@@ -43,7 +44,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
 
-        <Route path="/home" element={<Home />} />
+        
         <Route
           path="/clerk/create/reservation"
           element={<CreateReservation />}
@@ -52,12 +53,18 @@ function App() {
         <Route path="/seller/reservation" element={<SelectReservation />} />
         <Route path="/components" element={<EventsTree />} />
         <Route path="/test" element={<Test />} />
+
+        
         {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
         <Route element={<RequireAuthLayout />}>
-          <Route path="/events" element={<Events />} />
-          <Route path="/squares" element={<Squares />} />
+          <Route path="/tickets" element={<Ticket />} />
 
-          <Route path="/table/:modelName" element={<TablePage />} />
+          <Route path="/home" element={<Home />} />
+
+          <Route path="/squares" element={<Squares />} />
+          <Route path="/reservations" element={<Reservations />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<Events />} />
 
           <Route path="/settings" element={<UserSettings />} />
 
