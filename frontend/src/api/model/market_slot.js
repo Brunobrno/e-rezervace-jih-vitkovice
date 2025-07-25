@@ -10,7 +10,7 @@ const MARKET_SLOTS_API_URL = '/booking/market-slots/';
  *   - ordering: řazení podle pole (např. `x`, `-y`, ...)
  * @returns {Promise<Array>} - Pole objektů `MarketSlot`
  */
-const getAllMarketSlots = async (params = {}) => {
+export const getAllMarketSlots = async (params = {}) => {
   const response = await axios_instance.get(MARKET_SLOTS_API_URL, { params });
   return response.data;
 };
@@ -29,7 +29,7 @@ const getAllMarketSlots = async (params = {}) => {
  *   - price_per_m2: cena za m²
  * @returns {Promise<Object>} - Vytvořený objekt `MarketSlot`
  */
-const createMarketSlot = async (data) => {
+export const createMarketSlot = async (data) => {
   const response = await axios_instance.post(MARKET_SLOTS_API_URL, data);
   return response.data;
 };
@@ -39,7 +39,7 @@ const createMarketSlot = async (data) => {
  * @param {number} id - ID prodejního místa
  * @returns {Promise<Object>} - Objekt `MarketSlot`
  */
-const getMarketSlotById = async (id) => {
+export const getMarketSlotById = async (id) => {
   const response = await axios_instance.get(`${MARKET_SLOTS_API_URL}${id}/`);
   return response.data;
 };
@@ -50,7 +50,7 @@ const getMarketSlotById = async (id) => {
  * @param {Object} data - Částečný objekt s vlastnostmi k aktualizaci
  * @returns {Promise<Object>} - Aktualizovaný objekt `MarketSlot`
  */
-const updateMarketSlot = async (id, data) => {
+export const updateMarketSlot = async (id, data) => {
   const response = await axios_instance.patch(`${MARKET_SLOTS_API_URL}${id}/`, data);
   return response.data;
 };
@@ -60,16 +60,7 @@ const updateMarketSlot = async (id, data) => {
  * @param {number} id - ID prodejního místa
  * @returns {Promise<void>} - Úspěšný DELETE vrací 204 bez obsahu
  */
-const deleteMarketSlot = async (id) => {
+export const deleteMarketSlot = async (id) => {
   const response = await axios_instance.delete(`${MARKET_SLOTS_API_URL}${id}/`);
   return response.data;
-};
-
-export default {
-  getAllMarketSlots,
-  createMarketSlot,
-  getMarketSlotById,
-  updateMarketSlot,
-  patchMarketSlot,
-  deleteMarketSlot
 };

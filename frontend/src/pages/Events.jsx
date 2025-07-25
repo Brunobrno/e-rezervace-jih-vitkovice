@@ -1,5 +1,6 @@
 import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
+import getEvents from "../api/model/event";
 import {
   ActionIcon,
   Button,
@@ -10,15 +11,7 @@ import {
   Group,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { useEffect, useState, useMemo } from "react";
-import { 
-  Container, 
-  Row, 
-  Col,
-  Nav,
-  Navbar,
-  NavDropdown,
-  Form, } from "react-bootstrap";
+
 import {
   IconSearch,
   IconX,
@@ -27,11 +20,21 @@ import {
   IconTrash,
   IconPlus,
 } from "@tabler/icons-react";
-
 import { DataTable } from "mantine-datatable";
 import dayjs from "dayjs";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Container,
+  Nav,
+  Navbar,
+  NavDropdown,
+  Form,
+  Row,
+  Col,
+} from "react-bootstrap";
 
-import { getEvents } from "../api/model/event";
+
+
 
 function Events() {
   const [events, setEvents] = useState([]);
@@ -46,7 +49,7 @@ function Events() {
       const params = {};
       if (debouncedQuery) params.search = debouncedQuery;
       if (selectedCities.length > 0) params.city = selectedCities;
-      const data = await getAllEvents(params);
+      const data = await getEvents(params);
       setEvents(data);
     } finally {
       setFetching(false);
@@ -93,12 +96,22 @@ function Events() {
     {
       accessor: "description",
       title: "Popis",
-      render: (row) => row.description || <Text c="dimmed" fs="italic">Bez popisu</Text>,
+      render: (row) =>
+        row.description || (
+          <Text c="dimmed" fs="italic">
+            Bez popisu
+          </Text>
+        ),
     },
     {
       accessor: "square",
       title: "Náměstí",
-      render: (row) => row.square?.name || <Text c="dimmed" fs="italic">Neznámé</Text>,
+      render: (row) =>
+        row.square?.name || (
+          <Text c="dimmed" fs="italic">
+            Neznámé
+          </Text>
+        ),
     },
     {
       accessor: "city",
@@ -168,26 +181,48 @@ function Events() {
 
   const renderModalContent = (record, closeModal) => (
     <Stack>
-      <Text><strong>ID:</strong> {record.id}</Text>
-      <Text><strong>Název:</strong> {record.name}</Text>
-      <Text><strong>Popis:</strong> {record.description}</Text>
-      <Text><strong>Město:</strong> {record.square?.city || "-"}</Text>
-      <Text><strong>Od:</strong> {new Date(record.start).toLocaleString()}</Text>
-      <Text><strong>Do:</strong> {new Date(record.end).toLocaleString()}</Text>
+      <Text>
+        <strong>ID:</strong> {record.id}
+      </Text>
+      <Text>
+        <strong>Název:</strong> {record.name}
+      </Text>
+      <Text>
+        <strong>Popis:</strong> {record.description}
+      </Text>
+      <Text>
+        <strong>Město:</strong> {record.square?.city || "-"}
+      </Text>
+      <Text>
+        <strong>Od:</strong> {new Date(record.start).toLocaleString()}
+      </Text>
+      <Text>
+        <strong>Do:</strong> {new Date(record.end).toLocaleString()}
+      </Text>
       <Group mt="md">
-        <Button variant="outline" onClick={closeModal}>Zavřít</Button>
+        <Button variant="outline" onClick={closeModal}>
+          Zavřít
+        </Button>
         <Button color="blue">Upravit</Button>
       </Group>
     </Stack>
   );
 
   return (
-    <Container fluid className="p-0 d-flex flex-column" style={{ overflowX: "hidden", height: "100vh" }}>
+    <Container
+      fluid
+      className="p-0 d-flex flex-column"
+      style={{ overflowX: "hidden", height: "100vh" }}
+    >
       <Row className="mx-0 flex-grow-1">
         <Col xs={2} className="px-0 bg-light" style={{ minWidth: 0 }}>
           <Sidebar />
         </Col>
-        <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
+        <Col
+          xs={10}
+          className="px-0 bg-white d-flex flex-column"
+          style={{ minWidth: 0 }}
+        >
           <Table
             data={events}
             columns={columns}

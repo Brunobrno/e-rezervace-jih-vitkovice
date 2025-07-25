@@ -55,14 +55,12 @@ function App() {
         <Route element={<RequireAuthLayout />}>
           <Route path="/squares" element={<Squares />} />
           <Route path="/events" element={<Events />} />
-          <Route path="/squares" element={<Squares />} />
 
           <Route path="/settings" element={<UserSettings />} />
 
           {/* Admin - tady si můžeš specifikovat roli která má oprávnění */}
           
           <Route element={<RequireRole roles={["admin"]} />}>
-
             <Route path="/test" element={<Test />} />
           </Route>
         </Route>

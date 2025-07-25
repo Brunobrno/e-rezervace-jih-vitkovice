@@ -34,7 +34,7 @@ export const getSquareById = async (id) => {
  * @param {Object} data - Kompletní objekt náměstí ve formátu dle API (např. `name`, `city`, `width`, `height`, `description`)
  * @returns {Promise<Object>} - Aktualizovaný objekt `Square`
  */
-export const updateSquare = async (id, data) => {
+ export const updateSquare = async (id, data) => {
   const response = await axios_instance.patch(`${SQUARE_API_URL}${id}/`, data);
   return response.data;
 };
@@ -49,9 +49,3 @@ export const deleteSquare = async (id) => {
   return response.data;
 };
 
-export default {
-  getSquares,
-  getSquareById,
-  updateSquare,
-  deleteSquare
-};
