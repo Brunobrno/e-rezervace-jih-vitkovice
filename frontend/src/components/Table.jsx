@@ -64,7 +64,7 @@ function Table({
       setRecords([]);
       return;
     }
-
+    console.log(data)
     let filteredData = [...data];
     
     // Apply global search
