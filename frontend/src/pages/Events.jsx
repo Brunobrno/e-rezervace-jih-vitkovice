@@ -1,6 +1,6 @@
 import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
-import getEvents from "../api/model/event";
+import { getEvents } from "../api/model/event";
 import {
   ActionIcon,
   Button,
