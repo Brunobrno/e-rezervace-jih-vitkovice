@@ -80,14 +80,6 @@ class ReservationSerializer(serializers.ModelSerializer):
                 reserved_to__gt=reserved_from,
                 # status="reserved"
             )
-        # else:
-        #     overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
-        #         event=event,
-        #         marketSlot__isnull=True,
-        #         reserved_from__lt=reserved_to,
-        #         reserved_to__gt=reserved_from,
-        #         # status="reserved"
-        #     )
 
         if overlapping.exists():
             raise serializers.ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
@@ -136,9 +128,6 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         return data
 
 
-
-
-
 class SquareShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Square
@@ -150,6 +139,9 @@ class SquareShortSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     square = SquareShortSerializer(read_only=True)
+    square_id = serializers.PrimaryKeyRelatedField(
+        queryset=Square.objects.all(), source="square", write_only=True
+    )
 
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
     event_products = EventProductSerializer(many=True, read_only=True)
@@ -160,7 +152,9 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = [
-            "id", "name", "description", "start", "end", "price_per_m2", "image", "market_slots", "event_products", "square"
+            "id", "name", "description", "start", "end", "price_per_m2", "image", "market_slots", "event_products", 
+            "square",     # nested read-only
+            "square_id"   # required in POST/PUT
         ]
         read_only_fields = ["id"]
         extra_kwargs = {
@@ -175,25 +169,33 @@ class EventSerializer(serializers.ModelSerializer):
             "event_products": {"help_text": "Seznam povolených zboží k prodeji v rámci této události", "required": False},
 
             "square": {"help_text": "Náměstí, na kterém se akce koná (jen ke čtení)", "required": False},
+            "square_id": {"help_text": "ID Náměstí, na kterém se akce koná (jen ke zápis)", "required": True},
         }
-
-    def validate(self, data):
-
-        if data.get("start", 0) >= data.get("end", 0):
-            return serializers.ValidationError("Datum začátku musí být před datem konce.")
         
-        if data.get("price_per_m2", 0) <= 0:
-            return serializers.ValidationError("Cena za m² plochy pro rezervaci musí být větší než 0.")
+    def validate(self, data):
+        start = data.get("start")
+        end = data.get("end")
+        square = data.get("square")
 
-        #TODO: Dodelat, stahnout zmeny od Bruno a validovat field Square
-        # Zkontroluj, že se událost nepřekrývá s jinou na stejném náměstí
-        # overlapping = Event.objects.exclude(id=self.id).filter(
-        #     square=self.square,
-        #     start__lt=self.end,
-        #     end__gt=self.start,
-        # )
-        # if overlapping.exists():
-        #     return ValidationError("V tomto termínu už na daném náměstí probíhá jiná událost.")
+        if not start or not end or not square:
+            raise serializers.ValidationError("Pole start, end a square musí být vyplněné.")
+
+        if start >= end:
+            raise serializers.ValidationError("Datum začátku musí být před datem konce.")
+
+        if data.get("price_per_m2", 0) <= 0:
+            raise serializers.ValidationError("Cena za m² plochy pro rezervaci musí být větší než 0.")
+
+        overlapping = Event.objects.exclude(id=self.instance.id if self.instance else None).filter(
+            square=square,
+            start__lt=end,
+            end__gt=start,
+        )
+
+        if overlapping.exists():
+            raise serializers.ValidationError("V tomto termínu už na daném náměstí probíhá jiná událost.")
+
+        return data
 
 
 
