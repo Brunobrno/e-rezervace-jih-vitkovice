@@ -210,7 +210,7 @@ class Reservation(SoftDeleteModel):
                                     max_digits=8, 
                                     decimal_places=2, 
                                     validators=[MinValueValidator(0)], 
-                                    help_text="Neuvádět, pokud chcete, aby se vypočitala automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
+                                    help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
                                     )
 
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
@@ -239,7 +239,10 @@ class Reservation(SoftDeleteModel):
                 marketSlot=self.marketSlot,
                 reserved_from__lt=self.reserved_to,
                 reserved_to__gt=self.reserved_from,
+                # status="reserved"
             )
+        else:
+            raise ValidationError("Rezervace musí mít v sobě prodejní místo (MarketSlot).")
 
             if overlapping.exists():
                 raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")

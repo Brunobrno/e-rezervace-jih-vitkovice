@@ -28,7 +28,7 @@ class Order(SoftDeleteModel):
                                     max_digits=8, 
                                     decimal_places=2, 
                                     validators=[MinValueValidator(0)], 
-                                    help_text="Cena k zaplacení. Uveďte 0, aby se cena vypočetla automaticky.",
+                                    help_text="Cena k zaplacení. Počítá se automaticky z Rezervace.",
                                     )
     
     payed_at = models.DateTimeField(null=True, blank=True)
@@ -81,12 +81,18 @@ class Order(SoftDeleteModel):
         if self.status != "payed" and self.payed_at:
             errors["payed_at"] = "Datum zaplacení může být uvedeno pouze u zaplacených objednávek."
 
+        if self.reservation.final_price:
+            self.price_to_pay = self.reservation.final_price
+        else:
+            errors["price_to_pay"] = "Chyba v Rezervaci, neplatná cena."
+
         # Price must be greater than zero
-        if self.price_to_pay or self.price_to_pay == 0:
+        if self.price_to_pay:
             if self.price_to_pay < 0:
                 errors["price_to_pay"] = "Cena musí být větší než 0."
-            if self.price_to_pay == 0 and self.reservation:
-                self.price_to_pay = self.reservation.final_price
+            # if self.price_to_pay == 0 and self.reservation:
+        else:
+            errors["price_to_pay"] = "Nemůže být prázdné."
 
         if errors:
             raise ValidationError(errors)
@@ -95,7 +101,7 @@ class Order(SoftDeleteModel):
     def save(self, *args, **kwargs):
         self.full_clean()
 
-        if not self.price_to_pay and self.reservation:
-            self.price_to_pay = self.reservation.final_price
+        # if self.reservation:
+        #     self.price_to_pay = self.reservation.final_price
         
         super().save(*args, **kwargs)
