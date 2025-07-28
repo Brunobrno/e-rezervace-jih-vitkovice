@@ -4,12 +4,13 @@ from .models import Event, Reservation
 class EventFilter(django_filters.FilterSet):
     start_after = django_filters.IsoDateTimeFilter(field_name="start", lookup_expr="gte")
     end_before = django_filters.IsoDateTimeFilter(field_name="end", lookup_expr="lte")
-    city = django_filters.CharFilter(lookup_expr="icontains")
-    square_size = django_filters.CharFilter(lookup_expr="exact")
+    city = django_filters.CharFilter(field_name="square__city", lookup_expr="icontains")
+    square = django_filters.NumberFilter(field_name="square__id")  # přidáno filtrování podle ID náměstí
 
     class Meta:
         model = Event
-        fields = ["start_after", "end_before", "city", "square_size"]
+        fields = ["start_after", "end_before", "city", "square"]  # přidáno "square"
+
 
 
 class ReservationFilter(django_filters.FilterSet):

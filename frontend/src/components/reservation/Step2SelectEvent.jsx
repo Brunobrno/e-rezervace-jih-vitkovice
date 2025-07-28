@@ -1,49 +1,112 @@
-import { Card, Table, Button } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { Card, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import eventAPI from '../../api/model/event';
 
 const Step2SelectEvent = ({ data, setData, next, prev }) => {
-  const events = [
-    { id: 1, name: 'ZOO Market', price: '200 Kč', from: '12.1.', to: '12.20' },
-    { id: 2, name: 'Jarmark', price: '150 Kč', from: '10.5.', to: '10.10' },
-  ];
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  console.log("Data: ", data);
+
+  useEffect(() => {
+    if (!data.square?.id) {
+      setEvents([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    eventAPI.getEvents({ square_id: data.square.id })
+      .then(result => {
+        setEvents(result);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Nepodařilo se načíst události");
+        setLoading(false);
+      });
+  }, [data.square]);
 
   const selectEvent = (event) => {
-    setData((d) => ({ ...d, event }));
-    next();
+    setData(prev => ({
+      ...prev,
+      event,
+      slots: [],
+    }));
   };
 
+  if (!data.square) {
+    return (
+      <>
+        <Alert variant="warning">
+          Nejprve vyberte náměstí v předchozím kroku.
+        </Alert>
+        <Button onClick={prev}>Zpět</Button>
+      </>
+    );
+  }
+
+  if (loading) return <Spinner animation="border" role="status"><span className="visually-hidden">Načítám...</span></Spinner>;
+  if (error) return <Alert variant="danger">{error}</Alert>;
+  if (events.length === 0) return <p>Pro vybrané náměstí nebyly nalezeny žádné události.</p>;
+
   return (
-    <Card>
-      <Card.Body>
-        <h5>2. Vyberte si událost</h5>
-        <Table hover>
-          <thead>
-            <tr>
-              <th>Název</th>
-              <th>Cena</th>
-              <th>Od</th>
-              <th>Do</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((ev) => (
-              <tr key={ev.id}>
-                <td>{ev.name}</td>
-                <td>{ev.price}</td>
-                <td>{ev.from}</td>
-                <td>{ev.to}</td>
-                <td>
-                  <Button size="sm" onClick={() => selectEvent(ev)}>
-                    Vybrat
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-        <Button variant="secondary" onClick={prev}>Zpět</Button>
-      </Card.Body>
-    </Card>
+    <>
+      <h2>Vyber událost</h2>
+      <Row xs={1} sm={2} md={3} lg={3} className="g-4">
+        {events.map(ev => {
+          const selected = data.event?.id === ev.id;
+          return (
+            <Col key={ev.id} className='mb-5'>
+              <Card
+                onClick={() => selectEvent(ev)}
+                border={selected ? 'primary' : undefined}
+                className={`h-100 cursor-pointer ${selected ? 'shadow-lg' : ''}`}
+                style={{ userSelect: 'none' }}
+              >
+                {ev.image
+                  ? <Card.Img variant="top" src={ev.image} alt={ev.name} style={{ height: 150, objectFit: 'cover' }} />
+                  : <div style={{
+                      height: 150,
+                      backgroundColor: '#eee',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#999',
+                      fontStyle: 'italic',
+                      fontSize: 14,
+                    }}>
+                      Obrázek chybí
+                    </div>
+                }
+                <Card.Body>
+                  <Card.Title>{ev.name}</Card.Title>
+                  <Card.Subtitle className="mb-2 text-muted">
+                    {new Date(ev.start).toLocaleDateString()} – {new Date(ev.end).toLocaleDateString()}
+                  </Card.Subtitle>
+                  <Card.Text style={{ whiteSpace: 'pre-line', height: 70, overflow: 'hidden' }}>
+                    {ev.description}
+                  </Card.Text>
+                  <Card.Text><strong>Cena za m²:</strong> {ev.price_per_m2} Kč</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          );
+        })}
+      </Row>
+      <div className="mt-3 d-flex justify-content-between">
+        <Button onClick={prev} variant="secondary">Zpět</Button>
+        <Button
+          onClick={next}
+          disabled={!data.event}
+          variant="primary"
+        >
+          Pokračovat
+        </Button>
+      </div>
+    </>
   );
 };
 

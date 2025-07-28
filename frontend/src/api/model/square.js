@@ -49,3 +49,10 @@ export const deleteSquare = async (id) => {
   return response.data;
 };
 
+
+export default {
+  getSquares,
+  getSquareById,
+  updateSquare,
+  deleteSquare,
+};

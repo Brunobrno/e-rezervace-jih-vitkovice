@@ -59,3 +59,9 @@ export const deleteEvent = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
+export default {
+  getEvents,
+  getEventById,
+  updateEvent,
+  deleteEvent,
+};

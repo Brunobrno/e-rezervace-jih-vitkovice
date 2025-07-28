@@ -6,23 +6,32 @@ import Step2SelectEvent from './Step2SelectEvent';
 import Step3Map from './Step3Map';
 import Step4Summary from './Step4Summary';
 
-import eventAPI from '../../api/model/event'
-import squareAPI from '../../api/model/square'
-import market_slotAPI from '../../api/model/market_slot'
-import orderAPI from '../../api/model/order'
-import reservationAPI from '../../api/model/reservation'
-
+import orderAPI from '../../api/model/order';
 
 const ReservationWizard = () => {
-  const [step, setStep] = useState(1);
   const [data, setData] = useState({
-    square: squareAPI.get(),
-    event: ,
+    square: null,
+    event: null,
     slots: [],
   });
+  const [step, setStep] = useState(1);
 
   const next = () => setStep((s) => Math.min(s + 1, 4));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
+
+  const handleSubmit = async () => {
+    try {
+      const response = await orderAPI.createOrder({
+        event: data.event.id,
+        slots: data.slots.map((s) => s.id),
+      });
+      alert('Objednávka byla úspěšně odeslána!');
+      console.log('📦 Objednáno:', response);
+    } catch (error) {
+      console.error('❌ Chyba při odesílání objednávky:', error);
+      alert('Něco se pokazilo při odesílání objednávky.');
+    }
+  };
 
   return (
     <>
@@ -38,7 +47,15 @@ const ReservationWizard = () => {
         <Step3Map data={data} setData={setData} next={next} prev={prev} />
       )}
       {step === 4 && (
-        <Step4Summary data={data} prev={prev} />
+        <Step4Summary
+          formData={{
+            selectedSquare: data.square,
+            selectedEvent: data.event,
+            selectedSlot: data.slots,
+          }}
+          onBack={prev}
+          onSubmit={handleSubmit}
+        />
       )}
     </>
   );

@@ -32,7 +32,8 @@ const DynamicGrid = ({
   onReservationsChange,
   selectedIndex,
   onSelectedIndexChange,
-  static: isStatic = false,
+  static: isStatic = false, //možnost editovaní prostorů
+  multiSelect = false, //možnost zvolit více rezervací
 }) => {
   const {
     rows = DEFAULT_CONFIG.rows,
@@ -55,6 +56,29 @@ const DynamicGrid = ({
   const gridRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const lastCoordsRef = useRef(null);
+
+  /* 
+  selectedIndex (prop) může být nyní buď číslo (jediný index) nebo pole (více indexů).
+  selectedIndices je interní stav, který drží pole indexů.
+  */
+  const [selectedIndices, setSelectedIndices] = useState(
+    multiSelect && Array.isArray(selectedIndex) ? selectedIndex : selectedIndex !== null ? [selectedIndex] : []
+  );
+
+  useEffect(() => {
+    if (multiSelect) {
+      if (Array.isArray(selectedIndex)) {
+        setSelectedIndices(selectedIndex);
+      } else if (selectedIndex === null) {
+        setSelectedIndices([]);
+      } else {
+        setSelectedIndices([selectedIndex]);
+      }
+    } else {
+      // pokud není multiSelect, tak vyber jen jeden
+      setSelectedIndices(selectedIndex !== null ? [selectedIndex] : []);
+    }
+  }, [selectedIndex, multiSelect]);
 
   // Clamp function to ensure values stay within bounds
   // This function restricts a value to be within a specified range.
@@ -124,7 +148,23 @@ const DynamicGrid = ({
         isReservationClicked = true;
 
         if (!isStatic || res.status === "active") {
-          onSelectedIndexChange(resIndex);
+
+          if (multiSelect && (e.ctrlKey || e.metaKey)) { //pokud se při výberu drží CTRL + levý klik na myši
+            // toggle výběru kliknutého indexu
+            let newSelected;
+            if (selectedIndices.includes(resIndex)) {
+              newSelected = selectedIndices.filter(i => i !== resIndex);
+            } else {
+              newSelected = [...selectedIndices, resIndex];
+            }
+            setSelectedIndices(newSelected);
+            onSelectedIndexChange(newSelected);
+
+          } else {
+            // výběr jednoho prvku
+            setSelectedIndices([resIndex]);
+            onSelectedIndexChange(resIndex);
+          }
         }
 
         if (!isStatic) {
@@ -281,14 +321,23 @@ const DynamicGrid = ({
     (index) => {
       if (isStatic) return; // Disable for static
       onReservationsChange((prev) => prev.filter((_, i) => i !== index));
-      if (selectedIndex === index) {
-        onSelectedIndexChange(null);
-      } else if (selectedIndex > index) {
-        onSelectedIndexChange(selectedIndex - 1);
+
+      // Aktualizuj vybraný stav
+      if (multiSelect) {
+        const newSelected = selectedIndices.filter(i => i !== index);
+        setSelectedIndices(newSelected);
+        onSelectedIndexChange(newSelected);
+      } else {
+        if (selectedIndex === index) {
+          onSelectedIndexChange(null);
+        } else if (selectedIndex > index) {
+          onSelectedIndexChange(selectedIndex - 1);
+        }
       }
     },
-    [onReservationsChange, onSelectedIndexChange, selectedIndex, isStatic]
+    [onReservationsChange, onSelectedIndexChange, selectedIndex, selectedIndices, multiSelect, isStatic]
   );
+
 
   // Function to handle status change of a reservation
   // This function updates the status of a reservation based on user selection.
@@ -369,7 +418,7 @@ const DynamicGrid = ({
             width: res.w * cellSize,
             height: res.h * cellSize,
             backgroundColor: statusColors[res.status],
-            border: i === selectedIndex ? "2px solid black" : "none",
+            border: selectedIndices.includes(i) ? "2px solid black" : "none",
             fontSize: 12,
             textAlign: "center",
             transition:
@@ -383,6 +432,27 @@ const DynamicGrid = ({
                 ? "pointer"
                 : "default"
               : "move",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isStatic) {
+              if (multiSelect && (e.ctrlKey || e.metaKey)) {
+                // toggle selection
+                if (selectedIndices.includes(i)) {
+                  const newSelected = selectedIndices.filter(idx => idx !== i);
+                  setSelectedIndices(newSelected);
+                  onSelectedIndexChange(newSelected);
+                } else {
+                  const newSelected = [...selectedIndices, i];
+                  setSelectedIndices(newSelected);
+                  onSelectedIndexChange(newSelected);
+                }
+              } else {
+                // single select
+                setSelectedIndices([i]);
+                onSelectedIndexChange(i);
+              }
+            }
           }}
         >
           <div className="d-flex flex-column h-100 p-1">
