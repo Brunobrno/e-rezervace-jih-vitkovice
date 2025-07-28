@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 
 from trznice.utils import RoundedDateTimeField
 from account.serializers import CustomUserSerializer
@@ -8,8 +9,8 @@ from booking.models import Reservation
 from .models import Order
 
 class OrderSerializer(serializers.ModelSerializer):
-    created_at = RoundedDateTimeField()
-    payed_at = RoundedDateTimeField()
+    created_at = RoundedDateTimeField(read_only=True, required=False)
+    payed_at = RoundedDateTimeField(read_only=True, required=False)
 
     user = CustomUserSerializer(read_only=True)
     reservation = ReservationSerializer(read_only=True)
@@ -36,7 +37,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "price_to_pay",
             "payed_at",
         ]
-        read_only_fields = ["id", "created_at", "order_number", "payed_at"]
+        read_only_fields = ["id", "created_at", "order_number", "status", "price_to_pay", "payed_at"]
         
         extra_kwargs = {
             "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": True},
@@ -51,18 +52,18 @@ class OrderSerializer(serializers.ModelSerializer):
         if "status" in data and data["status"] not in dict(Order.STATUS_CHOICES):
             raise serializers.ValidationError({"status": "Neplatný stav objednávky."})
         
-        status = data.get("status", getattr(self.instance, "status", "pending"))
-        payed_at = data.get("payed_at", getattr(self.instance, "payed_at", None))
+        # status = data.get("status", getattr(self.instance, "status", "pending"))
+        # payed_at = data.get("payed_at", getattr(self.instance, "payed_at", None))
         reservation = data.get("reservation", getattr(self.instance, "reservation", None))
         price = data.get("price_to_pay", getattr(self.instance, "price_to_pay", 0))
 
         errors = {}
 
-        if status == "payed" and not payed_at:
-            errors["payed_at"] = "Musíte zadat datum a čas zaplacení, pokud je objednávka zaplacena."
+        # if status == "payed" and not payed_at:
+        #     errors["payed_at"] = "Musíte zadat datum a čas zaplacení, pokud je objednávka zaplacena."
 
-        if status != "payed" and payed_at:
-            errors["payed_at"] = "Datum zaplacení může být uvedeno pouze u zaplacených objednávek."
+        # if status != "payed" and payed_at:
+        #     errors["payed_at"] = "Datum zaplacení může být uvedeno pouze u zaplacených objednávek."
 
         if price is not None and price < 0:
             errors["price_to_pay"] = "Cena musí být větší nebo rovna 0."
@@ -77,8 +78,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # Automatically fill in the final price if not provided
-        if validated_data.get("price_to_pay") == 0 and validated_data.get("reservation"):
+        if validated_data.get("reservation"):
             validated_data["price_to_pay"] = validated_data["reservation"].final_price
 
         validated_data["user"] = validated_data.pop("user_id", validated_data.get("user"))
@@ -87,6 +87,10 @@ class OrderSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        if validated_data.get("price_to_pay") == 0 and instance.reservation:
-            validated_data["price_to_pay"] = instance.reservation.final_price
+        old_status = instance.status
+        new_status = validated_data.get("status", old_status)
+
+        if old_status != "payed" and new_status == "payed":
+            validated_data["payed_at"] = timezone.now()
+
         return super().update(instance, validated_data)
