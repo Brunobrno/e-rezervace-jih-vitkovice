@@ -14,7 +14,7 @@ import {
   Badge,
   TextInput,
   Select,
-  NumberInput
+  NumberInput,
 } from "@mantine/core";
 import dayjs from "dayjs";
 
@@ -109,9 +109,10 @@ function Reservations() {
       sortable: true,
     },
     {
-      accessor: "final_price",
+      accessor: (row) => parseFloat(row.final_price),
       title: "Cena",
-      render: (row) => `${row.final_price} Kč`,
+      sortable: true,
+      render: (row) => `${parseFloat(row.final_price).toFixed(2)} Kč`,
     },
     {
       accessor: "actions",
@@ -184,7 +185,9 @@ function Reservations() {
             </Text>
             <Text>
               <strong>Do:</strong>{" "}
-              {dayjs(selectedReservation.reserved_to).format("DD.MM.YYYY HH:mm")}
+              {dayjs(selectedReservation.reserved_to).format(
+                "DD.MM.YYYY HH:mm"
+              )}
             </Text>
             <Text>
               <strong>Vytvořeno:</strong>{" "}
@@ -200,7 +203,9 @@ function Reservations() {
               <Button variant="outline" onClick={() => setShowModal(false)}>
                 Zavřít
               </Button>
-              <Button onClick={() => handleEditReservation(selectedReservation)}>
+              <Button
+                onClick={() => handleEditReservation(selectedReservation)}
+              >
                 Upravit
               </Button>
             </Group>
@@ -221,28 +226,28 @@ function Reservations() {
               ]}
               mb="sm"
             />
-            
+
             <TextInput
               label="Událost"
               defaultValue={`#${selectedReservation.event}`}
               disabled
               mb="sm"
             />
-            
+
             <TextInput
               label="Uživatel"
               defaultValue={`#${selectedReservation.user}`}
               disabled
               mb="sm"
             />
-            
+
             <TextInput
               label="Pozice"
               defaultValue={`#${selectedReservation.marketSlot}`}
               disabled
               mb="sm"
             />
-            
+
             <TextInput
               label="Od"
               defaultValue={dayjs(selectedReservation.reserved_from).format(
@@ -251,7 +256,7 @@ function Reservations() {
               disabled
               mb="sm"
             />
-            
+
             <TextInput
               label="Do"
               defaultValue={dayjs(selectedReservation.reserved_to).format(
@@ -260,7 +265,7 @@ function Reservations() {
               disabled
               mb="sm"
             />
-            
+
             <NumberInput
               label="Cena (Kč)"
               defaultValue={parseFloat(selectedReservation.final_price)}
@@ -268,13 +273,13 @@ function Reservations() {
               precision={2}
               mb="sm"
             />
-            
+
             <TextInput
               label="Poznámka"
               defaultValue={selectedReservation.note}
               mb="sm"
             />
-            
+
             <Group mt="md">
               <Button variant="outline" onClick={() => setShowModal(false)}>
                 Zrušit

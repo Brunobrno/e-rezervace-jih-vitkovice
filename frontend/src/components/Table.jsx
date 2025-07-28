@@ -58,21 +58,39 @@ function Table({
     }
   }, [query, onQueryChange]);
   
+  // Deep search function to handle nested objects
+  const deepSearch = (obj, searchString) => {
+    if (typeof obj === 'string') {
+      return obj.toLowerCase().includes(searchString);
+    }
+    
+    if (typeof obj === 'number') {
+      return obj.toString().includes(searchString);
+    }
+    
+    if (obj && typeof obj === 'object') {
+      return Object.values(obj).some(value => 
+        deepSearch(value, searchString)
+      );
+    }
+    
+    return false;
+  };
+  
   // Apply sorting and filtering
   useEffect(() => {
     if (!data || data.length === 0) {
       setRecords([]);
       return;
     }
-    console.log(data)
-    let filteredData = [...data];
     
-    // Apply global search
-    if (debouncedQuery) {
+    let filteredData = [...data];
+    const searchString = debouncedQuery.trim().toLowerCase();
+    
+    // Apply global search with deep search
+    if (searchString) {
       filteredData = filteredData.filter(item => 
-        Object.values(item).some(value => 
-          String(value).toLowerCase().includes(debouncedQuery.toLowerCase())
-        )
+        deepSearch(item, searchString)
       );
     }
     
