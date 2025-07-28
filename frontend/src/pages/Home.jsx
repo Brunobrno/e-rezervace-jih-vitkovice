@@ -156,13 +156,13 @@ function Home() {
         <Col>
           <Container>
             <Row>
-              <Link to="/create-reservation?" className="btn btn-success fs-3 mb-3">
+              <Link to="/create-reservation" className="btn btn-success fs-3 mb-3">
                 <FontAwesomeIcon icon={faPlus} className="mr-2" />
                  Vytvořit Rezervaci
               </Link>
             </Row>
             <Row>
-              <Link to="/create-reservation?" className="btn btn-danger fs-3">
+              <Link to="#kkt" className="btn btn-danger fs-3">
                 nějaká další vypíčena akce
               </Link>
             </Row>

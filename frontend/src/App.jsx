@@ -25,6 +25,8 @@ import Squares from "./pages/Squares";
 import Reservations from "./pages/Reservations";
 import Ticket from "./pages/Ticket";
 
+import ReservationCart from "./pages/Reservation-cart"
+
 function App() {
   return (
     <>
@@ -52,7 +54,6 @@ function App() {
 
         <Route path="/seller/reservation" element={<SelectReservation />} />
         <Route path="/components" element={<EventsTree />} />
-        <Route path="/test" element={<Test />} />
 
         
         {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
@@ -72,6 +73,10 @@ function App() {
           
           <Route element={<RequireRole roles={["admin"]} />}>
             <Route path="/test" element={<Test />} />
+          </Route>
+
+          <Route element={<RequireRole roles={["seller"]} />}>
+            <Route path="/create-reservation" element={<ReservationCart />} />
           </Route>
         </Route>
       </Routes>

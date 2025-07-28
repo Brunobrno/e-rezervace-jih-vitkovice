@@ -41,7 +41,7 @@ function NavBar(){
 
         <Navbar expand="lg">
       <Container>
-        <Navbar.Brand href="/">
+        <Navbar.Brand href="/home">
             <img
               src={logo}
               className="d-none d-sm-block"
