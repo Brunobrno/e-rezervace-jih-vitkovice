@@ -7,6 +7,37 @@ import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
 
 // CreateReservation component
 // This component manages the state of reservations and provides functionality to export and clear them.
+// FIXME: upravit aby to tahalo data z import apiMarket_Slots from "../api/model/market_slot"
+/*
+export default {
+  getMarketSlots,
+  getMarketSlotById,
+  createMarketSlot,
+  updateMarketSlot,
+  deleteMarketSlot,
+};
+
+getbyid vrací:
+
+[
+  {
+    "id": 0,
+    "event": 0,
+    "number": 0,
+    "status": "empty",
+    "base_size": 0,
+    "available_extension": 0,
+    "x": 9223372036854776000,
+    "y": 9223372036854776000,
+    "width": 9223372036854776000,
+    "height": 9223372036854776000,
+    "price_per_m2": "-290842.30"
+  },
+  atd...
+]
+ty data použij a implementuj
+
+*/
 function CreateReservation() {
   const gridConfig = DEFAULT_CONFIG;
   const storageKey = `reservationData_${gridConfig.rows}x${gridConfig.cols}`;
@@ -99,6 +130,7 @@ function CreateReservation() {
 
       <div className="mt-3">
         <pre>{JSON.stringify(reservations, null, 2)}</pre>
+        místo tohodle prostě dej tlačítko uložit a odeslat 
       </div>
     </Container>
   );

@@ -1,7 +1,7 @@
 import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
 import { getEvents, deleteEvent } from "../api/model/event";
-import { IconEye, IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconEye, IconEdit, IconTrash, IconMap  } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import {
@@ -17,15 +17,19 @@ import {
   Text,
   Modal,
 } from "@mantine/core";
+import { useNavigate } from "react-router-dom";
 
 
 function Events() {
+  const navigate = useNavigate();
+
   const [events, setEvents] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("view"); // 'view', 'edit', 'delete'
   const [query, setQuery] = useState("");
+
 
   const fetchEvents = async () => {
     setFetching(true);
@@ -69,6 +73,10 @@ function Events() {
     }
   };
 
+  const handleRedirectToMap = async (event) => {
+    navigate(`/manage/events/map/${event.id}`);
+  };
+
   const columns = [
     { accessor: "id", title: "#", sortable: true },
     { accessor: "name", title: "Název", sortable: true },
@@ -108,31 +116,53 @@ function Events() {
       accessor: "actions",
       title: "Akce",
       render: (event) => (
-        <Group gap={4} wrap="nowrap">
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="green"
-            onClick={() => handleShowEvent(event)}
-          >
-            <IconEye size={16} />
-          </ActionIcon>
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="blue"
-            onClick={() => handleEditEvent(event)}
-          >
-            <IconEdit size={16} />
-          </ActionIcon>
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="red"
-            onClick={() => handleDeleteEvent(event)}
-          >
-            <IconTrash size={16} />
-          </ActionIcon>
+        <Group gap={4} wrap="nowrap" className="">
+          <Container className="d-flex">
+            <Row>
+              <Col className="p-0">
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="green"
+                  onClick={() => handleShowEvent(event)}
+                >
+                  <IconEye size={16} />
+                </ActionIcon>
+              </Col>
+              <Col className="p-0">
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="blue"
+                  onClick={() => handleEditEvent(event)}
+                >
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Col>
+            </Row>
+            <Row>
+              <Col className="p-0 pl-3">
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="red"
+                  onClick={() => handleDeleteEvent(event)}
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </Col>
+              <Col className="p-0 pl-3">
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="red"
+                  onClick={() => handleRedirectToMap(event)}
+                >
+                  <IconMap size={16} />
+                </ActionIcon>
+              </Col>
+            </Row>
+          </Container>
         </Group>
       ),
     },
