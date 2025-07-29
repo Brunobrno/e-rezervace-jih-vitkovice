@@ -165,8 +165,10 @@ class MarketSlot(SoftDeleteModel):
     
     def save(self, *args, **kwargs):
         self.full_clean()
+        # TODO: Fix this hovno logic, kdy uyivatel zada 0, se nastavi cena. Vymyslet neco noveho
         # If price_per_m2 is 0, use the event default
-        if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
+        # if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
+        if self.event and hasattr(self.event, 'price_per_m2'):
             self.price_per_m2 = self.event.price_per_m2
 
         # Automatically assign next available number within the same event
@@ -239,13 +241,13 @@ class Reservation(SoftDeleteModel):
                 marketSlot=self.marketSlot,
                 reserved_from__lt=self.reserved_to,
                 reserved_to__gt=self.reserved_from,
-                # status="reserved"
+                status="reserved"
             )
         else:
             raise ValidationError("Rezervace musí mít v sobě prodejní místo (MarketSlot).")
 
-            if overlapping.exists():
-                raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
+        if overlapping.exists():
+            raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
 
         # Oprava chyby při porovnání timezone-naive vs timezone-aware
         if self.event:
@@ -290,6 +292,7 @@ class Reservation(SoftDeleteModel):
             self.final_price = duration * (self.marketSlot.price_per_m2 * (
             Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
         ))
+        self.marketSlot.status = "reserved"
         super().save(*args, **kwargs)
 
     def __str__(self):
