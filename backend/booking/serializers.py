@@ -153,6 +153,7 @@ class EventSerializer(serializers.ModelSerializer):
     square_id = serializers.PrimaryKeyRelatedField(
         queryset=Square.objects.all(), source="square", write_only=True
     )
+    
 
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
     event_products = EventProductSerializer(many=True, read_only=True)

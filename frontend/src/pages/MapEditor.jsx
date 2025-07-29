@@ -3,16 +3,18 @@ import { useParams } from "react-router-dom";
 import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
 import DynamicGrid, { DEFAULT_CONFIG } from "../components/DynamicGrid";
 import apiEvent from "../api/model/event";
+import apiSquare from "../api/model/square";
+import apiMarketSlot from "../api/model/market_slot";
 
 function MapEditor() {
   const { eventId } = useParams();
-  const gridConfig = DEFAULT_CONFIG;
-  const storageKey = `reservationData_${eventId}_${gridConfig.rows}x${gridConfig.cols}`;
+  const [gridConfig, setGridConfig] = useState(DEFAULT_CONFIG);
 
   const [eventObject, setEventObject] = useState(null);
   const [marketSlots, setMarketSlots] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [squareObject, setSquareObject] = useState(null);
 
   // 🟡 Načtení eventu a slotů z databáze
   useEffect(() => {
@@ -22,7 +24,23 @@ function MapEditor() {
       try {
         const data = await apiEvent.getEventById(eventId);
         setEventObject(data);
-        setMarketSlots(data.market_slots || []);
+        setMarketSlots((data.market_slots || []).map((slot) => ({
+                ...slot,
+                status: slot.status || "active", // <- doplní výchozí hodnotu
+            }))
+        );
+
+        const sqData = await apiSquare.getSquareById(data.square.id)
+        setSquareObject(sqData);
+        
+        const rows = sqData.grid_rows;
+        const cols = sqData.grid_cols;
+
+        setGridConfig({
+            ...DEFAULT_CONFIG,
+            rows,
+            cols,
+        });
 
         // Převedení slotů na "reservations" formát
         const loadedReservations = (data.market_slots || []).map((slot, index) => ({
@@ -33,6 +51,7 @@ function MapEditor() {
           w: slot.width || 1,
           h: slot.height || 1,
           locked: slot.locked || false,
+          status: slot.status
         }));
 
         setReservations(loadedReservations);
@@ -44,10 +63,14 @@ function MapEditor() {
     fetchSlots();
   }, [eventId]);
 
+  /*
   // (Volitelně) Uložení rezervací do localStorage – pokud chceš mít zálohu
   useEffect(() => {
+    const storageKey = `reservationData_${eventId}_${gridConfig.rows}x${gridConfig.cols}`;
+
     localStorage.setItem(storageKey, JSON.stringify(reservations));
   }, [reservations, storageKey]);
+  */
 
   const exportReservations = () => {
     const dataStr = JSON.stringify(reservations, null, 2);
@@ -67,9 +90,42 @@ function MapEditor() {
     setSelectedIndex(null);
   };
 
-  const saveAndSend = () => {
-    console.log("Ukládám rezervace:", reservations);
-    alert("Rezervace uloženy (demo)");
+  {/* UKLÁDANÍ */}
+  const saveAndSend = async () => {
+    try {
+      console.log("Ukládám rezervace:", reservations);
+
+      // Pro každou rezervaci: update pokud je id, create pokud ne
+      for (const res of reservations) {
+        // Připrav data ve formátu API
+        const data = {
+          event: eventId,
+          status: res.status || "active", // nebo jiný výchozí stav
+          base_size: (res.w || 1) * (res.h || 1), // pokud máš pole base_size
+          available_extension: 0, // nebo něco rozumného, pokud nemáš
+          x: res.x,
+          y: res.y,
+          width: res.w,
+          height: res.h,
+          price_per_m2: 0, // případně doplnit podle potřeby
+        };
+
+        if (res.id) {
+          // Update existujícího slotu
+          await apiMarketSlot.updateMarketSlot(res.id, data);
+        } else {
+          // Vytvoření nového slotu
+          const created = await apiMarketSlot.createMarketSlot(data);
+          // Aktualizuj ID v state, aby bylo aktuální
+          res.id = created.id;
+        }
+      }
+
+      alert("Rezervace byly úspěšně uloženy.");
+    } catch (error) {
+      console.error("Chyba při ukládání rezervací:", error);
+      alert("Chyba při ukládání rezervací, zkontrolujte konzoli.");
+    }
   };
 
   return (
@@ -105,14 +161,14 @@ function MapEditor() {
             onReservationsChange={setReservations}
             selectedIndex={selectedIndex}
             onSelectedIndexChange={setSelectedIndex}
-            marketSlots={marketSlots} // volitelné, ale můžeš ho využít dál
+            marketSlots={marketSlots}
           />
         </Col>
         <Col sm={6} md={4}>
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Seznam rezervací</h5>
-              <span className="badge bg-primary">
+              <span className="badge bg-info text-white">
                 {reservations.length}
               </span>
             </Card.Header>

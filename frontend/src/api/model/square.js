@@ -24,7 +24,8 @@ export const getSquares = async (params = {}) => {
  * @returns {Promise<Object>} - Objekt `Square`
  */
 export const getSquareById = async (id) => {
-  const response = await axios_instance.get(`${SQUARE_API_URL}${id}/`, { params });
+  const response = await axios_instance.get(`${SQUARE_API_URL}${id}/`);
+  console.log(response.data);
   return response.data;
 };
 

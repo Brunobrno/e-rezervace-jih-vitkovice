@@ -92,15 +92,19 @@ const DynamicGrid = ({
   const getCellCoords = useCallback(
     (e) => {
       const rect = gridRef.current.getBoundingClientRect();
-      const cellWidth = rect.width / cols;
-      const cellHeight = rect.height / rows;
-
-      const x = clamp(Math.floor((e.clientX - rect.left) / cellWidth), 0, cols - 1);
-      const y = clamp(Math.floor((e.clientY - rect.top) / cellHeight), 0, rows - 1);
-
+      const x = clamp(
+        Math.floor((e.clientX - rect.left) / cellSize),
+        0,
+        cols - 1
+      );
+      const y = clamp(
+        Math.floor((e.clientY - rect.top) / cellSize),
+        0,
+        rows - 1
+      );
       return { x, y };
     },
-    [clamp, rows, cols]
+    [clamp, cellSize, rows, cols]
   );
 
   // Function to check if two rectangles overlap
@@ -361,15 +365,12 @@ const DynamicGrid = ({
             key={`${x}-${y}`}
             className="cell border"
             style={{
-              width: "100%",
-              height: "100%",
+              width: cellSize,
+              height: cellSize,
               border: "1px solid #eee",
-              opacity: 0.3,
-              backgroundColor: "transparent",
-              boxSizing: "border-box",
-              pointerEvents: "none",
               gridColumn: x + 1,
               gridRow: y + 1,
+              opacity: 0.4,
             }}
           />
         );
@@ -387,26 +388,24 @@ const DynamicGrid = ({
       onMouseLeave={isStatic ? undefined : handleMouseUp}
       onContextMenu={(e) => (isStatic ? undefined : e.preventDefault())}
       style={{
-        width: "100%",
-        aspectRatio: `${cols} / ${rows}`,
+        width: cols * cellSize,
+        height: rows * cellSize,
         display: "grid",
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        cursor: isStatic ? "default" : "crosshair",
-        position: "relative",
-        boxSizing: "border-box",
-        userSelect: "none",
+        gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+        cursor: isStatic ? "default" : "crosshair", // Changed to default
       }}
     >
-      {/* Grid buňky (pozadí) */}
-      {gridCells.map((cell, i) => React.cloneElement(cell, { key: i }))}
+      {gridCells}
 
-      {/* Rezervace */}
-      {reservations.map((res, i) => (
+      {reservations.map((res, i) => {
+        return(
         <div
           key={i}
           data-index={i}
-          className={`reservation ${res.status} ${draggedIndex === i ? "dragging" : ""}`}
+          className={`reservation ${res.status} ${
+            draggedIndex === i ? "dragging" : ""
+          }`}
           onContextMenu={(e) => {
             if (!isStatic) {
               e.preventDefault();
@@ -415,26 +414,31 @@ const DynamicGrid = ({
           }}
           style={{
             position: "absolute",
-            left: (res.x / cols) * 100 + "%",
-            top: (res.y / rows) * 100 + "%",
-            width: (res.w / cols) * 100 + "%",
-            height: (res.h / rows) * 100 + "%",
+            left: res.x * cellSize,
+            top: res.y * cellSize,
+            width: res.w * cellSize,
+            height: res.h * cellSize,
             backgroundColor: statusColors[res.status],
             border: selectedIndices.includes(i) ? "2px solid black" : "none",
-            boxShadow: selectedIndices.includes(i) ? "0 0 8px 2px rgba(0,0,0,0.3)" : "none",
-            borderRadius: 4,
-            fontSize: "0.8rem",
+            fontSize: 12,
             textAlign: "center",
-            transition: draggedIndex === i || resizingIndex === i ? "none" : "all 0.2s ease",
+            transition:
+              draggedIndex === i || resizingIndex === i
+                ? "none"
+                : "all 0.2s ease",
             zIndex: 2,
-            cursor: isStatic ? (res.status === "empty" ? "pointer" : "default") : "move",
-            overflow: "hidden",
-            userSelect: "none",
+            // Only show pointer for empty reservations in static mode
+            cursor: isStatic
+              ? res.status === "empty"
+                ? "pointer"
+                : "default"
+              : "move",
           }}
           onClick={(e) => {
             e.stopPropagation();
             if (!isStatic) {
               if (multiSelect && (e.ctrlKey || e.metaKey)) {
+                // toggle selection
                 if (selectedIndices.includes(i)) {
                   const newSelected = selectedIndices.filter(idx => idx !== i);
                   setSelectedIndices(newSelected);
@@ -445,6 +449,7 @@ const DynamicGrid = ({
                   onSelectedIndexChange(newSelected);
                 }
               } else {
+                // single select
                 setSelectedIndices([i]);
                 onSelectedIndexChange(i);
               }
@@ -456,10 +461,12 @@ const DynamicGrid = ({
               <strong>{i + 1}</strong>
             </div>
             {isStatic ? (
+              // Show status text in static mode
               <div className="status-text text-center">
                 {statusLabels[res.status]}
               </div>
             ) : (
+              // Show dropdown in non-static mode
               <select
                 className="form-select form-select-sm"
                 value={res.status}
@@ -479,35 +486,31 @@ const DynamicGrid = ({
                 position: "absolute",
                 right: 0,
                 bottom: 0,
-                width: "1rem",
-                height: "1rem",
+                width: 12, // FIX: Increased size for better usability
+                height: 12,
                 backgroundColor: "black",
                 cursor: "nwse-resize",
                 zIndex: 3,
-                border: "1px solid white",
-                borderRadius: "0 0 4px 0",
-                boxSizing: "border-box",
+                border: "1px solid white", // FIX: Better visibility
               }}
             />
           )}
         </div>
-      ))}
+        )
+      })}
 
-      {/* Výběr nové rezervace (draft) */}
       {!isStatic && isDragging && startCell && hoverCell && (
         <div
           className="reservation-draft"
           style={{
             position: "absolute",
-            left: (Math.min(startCell.x, hoverCell.x) / cols) * 100 + "%",
-            top: (Math.min(startCell.y, hoverCell.y) / rows) * 100 + "%",
-            width: ((Math.abs(startCell.x - hoverCell.x) + 1) / cols) * 100 + "%",
-            height: ((Math.abs(startCell.y - hoverCell.y) + 1) / rows) * 100 + "%",
+            left: Math.min(startCell.x, hoverCell.x) * cellSize,
+            top: Math.min(startCell.y, hoverCell.y) * cellSize,
+            width: (Math.abs(startCell.x - hoverCell.x) + 1) * cellSize,
+            height: (Math.abs(startCell.y - hoverCell.y) + 1) * cellSize,
             backgroundColor: "rgba(0, 128, 0, 0.3)",
             pointerEvents: "none",
             zIndex: 1,
-            border: "2px dashed rgba(0, 128, 0, 0.7)",
-            borderRadius: 4,
           }}
         />
       )}
