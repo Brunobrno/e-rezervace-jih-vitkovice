@@ -13,9 +13,8 @@ from .email import *
 
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import PermissionDenied  
 
-
-import re
 
 User = get_user_model()
 
@@ -44,6 +43,18 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "is_active",
         ]
         read_only_fields = ["id", "create_time", "GDPR", "username", "account_type"]
+
+        def update(self, instance, validated_data):
+            user = self.context["request"].user
+            staff_only_fields = ["role", "email_verified", "var_symbol", "is_active"]
+
+            if user.role not in ["admin", "cityClerk"]:
+                unauthorized = [f for f in staff_only_fields if f in validated_data]
+                if unauthorized:
+                    raise PermissionDenied(f"You are not allowed to modify: {', '.join(unauthorized)}")
+
+            return super().update(instance, validated_data)
+
  
 
 

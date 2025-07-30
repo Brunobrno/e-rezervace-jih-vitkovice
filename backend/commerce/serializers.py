@@ -17,8 +17,8 @@ class SlotPriceInputSerializer(serializers.Serializer):
 #počítaní ceny!!!
 class PriceCalculationSerializer(serializers.Serializer):
     event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
-    reserved_from = serializers.DateTimeField()
-    reserved_to = serializers.DateTimeField()
+    reserved_from = RoundedDateTimeField()
+    reserved_to = RoundedDateTimeField()
     slots = SlotPriceInputSerializer(many=True)
 
     def validate(self, data):

@@ -57,7 +57,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             "created_at", "status", "note", "final_price",
             "event", "user"
         ]
-        read_only_fields = ["id", "created_at", "final_price"]
+        read_only_fields = ["id", "created_at"]
         extra_kwargs = {
             "event": {"help_text": "ID a název akce (Event), ke které rezervace patří", "required": True},
             "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False},
@@ -67,6 +67,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             "reserved_to": {"help_text": "Datum a čas konce rezervace", "required": True},
             "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False},
             "note": {"help_text": "Poznámka k rezervaci (volitelné)", "required": False},
+            "final_price": {"help_text": "Cena za Rezervaci, počítá se podle plochy prodejního místa a počtů dní.", "required": False, "default": 0},
         }
 
     def validate(self, data):
@@ -76,6 +77,24 @@ class ReservationSerializer(serializers.ModelSerializer):
         reserved_from = data.get("reserved_from")
         reserved_to = data.get("reserved_to")
         used_extension = data.get("used_extension", 0)
+
+
+        if "final_price" in data:
+            if self.instance:  # update
+                if data["final_price"] != self.instance.final_price and user.role not in ["admin", "cityClerk"]:
+                    raise serializers.ValidationError({
+                        "final_price": "Pouze administrátor nebo úředník může upravit finální cenu."
+                    })
+            else:  # create
+                if user.role not in ["admin", "cityClerk"]:
+                    raise serializers.ValidationError({
+                        "final_price": "Pouze administrátor nebo úředník může nastavit finální cenu."
+                    })
+        else:
+            data["final_price"] = 0
+
+        if data.get("final_price") < 0:
+            raise serializers.ValidationError("Cena za m² nemůže být záporná.")
 
         if reserved_from >= reserved_to:
             raise serializers.ValidationError("Datum začátku rezervace musí být dříve než její konec.")
@@ -97,7 +116,7 @@ class ReservationSerializer(serializers.ModelSerializer):
                 marketSlot=market_slot,
                 reserved_from__lt=reserved_to,
                 reserved_to__gt=reserved_from,
-                # status="reserved"
+                status="reserved"
             )
 
         if overlapping.exists():
@@ -125,12 +144,12 @@ class MarketSlotSerializer(serializers.ModelSerializer):
             "number": {"help_text": "Pořadové číslo prodejního místa u Akce, ke které toto místo patří", "required": False},
             "status": {"help_text": "Stav prodejního místa", "required": False},
             "base_size": {"help_text": "Základní velikost (m²)", "required": True},
-            "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": True},
+            "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": False, "default": 0},
             "x": {"help_text": "X souřadnice levého horního rohu", "required": True},
             "y": {"help_text": "Y souřadnice levého horního rohu", "required": True},
             "width": {"help_text": "Šířka Slotu", "required": True},
             "height": {"help_text": "Výška Slotu", "required": True},
-            "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": True},
+            "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": False, "default": 0},
         }
 
     def validate_base_size(self, value):
@@ -139,6 +158,13 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        price_per_m2 = data.setdefault("price_per_m2", 0)
+        if price_per_m2 < 0:
+            raise serializers.ValidationError("Cena za m² nemůže být záporná.")
+        
+        if data.setdefault("available_extension", 0) < 0:
+            raise serializers.ValidationError("Velikost možného rozšíření musí být větší než nula.")
+
         if data.get("width", 0) <= 0 or data.get("height", 0) <= 0:
             raise serializers.ValidationError("Šířka a výška místa musí být větší než nula.")
         
