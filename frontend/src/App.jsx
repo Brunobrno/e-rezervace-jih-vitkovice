@@ -18,11 +18,12 @@ import UserSettings from "./pages/Settings";
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
-import Events from "./pages/Events";
-import Squares from "./pages/Squares";
-import Reservations from "./pages/Reservations";
+import Events from "./pages/manager/Events";
+import Squares from "./pages/manager/Squares";
+import Reservations from "./pages/manager/Reservations";
 import Ticket from "./pages/Ticket";
-import MapEditor from "./pages/MapEditor"
+import MapEditor from "./pages/MapEditor";
+import SquareDesigner from "./pages/manager/create/SquareDesigner";
 
 import ReservationCart from "./pages/Reservation-cart"
 
@@ -79,12 +80,12 @@ function App() {
             <Route element={<RequireRole roles={[ "admin"]} />}>
 
               <Route path="/manage/squares" element={<Squares />} />
+              <Route path="/manage/squares/designer" element={<SquareDesigner />} />
               <Route path="/manage/reservations" element={<Reservations />} />
               <Route path="/manage/events" element={<Events />} />
               <Route path="/manage/events/:id" element={<Events />} />
 
               <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
-              
             </Route>
           </Route>
         </Routes>

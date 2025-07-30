@@ -61,28 +61,32 @@ export default function Step3Map({ data, setData, next, prev }) {
   }, [data?.event?.id]);
 
   // Výběr slotu
-  const handleSlotSelect = (index) => {
-    const selected = slots[index];
-    if (!selected?.id) return;
-
-    setSelectedIndices((prev) =>
-      multiSelectEnabled
-        ? prev.includes(index)
-          ? prev.filter((i) => i !== index)
-          : [...prev, index]
-        : [index]
-    );
-
-    setData((prev) => {
-      const isAlreadySelected = (prev.slots ?? []).some((s) => s.id === selected.id);
-      const updatedSlots = isAlreadySelected
-        ? prev.slots.filter((s) => s.id !== selected.id)
-        : multiSelectEnabled
-        ? [...(prev.slots || []), selected]
-        : [selected];
-
-      return { ...prev, slots: updatedSlots };
-    });
+  // Opravená logika pro multiSelect i single select
+  const handleSlotSelect = (clickedIdx) => {
+    console.log('[Step3Map] handleSlotSelect called with:', clickedIdx, 'multiSelectEnabled:', multiSelectEnabled);
+    if (multiSelectEnabled) {
+      setSelectedIndices(prev => {
+        let indices;
+        if (prev.includes(clickedIdx)) {
+          indices = prev.filter(i => i !== clickedIdx);
+        } else {
+          indices = [...prev, clickedIdx];
+        }
+        setData((prevData) => ({
+          ...prevData,
+          slots: indices.map(i => slots[i]).filter(Boolean)
+        }));
+        return indices;
+      });
+    } else {
+      const idx = typeof clickedIdx === 'number' ? clickedIdx : null;
+      console.log('[Step3Map] Setting selectedIndices (single):', idx !== null ? [idx] : []);
+      setSelectedIndices(idx !== null ? [idx] : []);
+      setData((prevData) => ({
+        ...prevData,
+        slots: idx !== null && slots[idx] ? [slots[idx]] : []
+      }));
+    }
   };
 
   const calculatePrice = useCallback(async () => {
@@ -139,11 +143,13 @@ export default function Step3Map({ data, setData, next, prev }) {
     setData((prev) => ({ ...prev, date: format(date, "yyyy-MM-dd") }));
   };
 
+  // V multiSelect módu vždy pole, v single select číslo nebo null
   const dynamicGridSelectedIndex = multiSelectEnabled
     ? selectedIndices
     : selectedIndices.length === 1
-    ? selectedIndices[0]
-    : null;
+      ? selectedIndices[0]
+      : null;
+  console.log('[Step3Map] dynamicGridSelectedIndex:', dynamicGridSelectedIndex, 'selectedIndices:', selectedIndices, 'multiSelectEnabled:', multiSelectEnabled);
 
   return (
     <div className="d-flex flex-column align-items-center gap-3 w-100">
@@ -204,6 +210,16 @@ export default function Step3Map({ data, setData, next, prev }) {
         static={true}
         multiSelect={multiSelectEnabled}
         clickableStatic={true}
+        // Debug: log props on every render
+        ref={el => {
+          if (el) {
+            console.log('[Step3Map] DynamicGrid props:', {
+              selectedIndex: dynamicGridSelectedIndex,
+              multiSelect: multiSelectEnabled,
+              slots,
+            });
+          }
+        }}
       />
 
       <div className="d-flex justify-content-between w-100 mt-4 px-4">

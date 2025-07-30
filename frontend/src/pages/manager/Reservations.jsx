@@ -1,7 +1,7 @@
-import Table from "../components/Table";
-import Sidebar from "../components/Sidebar";
-import { getReservations, deleteReservation } from "../api/model/reservation";
-import { IconEye, IconEdit, IconTrash } from "@tabler/icons-react";
+import Table from "../../components/Table";
+import Sidebar from "../../components/Sidebar";
+import { getReservations, deleteReservation } from "../../api/model/reservation";
+import { IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import {
@@ -338,6 +338,16 @@ function Reservations() {
           className="px-0 bg-white d-flex flex-column"
           style={{ minWidth: 0 }}
         >
+          <Group justify="space-between" align="center" px="md" py="sm">
+            <h1>Rezervace</h1>
+            <Button leftSection={<IconPlus size={16} />} onClick={() => {
+              setModalType("edit");
+              setSelectedEvent(null);
+              setShowModal(true);
+            }}>
+              Přidat rezervaci
+            </Button>
+          </Group>
           <Table
             data={reservations}
             columns={columns}

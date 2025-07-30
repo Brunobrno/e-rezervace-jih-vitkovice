@@ -1,5 +1,5 @@
-import Table from "../components/Table";
-import Sidebar from "../components/Sidebar";
+import Table from "../../components/Table";
+import Sidebar from "../../components/Sidebar";
 import { IconEye, IconEdit, IconTrash, IconMap, IconPlus } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
@@ -18,7 +18,7 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 
-import apiEvent from "../api/model/event";
+import apiEvent from "../../api/model/event";
 
 function Events() {
   const navigate = useNavigate();
@@ -103,7 +103,7 @@ function Events() {
       setShowModal(false);
       fetchEvents();
     } catch (err) {
-      console.error("Chyba při ukládání události:", err);
+      console.error("Chyba při ukládání akce:", err);
       // Můžeš přidat state pro zobrazení chyby uživateli
     }
   };
@@ -136,7 +136,7 @@ function Events() {
   };
 
   const handleDeleteEvent = async (event) => {
-    if (window.confirm(`Opravdu smazat událost: ${event.name}?`)) {
+    if (window.confirm(`Opravdu smazat akci: ${event.name}?`)) {
       await apiEvent.deleteEvent(event.id);
       fetchEvents();
     }
@@ -240,7 +240,7 @@ function Events() {
     if (modalType === "delete" && selectedEvent) {
       return (
         <Stack>
-          <Text>Opravdu chcete smazat událost "{selectedEvent.name}"?</Text>
+          <Text>Opravdu chcete smazat akci "{selectedEvent.name}"?</Text>
           <Group mt="md">
             <Button variant="outline" onClick={() => setShowModal(false)}>Zrušit</Button>
             <Button color="red" onClick={handleConfirmDelete}>Smazat</Button>
@@ -254,17 +254,17 @@ function Events() {
 
   // getModalTitle můžeš použít stejný, např:
   const getModalTitle = () => {
-    if (!selectedEvent && modalType !== "edit") return "Detail události";
+    if (!selectedEvent && modalType !== "edit") return "Detail akce";
 
     switch (modalType) {
       case "view":
         return `Detail: ${selectedEvent?.name}`;
       case "edit":
-        return selectedEvent ? `Upravit: ${selectedEvent.name}` : "Přidat událost";
+        return selectedEvent ? `Upravit: ${selectedEvent.name}` : "Přidat akci";
       case "delete":
-        return `Smazat událost`;
+        return `Smazat akci`;
       default:
-        return "Detail události";
+        return "Detail akce";
     }
   };
 
@@ -375,13 +375,13 @@ function Events() {
           style={{ minWidth: 0 }}
         >
           <Group justify="space-between" align="center" px="md" py="sm">
-            <Text fw={700} size="lg">Události</Text>
+            <h1>Akce</h1>
             <Button leftSection={<IconPlus size={16} />} onClick={() => {
               setModalType("edit");
               setSelectedEvent(null);
               setShowModal(true);
             }}>
-              Přidat událost
+              Přidat akci
             </Button>
           </Group>
 
@@ -399,7 +399,7 @@ function Events() {
           <Modal
             opened={showModal}
             onClose={() => setShowModal(false)}
-            title={modalType === "edit" && !selectedEvent ? "Přidat událost" : getModalTitle()}
+            title={modalType === "edit" && !selectedEvent ? "Přidat akci" : getModalTitle()}
             size="lg"
             centered
           >

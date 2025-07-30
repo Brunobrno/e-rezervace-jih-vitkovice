@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Table from "../components/Table";
-import Sidebar from "../components/Sidebar";
+import Table from "../../components/Table";
+import Sidebar from "../../components/Sidebar";
 import {
   Container,
   Row,
@@ -18,7 +18,7 @@ import {
   MultiSelect
 } from "@mantine/core";
 import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
-import apiSquares from "../api/model/square";
+import apiSquares from "../../api/model/square";
 
 function Squares() {
   const [squares, setSquares] = useState([]);
@@ -246,12 +246,12 @@ function Squares() {
           <Sidebar />
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
-          {/* Přidávací tlačítko */}
-          <div className="p-3 d-flex justify-content-end">
-            <Button onClick={() => setShowModal(true)} variant="primary" size="sm" startIcon={<IconPlus />}>
-              Přidat
+          <Group justify="space-between" align="center" px="md" py="sm">
+            <h1>Náměstí</h1>
+            <Button leftSection={<IconPlus size={16} />} href="/manage/squares/designer">
+              Přidat náměstí
             </Button>
-          </div>
+          </Group>
 
           <Table
             data={squares}
@@ -268,176 +268,8 @@ function Squares() {
       </Row>
 
       {/* Modal pro přidání */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Přidat nové náměstí</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formName">
-                  <Form.Label>Název</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    placeholder="Název náměstí"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formStreet">
-                  <Form.Label>Ulice</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleChange}
-                    placeholder="Ulice"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formCity">
-                  <Form.Label>Město</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="Město"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formPSC">
-                  <Form.Label>PSČ</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="psc"
-                    value={formData.psc}
-                    onChange={handleChange}
-                    placeholder="PSČ"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formWidth">
-                  <Form.Label>Šířka</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="width"
-                    value={formData.width}
-                    onChange={handleChange}
-                    placeholder="Šířka"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formHeight">
-                  <Form.Label>Výška</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="height"
-                    value={formData.height}
-                    onChange={handleChange}
-                    placeholder="Výška"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formCellsize">
-                  <Form.Label>Velikost buňky</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="cellsize"
-                    value={formData.cellsize}
-                    onChange={handleChange}
-                    placeholder="Velikost buňky"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formGridRows">
-                  <Form.Label>Počet řádků</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="grid_rows"
-                    value={formData.grid_rows}
-                    onChange={handleChange}
-                    placeholder="Počet řádků"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formGridCols">
-                  <Form.Label>Počet sloupců</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="grid_cols"
-                    value={formData.grid_cols}
-                    onChange={handleChange}
-                    placeholder="Počet sloupců"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3" controlId="formDescription">
-                  <Form.Label>Popis</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Popis"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3" controlId="formImage">
-                  <Form.Label>URL obrázku</Form.Label>
-                  <Form.Control
-                    type="file"
-                    name="image"
-                    value={formData.image}
-                    onChange={handleChange}
-                    accept="image/*"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <div className="d-flex justify-content-end">
-              <Button variant="secondary" onClick={() => setShowModal(false)} className="me-2">
-                Zrušit
-              </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
-                {submitting ? "Ukládám..." : "Uložit"}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
-      </Modal>
+      {/* Instead of modal, redirect to designer page */}
+      {/* Modal removed, see button below */}
     </Container>
   );
 }
