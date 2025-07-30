@@ -65,7 +65,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             "used_extension": {"help_text": "Velikost rozšíření v m², které chce uživatel využít", "required": True},
             "reserved_from": {"help_text": "Datum a čas začátku rezervace", "required": True},
             "reserved_to": {"help_text": "Datum a čas konce rezervace", "required": True},
-            "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False},
+            "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False, "default": "reserved"},
             "note": {"help_text": "Poznámka k rezervaci (volitelné)", "required": False},
             "final_price": {"help_text": "Cena za Rezervaci, počítá se podle plochy prodejního místa a počtů dní.", "required": False, "default": 0},
         }
@@ -78,6 +78,14 @@ class ReservationSerializer(serializers.ModelSerializer):
         reserved_to = data.get("reserved_to")
         used_extension = data.get("used_extension", 0)
 
+        if "status" in data:
+            if self.instance:  # update
+                if data["status"] != self.instance.final_price and user.role not in ["admin", "cityClerk"]:
+                    raise serializers.ValidationError({
+                        "status": "Pouze administrátor nebo úředník může upravit status rezervace."
+                    })
+        else:
+            data["status"] = "reserved"
 
         if "final_price" in data:
             if self.instance:  # update
