@@ -9,6 +9,7 @@ from drf_spectacular.utils import extend_schema
 
 
 from account.permissions import RoleAllowed
+from rest_framework.permissions import IsAuthenticated
 from .serializers import OrderSerializer, PriceCalculationSerializer
 from .filters import OrderFilter
 
@@ -44,6 +45,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         "reservation__note",
     ]
     permission_classes = [RoleAllowed("admin", "cityClerk", "seller")]
+    # permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = Order.objects.select_related("user", "reservation").order_by("-created_at")
