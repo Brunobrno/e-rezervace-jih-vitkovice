@@ -33,7 +33,7 @@ class Square(SoftDeleteModel):
     #Grid Parameters
     grid_rows = models.PositiveSmallIntegerField(default=60)
     grid_cols = models.PositiveSmallIntegerField(default=45)
-    cellsize = models.PositiveIntegerField(default=10)
+    cellsize = models.PositiveIntegerField(default=10) #FIXME: zkontrolovat jestli je potrebne
 
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
@@ -167,8 +167,8 @@ class MarketSlot(SoftDeleteModel):
         self.full_clean()
         # TODO: Fix this hovno logic, kdy uyivatel zada 0, se nastavi cena. Vymyslet neco noveho
         # If price_per_m2 is 0, use the event default
-        # if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
-        if self.event and hasattr(self.event, 'price_per_m2'):
+        # if self.event and hasattr(self.event, 'price_per_m2'):
+        if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
             self.price_per_m2 = self.event.price_per_m2
 
         # Automatically assign next available number within the same event
@@ -281,20 +281,32 @@ class Reservation(SoftDeleteModel):
                 raise ValidationError(f"{self.user} už má 5 rezervací, víc není možno rezervovat pro jednoho uživatele.")
         else:
             raise ValidationError("Rezervace musí mít v sobě uživatele.")
+        
+        if self.final_price == 0:
+            duration = (self.reserved_to - self.reserved_from).days
+            self.final_price = duration * (self.marketSlot.price_per_m2 * (
+            Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
+            ))
+        elif self.final_price < 0:
+            raise ValidationError("Cena nemůže být záporná.")
 
         return super().clean()
 
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        if (self.marketSlot):
-            duration = (self.reserved_to - self.reserved_from).days
-            self.final_price = duration * (self.marketSlot.price_per_m2 * (
-            Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
-        ))
         self.marketSlot.status = "reserved"
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Rezervace {self.user} na event {self.event.name}"
+    
+    def delete(self, *args, **kwargs):
+        order = getattr(self, "order", None)
+        if order is not None:
+            order.is_deleted = True
+            order.deleted_at = timezone.now()
+            order.save()
+
+        return super().delete(*args, **kwargs)
     
