@@ -5,8 +5,44 @@ from trznice.utils import RoundedDateTimeField
 from account.serializers import CustomUserSerializer
 from booking.serializers import ReservationSerializer
 from account.models import CustomUser
-from booking.models import Reservation
+from booking.models import Event, MarketSlot, Reservation
 from .models import Order
+
+
+#počítaní ceny!!!
+class SlotPriceInputSerializer(serializers.Serializer):
+    slot_id = serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all())
+    used_extension = serializers.FloatField(min_value=0)
+
+#počítaní ceny!!!
+class PriceCalculationSerializer(serializers.Serializer):
+    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
+    reserved_from = serializers.DateTimeField()
+    reserved_to = serializers.DateTimeField()
+    slots = SlotPriceInputSerializer(many=True)
+
+    def validate(self, data):
+        from django.utils.timezone import make_aware, is_naive
+
+        reserved_from = data["reserved_from"]
+        reserved_to = data["reserved_to"]
+
+        if is_naive(reserved_from):
+            reserved_from = make_aware(reserved_from)
+        if is_naive(reserved_to):
+            reserved_to = make_aware(reserved_to)
+
+        duration = reserved_to - reserved_from
+        days = duration.days
+
+        if days not in (1, 7, 30):
+            raise serializers.ValidationError("Délka rezervace musí být 1, 7 nebo 30 dní.")
+
+        data["reserved_from"] = reserved_from
+        data["reserved_to"] = reserved_to
+        data["duration"] = days
+        return data
+
 
 class OrderSerializer(serializers.ModelSerializer):
     created_at = RoundedDateTimeField(read_only=True, required=False)

@@ -9,7 +9,7 @@ const API_BASE_URL = '/booking/reservations';
  *   - event: {number} ID události
  *   - user: {number} ID uživatele
  *   - status: {'reserved'|'cancelled'} Filtr na stav rezervace
- *   - ordering: {string} např. "-created_at"
+ *   - Reservationing: {string} např. "-created_at"
  *   - search: {string} hledání v poli poznámka, uživatel, název události atd.
  * 
  * @returns {Promise<Array<Reservation>>}
@@ -71,4 +71,12 @@ export const updateReservation = async (id, data) => {
  */
 export const deleteReservation = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
+};
+
+export default {
+  getReservations,
+  getReservationById,
+  createReservation,
+  updateReservation,
+  deleteReservation,
 };

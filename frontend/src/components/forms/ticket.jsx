@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import { Form, Button, Alert, Spinner } from "react-bootstrap";
 import { fetchEnumFromSchemaJson } from "../../api/get_chocies";
 import { apiRequest } from "../../api/auth";
 
+import { useContext } from "react";
+import { UserContext } from "../../context/UserContext";
+
+
+
 function TicketForm() {
-  const { user } = useOutletContext();
+  const { user } = useContext(UserContext) || {};
 
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [urgencyOptions, setUrgencyOptions] = useState([]);

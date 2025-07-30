@@ -1,72 +1,50 @@
-import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import React, { useContext } from 'react';
+import { Container, Nav, Navbar } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRightFromBracket, faUser, faTicket } from '@fortawesome/free-solid-svg-icons';
+import { Link, useNavigate } from 'react-router-dom';
 
-import React, { useState, useEffect } from 'react';
 import logo from '/img/logo.png';
-import { Link, useNavigate} from 'react-router-dom';
+import { logout } from '../api/auth';
+import { UserContext } from '../context/UserContext';
 
-import {getCurrentUser, logout} from '../api/auth';
+function NavBar() {
+  const { user, setUser } = useContext(UserContext);
+  const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setUser(null);
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
+  };
 
-function NavBar(){
-
-    const [user, setUser] = useState(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-      getCurrentUser()
-        .then(data => {
-          setUser(data);
-        })
-        .catch(err => {
-          console.error("Failed to get user:", err);
-          setUser(null);
-        });
-    }, []);
-
-
-    const handleLogout = async () => {
-      try {
-        await logout();
-        setUser(null);          // vymazat stav uživatele v Reactu
-        navigate('/login');     // přesměrovat na přihlášení
-      } catch (err) {
-        console.error("Logout failed", err);
-        // případně zobrazit chybu uživateli
-      }
-    };
-
-    return (
-
-        <Navbar expand="lg">
+  return (
+    <Navbar expand="lg">
       <Container>
-        <Navbar.Brand href="/">
-            <img
-              src={logo}
-              className="d-none d-sm-block"
-              alt="Ostrava-Jih"
-            />
+        <Navbar.Brand as={Link} to="/home">
+          <img src={logo} className="d-none d-sm-block" alt="Ostrava-Jih" />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="navbar-nav ml-auto text-uppercase">
-            {user != undefined && user != false ? (
-              <> 
+          <Nav className="ms-auto text-uppercase ml-auto">
+            {user ? (
+              <>
                 <Nav.Link as={Link} to="/tickets">
                   <FontAwesomeIcon icon={faTicket} className="mr-2" />
                   Tikety
                 </Nav.Link>
-                <div className="vr m-2" style={{ width: '2px',background: '#003a6b' }} />
-                <Nav.Link disabled as={Link} to="/settings"  className="text-secondary">
+                <div className="vr mx-2" style={{ width: '2px', background: '#003a6b' }} />
+                <Nav.Link as={Link} to="/home">
                   <FontAwesomeIcon icon={faUser} className="mr-2" />
                   {user.username}
                 </Nav.Link>
-                {/*<div className="vr m-2" style={{ width: '2px',background: '#003a6b' }} />*/}
-                <Nav.Link onClick={handleLogout}>
-                  <FontAwesomeIcon icon={faRightFromBracket} /> 
+                <Nav.Link onClick={handleLogout} style={{ cursor: 'pointer' }}>
+                  <FontAwesomeIcon icon={faRightFromBracket} />
                 </Nav.Link>
-                
               </>
             ) : (
               <>
@@ -78,8 +56,7 @@ function NavBar(){
         </Navbar.Collapse>
       </Container>
     </Navbar>
-        
-    ) 
+  );
 }
 
-export default NavBar
+export default NavBar;

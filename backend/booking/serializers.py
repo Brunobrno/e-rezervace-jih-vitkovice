@@ -3,7 +3,10 @@ from rest_framework import serializers
 from trznice.utils import RoundedDateTimeField
 from .models import Event, MarketSlot, Reservation, Square
 from account.models import CustomUser
-from  product.serializers import EventProductSerializer
+from product.serializers import EventProductSerializer
+
+
+#----------------------SHORT SERIALIZERS---------------------------------
 
 class EventShortSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,6 +25,22 @@ class UserShortSerializer(serializers.ModelSerializer):
             "id": {"read_only": True},
             "username": {"read_only": True, "help_text": "username uživatele"}
         }
+
+class SquareShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Square
+        fields = ["id", "name"]
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "name": {"read_only": True, "help_text": "Název náměstí"}
+        }
+
+#------------------------------------------------------------------------
+
+
+
+
+#------------------------NORMAL SERIALIZERS------------------------------
 
 class ReservationSerializer(serializers.ModelSerializer):
     reserved_from = RoundedDateTimeField()
@@ -89,6 +108,7 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         return data
 
+
 class MarketSlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketSlot
@@ -128,20 +148,12 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         return data
 
 
-class SquareShortSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Square
-        fields = ["id", "name"]
-        extra_kwargs = {
-            "id": {"read_only": True},
-            "name": {"read_only": True, "help_text": "Název náměstí"}
-        }
-
 class EventSerializer(serializers.ModelSerializer):
     square = SquareShortSerializer(read_only=True)
     square_id = serializers.PrimaryKeyRelatedField(
         queryset=Square.objects.all(), source="square", write_only=True
     )
+    
 
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
     event_products = EventProductSerializer(many=True, read_only=True)
@@ -198,7 +210,6 @@ class EventSerializer(serializers.ModelSerializer):
         return data
 
 
-
 class SquareSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -222,3 +233,6 @@ class SquareSerializer(serializers.ModelSerializer):
             "cellsize": {"help_text": "Velikost buňky gridu v pixelech", "required": True},
             "image": {"help_text": "Obrázek / mapa náměstí", "required": False},
         }
+
+
+#-----------------------------------------------------------------------

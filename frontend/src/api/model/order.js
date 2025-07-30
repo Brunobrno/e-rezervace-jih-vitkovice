@@ -21,11 +21,11 @@ export const getOrders = async (params = {}) => {
 /**
  * GET detail konkrétní objednávky.
  *
- * @param {string} uuid - UUID objednávky
+ * @param {number} id - ID objednávky
  * @returns {Promise<Order>}
  */
-export const getOrderByUuid = async (uuid) => {
-  const response = await axios_instance.get(`${API_BASE_URL}/${uuid}/`);
+export const getOrderById = async (id) => {
+  const response = await axios_instance.get(`${API_BASE_URL}/${id}/`);
   return response.data;
 };
 
@@ -65,4 +65,21 @@ export const updateOrder = async (uuid, data) => {
  */
 export const deleteOrder = async (uuid) => {
   await axios_instance.delete(`${API_BASE_URL}/${uuid}/`);
+};
+
+
+
+export const calculatePrice = async (data) => {
+  const res = await axios_instance.post("/commerce/calculate_price/", data);
+  return res.data;
+};
+
+
+export default {
+  calculatePrice,
+  getOrders,
+  getOrderById,
+  createOrder,
+  updateOrder,
+  deleteOrder,
 };

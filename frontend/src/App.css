@@ -1,0 +1,7 @@
+.tab-content{
+    margin: auto;
+    width: -webkit-fill-available;
+}
+.nav-tabs{
+    margin: 0 !important;
+}

@@ -8,7 +8,7 @@ const API_BASE_URL = "/service-tickets";
  * @param {Object} params - Možné query parametry:
  *   - user: {number} ID uživatele
  *   - status: {'new'|'in_progress'|'resolved'|'closed'}
- *   - category: {'tech'|'reservation'|'payment'|'account'|'content'|'suggestion'|'other'}
+ *   - category: {'tech'|'ServiceTicket'|'payment'|'account'|'content'|'suggestion'|'other'}
  *   - urgency: {'low'|'medium'|'high'|'critical'}
  *   - ordering: {string} např. "-created_at"
  *   - search: {string} hledání v názvu nebo popisu
@@ -38,7 +38,7 @@ export const getServiceTicketById = async (id) => {
  *   - title: {string}
  *   - description?: {string}
  *   - user?: {number} (volitelné – backend často určí automaticky dle tokenu)
- *   - category?: {'tech'|'reservation'|'payment'|'account'|'content'|'suggestion'|'other'}
+ *   - category?: {'tech'|'ServiceTicket'|'payment'|'account'|'content'|'suggestion'|'other'}
  *   - urgency?: {'low'|'medium'|'high'|'critical'}
  *   - status?: {'new'|'in_progress'|'resolved'|'closed'} (výchozí "new")
  *
@@ -75,4 +75,14 @@ export const updateServiceTicket = async (id, data) => {
  */
 export const deleteServiceTicket = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
+};
+
+
+
+export default {
+  getServiceTickets,
+  getServiceTicketById,
+  createServiceTicket,
+  updateServiceTicket,
+  deleteServiceTicket,
 };

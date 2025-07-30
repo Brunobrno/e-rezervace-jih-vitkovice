@@ -5,6 +5,10 @@ from faker import Faker
 from decimal import Decimal
 from datetime import datetime, timedelta
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from decimal import Decimal, ROUND_DOWN
+from datetime import timedelta
+import random
 
 # Nastavení Django prostředí
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "trznice.settings")
@@ -27,7 +31,8 @@ def create_users(n=10):
         email = fake.unique.email()
 
         # Generuj náhodné hodnoty
-        phone = fake.phone_number()
+        prefix = random.choice(["601", "602", "603", "604", "605", "606", "607", "608", "720", "721", "722", "723", "724", "725", "730", "731", "732", "733", "734", "735", "736", "737", "738", "739"])
+        phone_number = "+420" + prefix + ''.join([str(random.randint(0, 9)) for _ in range(6)])
         ico = fake.unique.msisdn()[0:8]
         rc = f"{fake.random_int(100000, 999999)}/{fake.random_int(100, 9999)}"
         psc = fake.postcode().replace(" ", "")[:5]
@@ -41,7 +46,7 @@ def create_users(n=10):
             email=email,
             role=role,
             account_type=random.choice(account_types),
-            phone_number=fake.phone_number(),
+            phone_number=phone_number,
             ICO=ico,
             RC=rc,
             city=fake.city(),
@@ -136,30 +141,85 @@ def create_market_slots(events, max_slots=10):
     print(f"✅ Vytvořeno {len(slots)} prodejních míst")
     return slots
 
+from django.utils import timezone
+
 def create_reservations(users, slots, max_per_user=3):
     reservations = []
+
     for user in users:
-        user_slots = random.sample(slots, k=min(len(slots), max_per_user))
+        # max 5 rezervací dle validace, proto méně než 5
+        max_res_for_user = min(max_per_user, 5)
+
+        # vyber náhodně market sloty (nebo opakuj, pokud má uživatel méně slotů než max)
+        user_slots = random.sample(slots, k=min(len(slots), max_res_for_user))
+
         for slot in user_slots:
             event = slot.event
-            start = event.start + timedelta(hours=random.randint(0, 12))
-            end = start + timedelta(days=1)
+
+            # Ujisti se, že event.start a event.end jsou aware
+            event_start = event.start
+            event_end = event.end
+            if timezone.is_naive(event_start):
+                event_start = timezone.make_aware(event_start)
+            if timezone.is_naive(event_end):
+                event_end = timezone.make_aware(event_end)
+
+            # Délky rezervace povolené validací
+            allowed_durations = [1, 7, 30]
+            duration_days = random.choice(allowed_durations)
+
+            # Vytvoř start rezervace tak, aby rezervace nepřesáhla konec eventu
+            max_start = event_end - timedelta(days=duration_days)
+            if max_start <= event_start:
+                # Pokud není prostor na rezervaci, přeskoč
+                continue
+
+            start = event_start + timedelta(
+                seconds=random.randint(0, int((max_start - event_start).total_seconds()))
+            )
+            end = start + timedelta(days=duration_days)
+
+            # Ujisti se, že start a end jsou aware
+            if timezone.is_naive(start):
+                start = timezone.make_aware(start)
+            if timezone.is_naive(end):
+                end = timezone.make_aware(end)
+
+            used_extension = round(random.uniform(0, slot.available_extension), 2)
+
+            # Spočítej a validuj finální cenu
+            base_size = Decimal(str(slot.base_size))
+            price_per_m2 = slot.price_per_m2
+            final_price = (price_per_m2 * (base_size + Decimal(str(used_extension))) * Decimal(duration_days)).quantize(Decimal("0.01"))
+
+            if final_price >= Decimal("1000000.00"):
+                print(f"⚠️ Přeskočeno – cena přesahuje limit: {final_price}")
+                continue
+
+            # Zkontroluj, že uživatel má méně než 5 rezervací, aby validace prošla
+            if user.user_reservations.count() >= 5:
+                break
+
             try:
                 res = Reservation.objects.create(
                     event=event,
                     marketSlot=slot,
                     user=user,
-                    used_extension=round(random.uniform(0, slot.available_extension), 2),
+                    used_extension=used_extension,
                     reserved_from=start,
                     reserved_to=end,
                     status="reserved",
-                    final_price=slot.price_per_m2 * Decimal(slot.base_size),
+                    final_price=final_price,
                 )
                 reservations.append(res)
+            except ValidationError as e:
+                print(f"❌ Validace selhala při vytváření rezervace: {e}")
             except Exception as e:
-                print(f"❌ Chyba při vytváření rezervace: {e}")
+                print(f"❌ Jiná chyba při vytváření rezervace pro uživatele {user.id} a slot {slot.id}: {e}")
+
     print(f"✅ Vytvořeno {len(reservations)} rezervací")
     return reservations
+
 
 if __name__ == "__main__":
     users = create_users(10)

@@ -8,10 +8,8 @@ import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import Login from "./pages/Login";
 import Register from "./pages/register/Register";
-import CreateReservation from "./pages/CreateReservation";
 import SelectReservation from "./pages/SelectReservation";
 import Test from "./pages/Test";
-import EventsTree from "./components/EventsTree";
 import EmailVerificationPage from "./pages/register/EmailVerification";
 import Home from "./pages/Home";
 import ResetPasswordPage from "./pages/PasswordReset";
@@ -24,57 +22,73 @@ import Events from "./pages/Events";
 import Squares from "./pages/Squares";
 import Reservations from "./pages/Reservations";
 import Ticket from "./pages/Ticket";
+import MapEditor from "./pages/MapEditor"
+
+import ReservationCart from "./pages/Reservation-cart"
+
+import { UserProvider } from './context/UserContext';
 
 function App() {
   return (
     <>
-      <header>
-        <NavBar />
-      </header>
+      <UserProvider>
 
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        // after user registers, they will be redirected from email, to the
-        email verification page
-        <Route path="/email-verification" element={<EmailVerificationPage />} />
-        <Route path="/email-verification/:uidb64/:token" element={<EmailVerificationPage />}/>
+      
+        <header>
+          <NavBar />
+        </header>
 
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          // after user registers, they will be redirected from email, to the
+          email verification page
+          <Route path="/email-verification" element={<EmailVerificationPage />} />
+          <Route path="/email-verification/:uidb64/:token" element={<EmailVerificationPage />}/>
 
-        
-        <Route
-          path="/clerk/create/reservation"
-          element={<CreateReservation />}
-        />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
 
-        <Route path="/seller/reservation" element={<SelectReservation />} />
-        <Route path="/components" element={<EventsTree />} />
-        <Route path="/test" element={<Test />} />
+          {/*test*/}
 
-        
-        {/* Na tyto stránky se dostanou jenom přihlášení uživatele */}
-        <Route element={<RequireAuthLayout />}>
-          <Route path="/tickets" element={<Ticket />} />
+          {/*<Route path="/seller/reservation" element={<SelectReservation />} />*/}
 
-          <Route path="/home" element={<Home />} />
-
-          <Route path="/squares" element={<Squares />} />
-          <Route path="/reservations" element={<Reservations />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/events/:id" element={<Events />} />
-
-          <Route path="/settings" element={<UserSettings />} />
-
-          {/* Admin - tady si můžeš specifikovat roli která má oprávnění */}
           
-          <Route element={<RequireRole roles={["admin"]} />}>
-            <Route path="/test" element={<Test />} />
+          {/* AUTHENTICATED */}
+          <Route element={<RequireAuthLayout />}>
+            <Route path="/tickets" element={<Ticket />} />
+
+            <Route path="/home" element={<Home />} />
+
+            
+
+            <Route path="/settings" element={<UserSettings />} />
+
+            {/* ADMIN */}
+            <Route element={<RequireRole roles={["admin"]} />}>
+              <Route path="/test" element={<Test />} />
+            </Route>
+
+            {/* SELLER && ADMIN */}
+            <Route element={<RequireRole roles={["seller", "admin"]} />}>
+              <Route path="/create-reservation" element={<ReservationCart />} />
+            </Route>
+
+            {/* CLERK & ADMIN */}
+            <Route element={<RequireRole roles={[ "admin"]} />}>
+
+              <Route path="/manage/squares" element={<Squares />} />
+              <Route path="/manage/reservations" element={<Reservations />} />
+              <Route path="/manage/events" element={<Events />} />
+              <Route path="/manage/events/:id" element={<Events />} />
+
+              <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
+              
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </UserProvider>
 
       <footer className="mt-auto">
         <p>
