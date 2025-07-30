@@ -1,7 +1,6 @@
 import Table from "../components/Table";
 import Sidebar from "../components/Sidebar";
-import { getEvents, deleteEvent } from "../api/model/event";
-import { IconEye, IconEdit, IconTrash, IconMap  } from "@tabler/icons-react";
+import { IconEye, IconEdit, IconTrash, IconMap, IconPlus } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import {
@@ -19,6 +18,7 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 
+import apiEvent from "../api/model/event";
 
 function Events() {
   const navigate = useNavigate();
@@ -27,15 +27,92 @@ function Events() {
   const [fetching, setFetching] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("view"); // 'view', 'edit', 'delete'
+  const [modalType, setModalType] = useState("view");
   const [query, setQuery] = useState("");
 
+  const [formState, setFormState] = useState({
+    name: "",
+    description: "",
+    start: "",
+    end: "",
+    price_per_m2: "",
+    image: null,
+    square_id: "",
+  });
+
+  // Když se vybere event pro editaci, naplníme formState
+  useEffect(() => {
+    if (modalType === "edit" && selectedEvent) {
+      setFormState({
+        name: selectedEvent.name || "",
+        description: selectedEvent.description || "",
+        start: selectedEvent.start ? selectedEvent.start.slice(0, 16) : "", // ISO string YYYY-MM-DDTHH:mm (pro input type=datetime-local)
+        end: selectedEvent.end ? selectedEvent.end.slice(0, 16) : "",
+        price_per_m2: selectedEvent.price_per_m2 || "",
+        image: null, // obrázek nezadáme, pokud chceme změnit, uživatel nahraje nový
+        square_id: selectedEvent.square_id || selectedEvent.square?.id || "",
+      });
+    }
+    if (modalType === "edit" && !selectedEvent) {
+      // Přidávání nového eventu: vyčistit form
+      setFormState({
+        name: "",
+        description: "",
+        start: "",
+        end: "",
+        price_per_m2: "",
+        image: null,
+        square_id: "",
+      });
+    }
+  }, [modalType, selectedEvent]);
+
+  // Handler pro změnu inputů
+  const handleFormChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "image") {
+      setFormState((old) => ({ ...old, image: files[0] || null }));
+    } else {
+      setFormState((old) => ({ ...old, [name]: value }));
+    }
+  };
+
+  // Odeslání formuláře
+  const handleSaveEvent = async (e) => {
+    e.preventDefault();
+
+    try {
+      const formData = new FormData();
+      formData.append("name", formState.name);
+      formData.append("description", formState.description);
+      formData.append("start", new Date(formState.start).toISOString());
+      formData.append("end", new Date(formState.end).toISOString());
+      formData.append("price_per_m2", formState.price_per_m2);
+      formData.append("square_id", formState.square_id);
+
+      if (formState.image instanceof File) {
+        formData.append("image", formState.image);
+      }
+
+      if (modalType === "edit" && selectedEvent) {
+        await apiEvent.updateEvent(selectedEvent.id, formData);
+      } else {
+        await apiEvent.createEvent(formData);
+      }
+
+      setShowModal(false);
+      fetchEvents();
+    } catch (err) {
+      console.error("Chyba při ukládání události:", err);
+      // Můžeš přidat state pro zobrazení chyby uživateli
+    }
+  };
 
   const fetchEvents = async () => {
     setFetching(true);
     try {
       const params = { search: query };
-      const data = await getEvents(params);
+      const data = await apiEvent.getEvents(params);
       setEvents(data);
     } finally {
       setFetching(false);
@@ -60,14 +137,14 @@ function Events() {
 
   const handleDeleteEvent = async (event) => {
     if (window.confirm(`Opravdu smazat událost: ${event.name}?`)) {
-      await deleteEvent(event.id);
+      await apiEvent.deleteEvent(event.id);
       fetchEvents();
     }
   };
 
   const handleConfirmDelete = async () => {
     if (selectedEvent) {
-      await deleteEvent(selectedEvent.id);
+      await apiEvent.deleteEvent(selectedEvent.id);
       setShowModal(false);
       fetchEvents();
     }
@@ -75,6 +152,120 @@ function Events() {
 
   const handleRedirectToMap = async (event) => {
     navigate(`/manage/events/map/${event.id}`);
+  };
+
+  // Upravený renderModalContent s formulářem
+  const renderModalContent = () => {
+    if (modalType === "view" && selectedEvent) {
+      return (
+        <Stack>
+          <Text><strong>ID:</strong> {selectedEvent.id}</Text>
+          <Text><strong>Název:</strong> {selectedEvent.name}</Text>
+          <Text><strong>Popis:</strong> {selectedEvent.description || "—"}</Text>
+          <Text><strong>Náměstí:</strong> {selectedEvent.square?.name || "Neznámé"}</Text>
+          <Text><strong>Město:</strong> {selectedEvent.square?.city || "—"}</Text>
+          <Text><strong>Začátek:</strong> {new Date(selectedEvent.start).toLocaleString()}</Text>
+          <Text><strong>Konec:</strong> {new Date(selectedEvent.end).toLocaleString()}</Text>
+          <Group mt="md">
+            <Button variant="outline" onClick={() => setShowModal(false)}>Zavřít</Button>
+            <Button onClick={() => handleEditEvent(selectedEvent)}>Upravit</Button>
+          </Group>
+        </Stack>
+      );
+    }
+
+    if (modalType === "edit") {
+      return (
+        <form onSubmit={handleSaveEvent}>
+          <Stack spacing="sm">
+            <TextInput
+              label="Název"
+              name="name"
+              value={formState.name}
+              onChange={handleFormChange}
+              required
+            />
+            <TextInput
+              label="Popis"
+              name="description"
+              value={formState.description}
+              onChange={handleFormChange}
+            />
+            <TextInput
+              label="Začátek"
+              type="datetime-local"
+              name="start"
+              value={formState.start}
+              onChange={handleFormChange}
+              required
+            />
+            <TextInput
+              label="Konec"
+              type="datetime-local"
+              name="end"
+              value={formState.end}
+              onChange={handleFormChange}
+              required
+            />
+            <TextInput
+              label="Cena za m²"
+              name="price_per_m2"
+              value={formState.price_per_m2}
+              onChange={handleFormChange}
+              placeholder="např. 1000"
+            />
+            <TextInput
+              label="ID náměstí"
+              name="square_id"
+              value={formState.square_id}
+              onChange={handleFormChange}
+              required
+            />
+            <input
+              type="file"
+              name="image"
+              accept="image/*"
+              onChange={handleFormChange}
+              style={{ marginTop: 10 }}
+            />
+            <Group position="right" mt="md">
+              <Button variant="outline" onClick={() => setShowModal(false)}>Zrušit</Button>
+              <Button type="submit" color="blue">Uložit</Button>
+            </Group>
+          </Stack>
+        </form>
+      );
+    }
+
+    if (modalType === "delete" && selectedEvent) {
+      return (
+        <Stack>
+          <Text>Opravdu chcete smazat událost "{selectedEvent.name}"?</Text>
+          <Group mt="md">
+            <Button variant="outline" onClick={() => setShowModal(false)}>Zrušit</Button>
+            <Button color="red" onClick={handleConfirmDelete}>Smazat</Button>
+          </Group>
+        </Stack>
+      );
+    }
+
+    return <Text>Žádný obsah</Text>;
+  };
+
+  // getModalTitle můžeš použít stejný, např:
+  const getModalTitle = () => {
+    if (!selectedEvent && modalType !== "edit") return "Detail události";
+
+    switch (modalType) {
+      case "view":
+        return `Detail: ${selectedEvent?.name}`;
+      case "edit":
+        return selectedEvent ? `Upravit: ${selectedEvent.name}` : "Přidat událost";
+      case "delete":
+        return `Smazat událost`;
+      default:
+        return "Detail události";
+    }
   };
 
   const columns = [
@@ -168,119 +359,6 @@ function Events() {
     },
   ];
 
-  const renderModalContent = () => {
-    if (!selectedEvent) return <Text>Událost nebyla nalezena</Text>;
-
-    switch (modalType) {
-      case "view":
-        return (
-          <Stack>
-            <Text>
-              <strong>ID:</strong> {selectedEvent.id}
-            </Text>
-            <Text>
-              <strong>Název:</strong> {selectedEvent.name}
-            </Text>
-            <Text>
-              <strong>Popis:</strong> {selectedEvent.description || "—"}
-            </Text>
-            <Text>
-              <strong>Náměstí:</strong>{" "}
-              {selectedEvent.square?.name || "Neznámé"}
-            </Text>
-            <Text>
-              <strong>Město:</strong> {selectedEvent.square?.city || "—"}
-            </Text>
-            <Text>
-              <strong>Začátek:</strong>{" "}
-              {new Date(selectedEvent.start).toLocaleString()}
-            </Text>
-            <Text>
-              <strong>Konec:</strong>{" "}
-              {new Date(selectedEvent.end).toLocaleString()}
-            </Text>
-            <Group mt="md">
-              <Button variant="outline" onClick={() => setShowModal(false)}>
-                Zavřít
-              </Button>
-              <Button onClick={() => handleEditEvent(selectedEvent)}>
-                Upravit
-              </Button>
-            </Group>
-          </Stack>
-        );
-
-      case "edit":
-        return (
-          <Stack>
-            <TextInput
-              label="Název"
-              defaultValue={selectedEvent.name}
-              mb="sm"
-            />
-            <TextInput
-              label="Popis"
-              defaultValue={selectedEvent.description}
-              mb="sm"
-            />
-            <TextInput
-              label="Začátek"
-              defaultValue={new Date(selectedEvent.start).toLocaleString()}
-              disabled
-              mb="sm"
-            />
-            <TextInput
-              label="Konec"
-              defaultValue={new Date(selectedEvent.end).toLocaleString()}
-              disabled
-              mb="sm"
-            />
-            <Group mt="md">
-              <Button variant="outline" onClick={() => setShowModal(false)}>
-                Zrušit
-              </Button>
-              <Button color="blue" onClick={() => setShowModal(false)}>
-                Uložit změny
-              </Button>
-            </Group>
-          </Stack>
-        );
-
-      case "delete":
-        return (
-          <Stack>
-            <Text>Opravdu chcete smazat událost "{selectedEvent.name}"?</Text>
-            <Group mt="md">
-              <Button variant="outline" onClick={() => setShowModal(false)}>
-                Zrušit
-              </Button>
-              <Button color="red" onClick={handleConfirmDelete}>
-                Smazat
-              </Button>
-            </Group>
-          </Stack>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const getModalTitle = () => {
-    if (!selectedEvent) return "Detail události";
-
-    switch (modalType) {
-      case "view":
-        return `Detail: ${selectedEvent.name}`;
-      case "edit":
-        return `Upravit: ${selectedEvent.name}`;
-      case "delete":
-        return `Smazat událost`;
-      default:
-        return "Detail události";
-    }
-  };
-
   return (
     <Container
       fluid
@@ -296,6 +374,17 @@ function Events() {
           className="px-0 bg-white d-flex flex-column"
           style={{ minWidth: 0 }}
         >
+          <Group justify="space-between" align="center" px="md" py="sm">
+            <Text fw={700} size="lg">Události</Text>
+            <Button leftSection={<IconPlus size={16} />} onClick={() => {
+              setModalType("edit");
+              setSelectedEvent(null);
+              setShowModal(true);
+            }}>
+              Přidat událost
+            </Button>
+          </Group>
+
           <Table
             data={events}
             columns={columns}
@@ -307,11 +396,10 @@ function Events() {
             onQueryChange={setQuery}
           />
 
-          {/* Custom Modal for Events */}
           <Modal
             opened={showModal}
             onClose={() => setShowModal(false)}
-            title={getModalTitle()}
+            title={modalType === "edit" && !selectedEvent ? "Přidat událost" : getModalTitle()}
             size="lg"
             centered
           >

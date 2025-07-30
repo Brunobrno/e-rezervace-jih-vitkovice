@@ -8,7 +8,6 @@ import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import Login from "./pages/Login";
 import Register from "./pages/register/Register";
-import CreateReservation from "./pages/CreateReservationDEMO";
 import SelectReservation from "./pages/SelectReservation";
 import Test from "./pages/Test";
 import EmailVerificationPage from "./pages/register/EmailVerification";
@@ -52,12 +51,8 @@ function App() {
           <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
 
           {/*test*/}
-          <Route
-            path="/clerk/create/reservation"
-            element={<CreateReservation />}
-          />
 
-          <Route path="/seller/reservation" element={<SelectReservation />} />
+          {/*<Route path="/seller/reservation" element={<SelectReservation />} />*/}
 
           
           {/* AUTHENTICATED */}
@@ -89,12 +84,6 @@ function App() {
               <Route path="/manage/events/:id" element={<Events />} />
 
               <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
-
-              {/*test*/}
-              <Route
-                path="/clerk/create/reservation"
-                element={<CreateReservation />}
-              />
               
             </Route>
           </Route>

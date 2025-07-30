@@ -277,6 +277,7 @@ function Home() {
         </Col>
         <Col>
           {/* Buttons */}
+          
           <Container>
             <Row>
               <Link to="/create-reservation" className="btn btn-success fs-3 mb-3">
@@ -285,10 +286,37 @@ function Home() {
               </Link>
             </Row>
             <Row>
-              <Link to="/tickets" className="btn btn-danger fs-3">
-                Problém? Pošlete ticket.
+              <Link to="/tickets" className="btn btn-danger fs-3 mb-3">
+                Problém?
               </Link>
             </Row>
+            {
+              user.role === "admin" ? (
+                <Row>
+                  <Link to="/manage/squares" className="btn btn-danger fs-3">
+                    Manager
+                  </Link>
+                </Row>
+              ) : user.role === "seller" ? (
+                ""
+              ) : user.role === "squareManager" ? (
+                <Row>
+                  <Link to="/manage/squares" className="btn btn-danger fs-3">
+                    Manager
+                  </Link>
+                </Row>
+              ) : user.role === "cityClerk" ? (
+                <Row>
+                  <Link to="/manage/squares" className="btn btn-danger fs-3">
+                    Manager
+                  </Link>
+                </Row>
+              ) : user.role === "checker" ? (
+                ""
+              ) : (
+                "Neznámá role"
+              )
+            }
           </Container>
           
         </Col>

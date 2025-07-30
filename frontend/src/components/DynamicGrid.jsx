@@ -34,6 +34,7 @@ const DynamicGrid = ({
   onSelectedIndexChange,
   static: isStatic = false, //možnost editovaní prostorů
   multiSelect = false, //možnost zvolit více rezervací
+  clickableStatic = false, //možnost volit rezervace i ve ,,static,, = true
 }) => {
   const {
     rows = DEFAULT_CONFIG.rows,
@@ -361,15 +362,15 @@ const DynamicGrid = ({
             key={`${x}-${y}`}
             className="cell border"
             style={{
-              width: "100%",
-              height: "100%",
-              border: "1px solid #eee",
-              opacity: 0.3,
-              backgroundColor: "transparent",
-              boxSizing: "border-box",
-              pointerEvents: "none",
               gridColumn: x + 1,
               gridRow: y + 1,
+              backgroundColor: "transparent",
+              border: "1px solid #ccc",
+              opacity: 0.3,
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              width: "100%",
+              height: "100%",
             }}
           />
         );
@@ -380,7 +381,7 @@ const DynamicGrid = ({
   return (
     <div
       ref={gridRef}
-      className="position-relative rounded grid-bg"
+      className="position-relative h-100 rounded grid-bg"
       onMouseDown={handleMouseDown}
       onMouseMove={isStatic ? undefined : handleMouseMove}
       onMouseUp={isStatic ? undefined : handleMouseUp}
@@ -388,6 +389,7 @@ const DynamicGrid = ({
       onContextMenu={(e) => (isStatic ? undefined : e.preventDefault())}
       style={{
         width: "100%",
+        height: "auto", 
         aspectRatio: `${cols} / ${rows}`,
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
@@ -433,7 +435,9 @@ const DynamicGrid = ({
           }}
           onClick={(e) => {
             e.stopPropagation();
-            if (!isStatic) {
+            console.log("prom: ",!isStatic, clickableStatic, res.status);
+            if (!isStatic || (clickableStatic && res.status === "empty")) {
+              console.log("Click: ", isStatic);
               if (multiSelect && (e.ctrlKey || e.metaKey)) {
                 if (selectedIndices.includes(i)) {
                   const newSelected = selectedIndices.filter(idx => idx !== i);

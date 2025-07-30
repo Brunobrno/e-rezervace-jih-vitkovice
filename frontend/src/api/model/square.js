@@ -40,6 +40,21 @@ export const getSquareById = async (id) => {
   return response.data;
 };
 
+
+/**
+ * Vytvoří nové náměstí (POST).
+ * @param {Object} data - Objekt náměstí
+ * @returns {Promise<Object>} - Vytvořené náměstí
+ */
+export const createSquare = async (data) => {
+  const response = await axios_instance.post(SQUARE_API_URL, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};
+
+
+
 /**
  * Smaže konkrétní náměstí podle ID.
  * @param {number} id - ID náměstí
@@ -56,4 +71,5 @@ export default {
   getSquareById,
   updateSquare,
   deleteSquare,
+  createSquare
 };

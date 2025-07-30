@@ -53,7 +53,7 @@ export default function Step3Map({ data, setData, next, prev }) {
           y: slot.y,
           w: slot.width,
           h: slot.height,
-          status: slot.status === "empty" ? "active" : slot.status,
+          status: slot.status,
         }));
         setSlots(mappedSlots);
       }
@@ -203,6 +203,7 @@ export default function Step3Map({ data, setData, next, prev }) {
         onSelectedIndexChange={handleSlotSelect}
         static={true}
         multiSelect={multiSelectEnabled}
+        clickableStatic={true}
       />
 
       <div className="d-flex justify-content-between w-100 mt-4 px-4">
