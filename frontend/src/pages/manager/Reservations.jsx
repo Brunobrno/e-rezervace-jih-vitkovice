@@ -3,7 +3,7 @@ import Sidebar from "../../components/Sidebar";
 import { getReservations, deleteReservation, updateReservation } from "../../api/model/reservation";
 import { IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { Container, Row, Col, Form } from "react-bootstrap";
+import { Container, Row, Col, Form, Modal, Button as BootstrapButton } from "react-bootstrap";
 import {
   ActionIcon,
   Button,
@@ -371,107 +371,63 @@ function Reservations() {
             onQueryChange={setQuery}
           />
 
-          {/* Bootstrap Modal for view/edit */}
-          <Form.Group>
-            <div
-              className="modal fade"
-              style={{
-                display: showModal && modalType === 'view' ? 'block' : 'none',
-                zIndex: 9999,
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                overflow: 'auto',
-                background: showModal && modalType === 'view' ? 'rgba(0,0,0,0.5)' : 'none',
-              }}
-              tabIndex="-1"
-              role="dialog"
-            >
-              <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 10000 }}>
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title">Detail rezervace</h5>
-                    <button type="button" className="close" onClick={() => setShowModal(false)} aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div className="modal-body">
-                    {selectedReservation && (
-                      <>
-                        <p><strong>ID:</strong> {selectedReservation.id}</p>
-                        <p><strong>Stav:</strong> {selectedReservation.status}</p>
-                        <p><strong>Událost:</strong> {selectedReservation.event?.name || "Neznámá událost"}</p>
-                        <p><strong>Uživatel:</strong> {selectedReservation.user?.username || "Neznámý"}</p>
-                        <p><strong>Od:</strong> {dayjs(selectedReservation.reserved_from).format("DD.MM.YYYY HH:mm")}</p>
-                        <p><strong>Do:</strong> {dayjs(selectedReservation.reserved_to).format("DD.MM.YYYY HH:mm")}</p>
-                        <p><strong>Poznámka:</strong> {selectedReservation.note || "—"}</p>
-                        <p><strong>Cena:</strong> {selectedReservation.final_price} Kč</p>
-                      </>
-                    )}
-                  </div>
-                  <div className="modal-footer">
-                    <Button variant="outline" onClick={() => setShowModal(false)}>Zavřít</Button>
-                    <Button color="blue" onClick={() => { setShowModal(false); handleEditReservationModal(selectedReservation); }}>Upravit</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div
-              className="modal fade"
-              style={{
-                display: showModal && modalType === 'edit' ? 'block' : 'none',
-                zIndex: 9999,
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                overflow: 'auto',
-                background: showModal && modalType === 'edit' ? 'rgba(0,0,0,0.5)' : 'none',
-              }}
-              tabIndex="-1"
-              role="dialog"
-            >
-              <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 10000 }}>
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title">Upravit rezervaci</h5>
-                    <button type="button" className="close" onClick={() => setShowModal(false)} aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <Form onSubmit={handleEditModalSubmit}>
-                    <div className="modal-body">
-                      <Form.Group className="mb-3">
-                        <Form.Label>Stav rezervace</Form.Label>
-                        <Form.Control as="select" name="status" value={formData.status} onChange={handleChange} required>
-                          <option value="reserved">Rezervováno</option>
-                          <option value="cancelled">Zrušeno</option>
-                          <option value="completed">Dokončeno</option>
-                          <option value="pending">Čekající</option>
-                        </Form.Control>
-                      </Form.Group>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Poznámka</Form.Label>
-                        <Form.Control as="textarea" rows={4} name="note" value={formData.note} onChange={handleChange} />
-                      </Form.Group>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Cena (Kč)</Form.Label>
-                        <Form.Control type="number" name="final_price" value={formData.final_price} onChange={handleChange} />
-                      </Form.Group>
-                      {error && <Text color="red">{error}</Text>}
-                    </div>
-                    <div className="modal-footer">
-                      <Button variant="outline" onClick={() => setShowModal(false)}>Zrušit</Button>
-                      <Button type="submit" color="blue" disabled={submitting}>Uložit změny</Button>
-                    </div>
-                  </Form>
-                </div>
-              </div>
-            </div>
-          </Form.Group>
+          {/* Bootstrap Modal for view */}
+          <Modal show={showModal && modalType === 'view'} onHide={() => setShowModal(false)} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>Detail rezervace</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {selectedReservation && (
+                <>
+                  <p><strong>ID:</strong> {selectedReservation.id}</p>
+                  <p><strong>Stav:</strong> {selectedReservation.status}</p>
+                  <p><strong>Událost:</strong> {selectedReservation.event?.name || "Neznámá událost"}</p>
+                  <p><strong>Uživatel:</strong> {selectedReservation.user?.username || "Neznámý"}</p>
+                  <p><strong>Od:</strong> {dayjs(selectedReservation.reserved_from).format("DD.MM.YYYY HH:mm")}</p>
+                  <p><strong>Do:</strong> {dayjs(selectedReservation.reserved_to).format("DD.MM.YYYY HH:mm")}</p>
+                  <p><strong>Poznámka:</strong> {selectedReservation.note || "—"}</p>
+                  <p><strong>Cena:</strong> {selectedReservation.final_price} Kč</p>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <BootstrapButton variant="outline" onClick={() => setShowModal(false)}>Zavřít</BootstrapButton>
+              <BootstrapButton variant="primary" onClick={() => { setShowModal(false); handleEditReservationModal(selectedReservation); }}>Upravit</BootstrapButton>
+            </Modal.Footer>
+          </Modal>
+
+          {/* Bootstrap Modal for edit */}
+          <Modal show={showModal && modalType === 'edit'} onHide={() => setShowModal(false)} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>Upravit rezervaci</Modal.Title>
+            </Modal.Header>
+            <Form onSubmit={handleEditModalSubmit}>
+              <Modal.Body>
+                <Form.Group className="mb-3">
+                  <Form.Label>Stav rezervace</Form.Label>
+                  <Form.Control as="select" name="status" value={formData.status} onChange={handleChange} required>
+                    <option value="reserved">Rezervováno</option>
+                    <option value="cancelled">Zrušeno</option>
+                    <option value="completed">Dokončeno</option>
+                    <option value="pending">Čekající</option>
+                  </Form.Control>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Poznámka</Form.Label>
+                  <Form.Control as="textarea" rows={4} name="note" value={formData.note} onChange={handleChange} />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Cena (Kč)</Form.Label>
+                  <Form.Control type="number" name="final_price" value={formData.final_price} onChange={handleChange} />
+                </Form.Group>
+                {error && <Text color="red">{error}</Text>}
+              </Modal.Body>
+              <Modal.Footer>
+                <BootstrapButton variant="outline" onClick={() => setShowModal(false)}>Zrušit</BootstrapButton>
+                <BootstrapButton type="submit" variant="primary" disabled={submitting}>Uložit změny</BootstrapButton>
+              </Modal.Footer>
+            </Form>
+          </Modal>
         </Col>
       </Row>
     </Container>
