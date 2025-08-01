@@ -39,6 +39,20 @@ function Events() {
     image: null,
     square_id: "",
   });
+  const [squares, setSquares] = useState([]);
+  const [squareSearch, setSquareSearch] = useState("");
+  // Fetch squares for dropdown
+  useEffect(() => {
+    const fetchSquares = async () => {
+      try {
+        const data = await import("../../api/model/square").then(mod => mod.default.getSquares());
+        setSquares(data);
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchSquares();
+  }, []);
 
   // Když se vybere event pro editaci, naplníme formState
   useEffect(() => {
@@ -214,13 +228,28 @@ function Events() {
               onChange={handleFormChange}
               placeholder="např. 1000"
             />
+            {/* Square search and select */}
             <TextInput
-              label="ID náměstí"
+              label="Hledat náměstí"
+              placeholder="Zadej název nebo město"
+              value={squareSearch}
+              onChange={e => setSquareSearch(e.target.value)}
+            />
+            <select
               name="square_id"
               value={formState.square_id}
               onChange={handleFormChange}
               required
-            />
+              style={{ padding: '8px', borderRadius: '4px' }}
+            >
+              <option value="">Vyber náměstí</option>
+              {squares.filter(sq =>
+                sq.name.toLowerCase().includes(squareSearch.toLowerCase()) ||
+                sq.city.toLowerCase().includes(squareSearch.toLowerCase())
+              ).map(sq => (
+                <option key={sq.id} value={sq.id}>{sq.name} ({sq.city})</option>
+              ))}
+            </select>
             <input
               type="file"
               name="image"

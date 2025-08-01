@@ -55,8 +55,22 @@ export const refreshAccessToken = async () => {
 // ✅ Přihlášení
 export const login = async (username, password) => {
   logout();
-  const response = await axios_instance.post(`/account/token/`, { username, password });
-  return response.data;
+  try {
+    const response = await axios_instance.post(`/account/token/`, { username, password });
+    return response.data;
+  } catch (err) {
+    if (err.response) {
+      // Server responded with a status code outside 2xx
+      console.log('Login error status:', err.response.status);
+    } else if (err.request) {
+      // Request was made but no response received
+      console.log('Login network error:', err.request);
+    } else {
+      // Something else happened
+      console.log('Login setup error:', err.message);
+    }
+    throw err;
+  }
 };
 
 
