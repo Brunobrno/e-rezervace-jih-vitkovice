@@ -119,10 +119,30 @@ function Squares() {
     fetchData();
   }, []);
 
+  // City options for filter
   const cityOptions = useMemo(() => {
-    const uniqueCities = new Set(squares.map((r) => r.city));
-    return [...uniqueCities];
+    if (!Array.isArray(squares)) return [];
+    const uniqueCities = [...new Set(squares.map(r => r.city).filter(Boolean))];
+    return uniqueCities;
   }, [squares]);
+
+  // Filtering (same pattern as Users.jsx)
+  const filteredSquares = useMemo(() => {
+    let data = Array.isArray(squares) ? squares : [];
+    if (query) {
+      const q = query.toLowerCase();
+      data = data.filter(
+        r =>
+          r.name?.toLowerCase().includes(q) ||
+          r.street?.toLowerCase().includes(q) ||
+          r.city?.toLowerCase().includes(q)
+      );
+    }
+    if (selectedCities.length > 0) {
+      data = data.filter(r => selectedCities.includes(r.city));
+    }
+    return data;
+  }, [squares, query, selectedCities]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -137,16 +157,14 @@ function Squares() {
     setShowModal(true);
   };
 
-  // (removed duplicate handleEditSquare)
-
-
   const columns = [
-    { accessor: "id", title: "#", sortable: true },
-    { accessor: "street", title: "Ulice", sortable: true },
+    { accessor: "id", title: "#", sortable: true, width: "48px" },
+    { accessor: "street", title: "Ulice", sortable: true, width: "1.5fr" },
     {
       accessor: "name",
       title: "Název",
       sortable: true,
+      width: "2fr",
       filter: (
         <TextInput
           label="Hledat názvy"
@@ -167,6 +185,7 @@ function Squares() {
       accessor: "city",
       title: "Město",
       sortable: true,
+      width: "1fr",
       filter: (
         <MultiSelect
           label="Filtrovat města"
@@ -185,6 +204,7 @@ function Squares() {
     {
       accessor: "image",
       title: "Obrázek",
+      width: "120px",
       render: (row) =>
         row.image ? (
           <img src={row.image} alt={row.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} />
@@ -197,7 +217,7 @@ function Squares() {
     {
       accessor: "events",
       title: "Počet událostí",
-      width: "0%",
+      width: "0.7fr",
       textAlign: "center",
       render: (row) => row.events?.length || 0,
       sortable: true,
@@ -205,8 +225,7 @@ function Squares() {
     {
       accessor: "actions",
       title: "Akce",
-      width: "0%",
-
+      width: "80px",
       render: (square) => (
         <Group gap={4} wrap="nowrap">
           <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowSquare(square)}>
@@ -242,13 +261,14 @@ function Squares() {
           </Group>
 
           <Table
-            data={squares}
+            data={filteredSquares}
             columns={columns}
             fetching={fetching}
             withTableBorder
             borderRadius="md"
             highlightOnHover
             verticalAlign="center"
+            titlePadding="4px 8px"
           />
 
           {/* Mantine modal for add only */}

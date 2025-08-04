@@ -63,7 +63,7 @@ class ReservationAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     filter_horizontal = ['event_products']  # adds a nice widget for selection
 
-    base_fields = ['event', 'marketSlot', 'user', 'status', 'used_extension', 'event_products', 'reserved_to', 'reserved_from', 'final_price', 'note'] 
+    base_fields = ['event', 'market_slot', 'user', 'status', 'used_extension', 'event_products', 'reserved_to', 'reserved_from', 'final_price', 'note'] 
 
     def get_fields(self, request, obj=None):
         fields = self.base_fields.copy()

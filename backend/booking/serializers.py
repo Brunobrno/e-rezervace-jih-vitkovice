@@ -1,7 +1,10 @@
 from rest_framework import serializers
+from datetime import timedelta
+from booking.models import Event, MarketSlot
+import logging
 
 from trznice.utils import RoundedDateTimeField
-from .models import Event, MarketSlot, Reservation, Square
+from .models import Event, Reservation, Square
 from account.models import CustomUser
 from product.serializers import EventProductSerializer
 
@@ -46,22 +49,32 @@ class ReservationSerializer(serializers.ModelSerializer):
     reserved_from = RoundedDateTimeField()
     reserved_to = RoundedDateTimeField()
 
-    event = EventShortSerializer(read_only=True)
+    event = serializers.PrimaryKeyRelatedField(
+        queryset=Event.objects.all(), required=True
+    )
     user = UserShortSerializer(read_only=True)
-    
+
+    # Accept single int or list of ints for marketSlot
+    marketSlot = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all()),
+        source='market_slots',
+        write_only=True,
+        required=False,  # allow missing/null for better error reporting
+        allow_null=True
+    )
+    market_slot = serializers.PrimaryKeyRelatedField(read_only=True, many=False)
+
     class Meta:
         model = Reservation
         fields = [
-            "id", "marketSlot",
-            "used_extension", "reserved_from", "reserved_to",
-            "created_at", "status", "note", "final_price",
-            "event", "user"
+            'id', 'event', 'marketSlot', 'market_slot', 'reserved_from', 'reserved_to',
+            'used_extension', 'note', 'user'
         ]
         read_only_fields = ["id", "created_at", "final_price"]
         extra_kwargs = {
             "event": {"help_text": "ID a název akce (Event), ke které rezervace patří", "required": True},
-            "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False},
-            "user": {"help_text": "ID a název uživatele, který rezervaci vytváří", "required": True},
+            "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False, "allow_null": True},
+            "user": {"help_text": "ID a název uživatele, který rezervaci vytváří", "required": False, "allow_null": True},
             "used_extension": {"help_text": "Velikost rozšíření v m², které chce uživatel využít", "required": True},
             "reserved_from": {"help_text": "Datum a čas začátku rezervace", "required": True},
             "reserved_to": {"help_text": "Datum a čas konce rezervace", "required": True},
@@ -69,42 +82,80 @@ class ReservationSerializer(serializers.ModelSerializer):
             "note": {"help_text": "Poznámka k rezervaci (volitelné)", "required": False},
         }
 
+    def to_internal_value(self, data):
+        # Accept both single int and list for marketSlot
+        market_slot = data.get('marketSlot')
+        if market_slot is not None and not isinstance(market_slot, list):
+            data['marketSlot'] = [market_slot]
+        return super().to_internal_value(data)
+
+    def create(self, validated_data):
+        # Set user to current request user if not provided
+        if 'user' not in validated_data or validated_data['user'] is None:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user') and request.user.is_authenticated:
+                validated_data['user'] = request.user
+        market_slots = validated_data.pop('market_slots', [])
+        if market_slots:
+            validated_data['market_slot'] = market_slots[0]
+        instance = Reservation.objects.create(**validated_data)
+        return instance
+
     def validate(self, data):
-        event = data.get("event")
-        market_slot = data.get("marketSlot")
-        user = data.get("user")
-        reserved_from = data.get("reserved_from")
-        reserved_to = data.get("reserved_to")
-        used_extension = data.get("used_extension", 0)
+        logger = logging.getLogger(__name__)
+        logger.debug(f"ReservationSerializer.validate input data: {data}")
 
-        if reserved_from >= reserved_to:
-            raise serializers.ValidationError("Datum začátku rezervace musí být dříve než její konec.")
+        reserved_from = data.get('reserved_from')
+        reserved_to = data.get('reserved_to')
+        event = data.get('event')
+        market_slots = data.get('market_slots', None)
+        user = data.get('user', None)
 
-        duration_days = (reserved_to - reserved_from).days
-        if duration_days not in (1, 7, 30):
-            raise serializers.ValidationError("Rezervace musí být na přesně 1, 7, nebo 30 dní.")
+        errors = {}
 
+        if event is None:
+            logger.error("Reservation validation error: event is None")
+            errors['event'] = ["Událost (event) je povinná."]
+
+        if reserved_from is None or reserved_to is None:
+            logger.error("Reservation validation error: reserved_from or reserved_to is None")
+            errors['non_field_errors'] = ["Datum rezervace je povinný."]
+
+        if not market_slots:
+            errors['marketSlot'] = ["Pole nemůže být null."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        # Only check if reserved_from and reserved_to are on the same day (ignore time)
+        if reserved_from and reserved_to:
+            if reserved_from.date() != reserved_to.date():
+                logger.debug("Reservation is not for a single day.")
+                raise serializers.ValidationError(
+                    {"__all__": ["Rezervace musí být pouze na jeden den (datum)."]}
+                )
+
+        if not hasattr(event, "start") or not hasattr(event, "end"):
+            logger.error("Reservation validation error: event missing start/end")
+            raise serializers.ValidationError(
+                {"event": ["Událost nemá správně nastavený začátek nebo konec."]}
+            )
         if reserved_from < event.start or reserved_to > event.end:
-            raise serializers.ValidationError("Rezervace musí být v rámci trvání akce.")
-
-        if market_slot:
-            if market_slot.event != event:
-                raise serializers.ValidationError("Prodejní místo nepatří do dané akce.")
-            if used_extension > market_slot.available_extension:
-                raise serializers.ValidationError("Požadované rozšíření překračuje dostupné rozšíření.")
-            overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
-                event=event,
-                marketSlot=market_slot,
-                reserved_from__lt=reserved_to,
-                reserved_to__gt=reserved_from,
-                # status="reserved"
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Rezervace musí být v rámci trvání události."]}
             )
 
-        if overlapping.exists():
-            raise serializers.ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
+        # No overlapping check, allow overlaps
+        # Validate market slots
+        for market_slot in market_slots:
+            if market_slot.event != event:
+                raise serializers.ValidationError("Prodejní místo nepatří do dané akce.")
 
-        if user.user_reservations.filter(status="reserved").count() >= 5:
-            raise serializers.ValidationError("Uživatel už má 5 aktivních rezervací.")
+        if user is not None:
+            request = self.context.get('request')
+            # Only allow manual user assignment for staff or cityClerk role
+            if request and not (request.user.is_staff or (hasattr(request.user, 'role') and request.user.role == 'cityClerk')):
+                raise serializers.ValidationError("Nemáte oprávnění zadat uživatele ručně.")
 
         return data
 
@@ -233,6 +284,5 @@ class SquareSerializer(serializers.ModelSerializer):
             "cellsize": {"help_text": "Velikost buňky gridu v pixelech", "required": True},
             "image": {"help_text": "Obrázek / mapa náměstí", "required": False},
         }
-
 
 #-----------------------------------------------------------------------

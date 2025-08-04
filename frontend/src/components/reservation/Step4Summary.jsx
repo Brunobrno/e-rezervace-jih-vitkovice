@@ -1,7 +1,8 @@
-import React from 'react';
-import { Card, Button, Table } from 'react-bootstrap';
 
-const Step4Summary = ({ formData, onBack, onSubmit }) => {
+import React from 'react';
+import { Card, Button, Table, Form } from 'react-bootstrap';
+
+const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
   const { selectedSquare, selectedEvent, selectedSlot } = formData;
 
   if (!selectedSquare || !selectedEvent || !selectedSlot || selectedSlot.length === 0) {
@@ -61,6 +62,20 @@ const Step4Summary = ({ formData, onBack, onSubmit }) => {
           </tr>
         </tfoot>
       </Table>
+
+      {/* Note input (optional) using Bootstrap */}
+      <Form.Group className="mb-3" controlId="note-field">
+        <Form.Label>
+          <small className="text-muted">Poznámka (volitelné)</small>
+        </Form.Label>
+        <Form.Control
+          as="textarea"
+          value={note}
+          onChange={e => setNote && setNote(e.target.value)}
+          placeholder="Zde můžete přidat poznámku k objednávce..."
+          rows={3}
+        />
+      </Form.Group>
 
       <div className="d-flex justify-content-between">
         <Button variant="secondary" onClick={onBack}>

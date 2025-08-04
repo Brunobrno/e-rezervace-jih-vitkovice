@@ -62,7 +62,6 @@ const DynamicGrid = ({
     }
   };
   const selectedIndices = getSelectedIndices();
-  console.log('[DynamicGrid] render selectedIndex:', selectedIndex, 'multiSelect:', multiSelect, 'selectedIndices:', selectedIndices);
 
   // Selection is now fully controlled by parent
 

@@ -45,6 +45,11 @@ function Table({
   initialQuery = "",
   withGlobalSearch = true,
   withActionsColumn = true,
+  withTableBorder,
+  borderRadius,
+  highlightOnHover,
+  verticalAlign,
+  titlePadding = "6px 8px", // default smaller padding
   ...props
 }) {
   const [sortStatus, setSortStatus] = useState({
@@ -174,67 +179,57 @@ function Table({
     : null;
 
   return (
-    <Box className="d-flex flex-column h-100" style={{ minHeight: 400 }}>
-      <Box style={{ overflowX: 'auto', flex: 1 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--mantine-color-body)', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <thead>
+    <div className="custom-table-wrapper">
+      <table
+        className={`custom-table${withTableBorder ? " table-bordered" : ""}`}
+        style={{
+          borderRadius,
+          width: "100%",
+          borderCollapse: "separate",
+          borderSpacing: 0,
+        }}
+      >
+        <thead>
+          <tr>
+            {columns.map((col, idx) => (
+              <th
+                key={col.accessor || idx}
+                style={{
+                  padding: titlePadding,
+                  textAlign: col.textAlign || "left",
+                  width: col.width || undefined, // allow fr, %, px, etc.
+                  minWidth: col.minWidth || undefined,
+                  maxWidth: col.maxWidth || undefined,
+                  // ...other style...
+                }}
+              >
+                {col.title}
+                {col.filter && <div style={{ marginTop: 2 }}>{col.filter}</div>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.length === 0 ? (
             <tr>
-              {table.getHeaderGroups()[0].headers.map(header => (
-                <th
-                  key={header.id}
-                  style={{
-                    padding: '12px 8px',
-                    background: 'var(--mantine-color-gray-0)',
-                    borderBottom: '1px solid var(--mantine-color-gray-3)',
-                    fontWeight: 600,
-                    fontSize: 15,
-                    textAlign: 'left',
-                  }}
-                  onClick={() => {
-                    if (header.column.getCanSort()) {
-                      const desc = sortStatus.columnAccessor === header.column.id ? sortStatus.direction !== 'desc' : false;
-                      setSortStatus({ columnAccessor: header.column.id, direction: desc ? 'desc' : 'asc' });
-                    }
-                  }}
-                  role={header.column.getCanSort() ? 'button' : undefined}
-                  tabIndex={header.column.getCanSort() ? 0 : undefined}
-                  aria-sort={sortStatus.columnAccessor === header.column.id ? (sortStatus.direction === 'desc' ? 'descending' : 'ascending') : undefined}
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {header.column.getCanSort() && (
-                    <IconCornerDownLeft size={28} style={{ marginLeft: 6, opacity: 0.5, transform: sortStatus.columnAccessor === header.column.id && sortStatus.direction === 'desc' ? 'rotate(180deg)' : undefined }} />
-                  )}
-                </th>
-              ))}
+              <td colSpan={table.getAllLeafColumns().length} style={{ textAlign: 'center', padding: 24, color: '#888' }}>
+                No data
+              </td>
             </tr>
-            {withGlobalSearch && (
-              <tr>
-                {filterRowTds}
+          ) : (
+            table.getRowModel().rows.map(row => (
+              <tr key={row.id} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id} style={{ padding: '10px 8px', fontSize: 15 }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
               </tr>
-            )}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td colSpan={table.getAllLeafColumns().length} style={{ textAlign: 'center', padding: 24, color: '#888' }}>
-                  No data
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map(row => (
-                <tr key={row.id} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} style={{ padding: '10px 8px', fontSize: 15 }}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </Box>
-    </Box>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -12,9 +12,11 @@ function Sidebar() {
     <div className="bg-light h-100 d-flex flex-column pt-3 px-2" style={{ minHeight: 0 }}>
       <Nav defaultActiveKey="/home" className="flex-column flex-grow-1">
         <Nav.Link href="/home">Home</Nav.Link>
+        <hr />
         <Nav.Link href="/manage/events" eventKey="link-1">Akce</Nav.Link>
         <Nav.Link href="/manage/reservations" eventKey="link-2">Rezervace</Nav.Link>
         <Nav.Link href="/manage/squares" eventKey="link-3">Náměstí</Nav.Link>
+        <Nav.Link href="/manage/users" eventKey="link-4">Uživatelé</Nav.Link>
       </Nav>
     </div>
   );

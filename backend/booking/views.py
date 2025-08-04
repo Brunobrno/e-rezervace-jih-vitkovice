@@ -12,6 +12,8 @@ from .filters import EventFilter, ReservationFilter
 from rest_framework.permissions import IsAuthenticated
 from account.permissions import *
 
+import logging
+
 
 @extend_schema(
     tags=["Square"],
@@ -105,8 +107,7 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     )
 )
 class ReservationViewSet(viewsets.ModelViewSet):
-    # queryset = Reservation.objects.select_related("event", "marketSlot", "user").all().order_by("-created_at")
-    queryset = Reservation.objects.all().order_by("-created_at")
+    queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = ReservationFilter
@@ -129,3 +130,13 @@ class ReservationViewSet(viewsets.ModelViewSet):
         if hasattr(user, "role") and user.role == "seller":
             return queryset.filter(user=user)
         return queryset
+
+    # Optionally, override create() to add logging or debug info
+    def create(self, request, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Reservation create POST data: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in ReservationViewSet.create: {e}", exc_info=True)
+            raise

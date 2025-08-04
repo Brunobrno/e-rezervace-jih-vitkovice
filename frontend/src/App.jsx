@@ -25,6 +25,7 @@ import Ticket from "./pages/Ticket";
 import MapEditor from "./pages/MapEditor";
 import SquareDesigner from "./pages/manager/create/SquareDesigner";
 
+import Users from "./pages/manager/Users";
 import ReservationCart from "./pages/Reservation-cart"
 
 import { UserProvider } from './context/UserContext';
@@ -79,6 +80,7 @@ function App() {
             {/* CLERK & ADMIN */}
             <Route element={<RequireRole roles={[ "admin"]} />}>
 
+              <Route path="/manage/users" element={<Users />} />
               <Route path="/manage/squares" element={<Squares />} />
               <Route path="/manage/squares/designer" element={<SquareDesigner />} />
               <Route path="/manage/reservations" element={<Reservations />} />

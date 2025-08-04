@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { ProgressBar } from 'react-bootstrap';
+import dayjs from 'dayjs';
+import { Form } from 'react-bootstrap';
 
 import Step1SelectSquare from './Step1SelectSquare';
 import Step2SelectEvent from './Step2SelectEvent';
@@ -7,6 +9,7 @@ import Step3Map from './Step3Map';
 import Step4Summary from './Step4Summary';
 
 import orderAPI from '../../api/model/order';
+import reservationAPI from '../../api/model/reservation';
 import userAPI from '../../api/model/user';
 
 
@@ -19,11 +22,14 @@ const ReservationWizard = () => {
     event: null,
     slots: [],
     user: '', // New field for user ID
+    date: null, // Ensure date is present for reservation
+    note: '',   // Ensure note is present
   });
   const [step, setStep] = useState(1);
   const [userSearch, setUserSearch] = useState('');
   const [userResults, setUserResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [duration, setDuration] = useState(1); // 1, 7, or 30
   // Debounced user search (replace with useDebouncedCallback if available)
   const handleUserSearch = async (value) => {
     setUserSearch(value);
@@ -51,19 +57,89 @@ const ReservationWizard = () => {
 
   const handleSubmit = async () => {
     try {
-      const payload = {
+      const slot = data.slots[0];
+      // Ensure slot and date are present
+      if (!slot || !data.date) {
+        alert('Vyberte termín a slot.');
+        return;
+      }
+      // Debug: log event before using
+      console.log('DEBUG data.event:', data.event);
+
+      // Ensure event is present and valid
+      if (!data.event || typeof data.event !== 'object' || !data.event.id) {
+        alert('Chybí událost (event). Vyberte prosím událost.');
+        return;
+      }
+
+      // Use event's start/end time for reservation boundaries
+      const eventStart = dayjs(data.event.start);
+      const eventEnd = dayjs(data.event.end);
+
+      // Calculate initial reserved_from and reserved_to
+      let reserved_from = dayjs(data.date + ' ' + eventStart.format('HH:mm'));
+      let reserved_to;
+      if (duration === 1) {
+        reserved_to = dayjs(data.date + ' ' + eventEnd.format('HH:mm'));
+      } else {
+        const candidate = dayjs(data.date).add(duration - 1, 'day').format('YYYY-MM-DD') + ' ' + eventEnd.format('HH:mm');
+        reserved_to = dayjs(candidate);
+      }
+
+      // Clamp reserved_from and reserved_to to event boundaries
+      if (reserved_from.isBefore(eventStart)) reserved_from = eventStart;
+      if (reserved_to.isAfter(eventEnd)) reserved_to = eventEnd;
+
+      reserved_from = reserved_from.toISOString();
+      reserved_to = reserved_to.toISOString();
+
+
+
+      const reservationData = {
         event: data.event.id,
-        slots: data.slots.map((s) => s.id),
+        marketSlot: slot.id,
+        reserved_from,
+        reserved_to,
+        used_extension: slot.used_extension || 0,
+        note: data.note || null,
       };
       if (isAdminOrClerk && data.user) {
-        payload.user = data.user;
+        reservationData.user = data.user;
       }
-      const response = await orderAPI.createOrder(payload);
+
+      console.log('DEBUG reservationData:', reservationData);
+
+      // Create reservation and get its ID
+      const ResponseReservation = await reservationAPI.createReservation(reservationData);
+      console.log('DEBUG reservation response:', ResponseReservation);
+
+      console
+
+      const response = await orderAPI.createOrder({
+        user_id: data.user || null,
+        note: data.note || null,
+        reservation: ResponseReservation.id, // Use the reservation ID
+      });
       alert('Objednávka byla úspěšně odeslána!');
       console.log('📦 Objednáno:', response);
     } catch (error) {
+      // Log the error and show backend validation errors if present
       console.error('❌ Chyba při odesílání objednávky:', error);
-      alert('Něco se pokazilo při odesílání objednávky.');
+      if (error.response) {
+        console.error('Backend response:', error.response);
+        // Log backend error details for debugging
+        if (error.response.data) {
+          console.error('Backend error details:', error.response.data);
+        }
+      }
+      if (error.response && error.response.data) {
+        alert(
+          'Chyba při odesílání objednávky:\n' +
+          JSON.stringify(error.response.data, null, 2)
+        );
+      } else {
+        alert('Něco se pokazilo při odesílání objednávky.');
+      }
     }
   };
 
@@ -115,7 +191,17 @@ const ReservationWizard = () => {
         <Step2SelectEvent data={data} setData={setData} next={next} prev={prev} />
       )}
       {step === 3 && (
-        <Step3Map data={data} setData={setData} next={next} prev={prev} />
+        <>
+          {/* Pass duration and setDuration to Step3Map */}
+          <Step3Map
+            data={data}
+            setData={setData}
+            next={next}
+            prev={prev}
+            duration={duration}
+            setDuration={setDuration}
+          />
+        </>
       )}
       {step === 4 && (
         <Step4Summary
@@ -124,9 +210,12 @@ const ReservationWizard = () => {
             selectedEvent: data.event,
             selectedSlot: data.slots,
             selectedUser: data.user || null,
+            note: data.note || '',
           }}
           onBack={prev}
           onSubmit={handleSubmit}
+          note={data.note || ''}
+          setNote={note => setData(d => ({ ...d, note }))}
         />
       )}
     </>

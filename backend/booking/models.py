@@ -194,7 +194,13 @@ class Reservation(SoftDeleteModel):
     ]
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_reservations", null=False, blank=False)
-    marketSlot = models.ForeignKey(MarketSlot, on_delete=models.CASCADE, related_name="marketslot_reservations", null=False, blank=False)
+    market_slot = models.ForeignKey(
+        'marketSlot',
+        on_delete=models.PROTECT,
+        related_name='reservations',
+        null=True,
+        blank=True
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_reservations", null=False, blank=False)
     
     used_extension = models.FloatField(default=0 ,help_text="Použité rozšíření (m2)", validators=[MinValueValidator(0.0)])
@@ -205,14 +211,16 @@ class Reservation(SoftDeleteModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="reserved")
     note = models.TextField(blank=True, null=True)
 
-    final_price = models.DecimalField(blank=True, 
-                                    default=0, 
-                                    max_digits=8, 
-                                    decimal_places=2, 
-                                    validators=[MinValueValidator(0)], 
-                                    help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
-                                    )
+    final_price = models.DecimalField(
+        blank=True, 
+        default=0, 
+        max_digits=8, 
+        decimal_places=2, 
+        validators=[MinValueValidator(0)], 
+        help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
+    )
 
+    # Many-to-many relationship with EventProduct
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
 
     def clean(self):
@@ -225,18 +233,14 @@ class Reservation(SoftDeleteModel):
         if self.reserved_from >= self.reserved_to:
             raise ValidationError("Datum začátku rezervace musí být před datem konce.")
 
-        duration = self.reserved_to - self.reserved_from
-        duration_days = duration.days
+        # Only check if reserved_from and reserved_to are on the same day (ignore time)
+        if self.reserved_from.date() != self.reserved_to.date():
+            raise ValidationError("Rezervace musí být pouze na jeden den (datum).")
 
-        if duration_days not in (1, 7, 30):
-            raise ValidationError(
-                "Rezervovat prodejní místo je možno pouze na: den (1 den), týden (7 dnů), nebo měsíc (30 dnů)."
-            )
-
-        if self.marketSlot:
+        if self.market_slot:
             overlapping = Reservation.objects.exclude(id=self.id).filter(
                 event=self.event,
-                marketSlot=self.marketSlot,
+                market_slot=self.market_slot,
                 reserved_from__lt=self.reserved_to,
                 reserved_to__gt=self.reserved_from,
                 # status="reserved"
@@ -268,11 +272,11 @@ class Reservation(SoftDeleteModel):
             if reserved_from < event_start or reserved_to > event_end:
                 raise ValidationError("Rezervace musí být v rámci trvání akce.")
 
-        if self.used_extension > self.marketSlot.available_extension:
+        if self.used_extension > self.market_slot.available_extension:
             raise ValidationError("Požadované rozšíření je větší než možné rožšíření daného prodejního místa.")
 
-        if self.marketSlot and self.event != self.marketSlot.event:
-            raise ValidationError(f"Prodejní místo {self.marketSlot} není část této akce, musí být ze stejné akce jako rezervace.")
+        if self.market_slot and self.event != self.market_slot.event:
+            raise ValidationError(f"Prodejní místo {self.market_slot} není část této akce, musí být ze stejné akce jako rezervace.")
 
         if self.user:
             if self.user.user_reservations.all().count() > 5:
@@ -285,13 +289,13 @@ class Reservation(SoftDeleteModel):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        if (self.marketSlot):
+        if self.market_slot:
             duration = (self.reserved_to - self.reserved_from).days
-            self.final_price = duration * (self.marketSlot.price_per_m2 * (
-            Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
-        ))
+            self.final_price = duration * (self.market_slot.price_per_m2 * (
+                Decimal(str(self.market_slot.base_size)) + Decimal(str(self.used_extension))
+            ))
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Rezervace {self.user} na event {self.event.name}"
-    
+

@@ -1,7 +1,7 @@
 import Table from "../../components/Table";
 import Sidebar from "../../components/Sidebar";
 import { getReservations, deleteReservation, updateReservation } from "../../api/model/reservation";
-import { IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconEye, IconEdit, IconTrash, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Container, Row, Col, Form, Modal, Button as BootstrapButton } from "react-bootstrap";
 import {
@@ -10,7 +10,9 @@ import {
   Stack,
   Text,
   Group,
-  Badge
+  Badge,
+  MultiSelect,
+  TextInput
 } from "@mantine/core";
 import dayjs from "dayjs";
 
@@ -83,6 +85,33 @@ function Reservations() {
   const [reservations, setReservations] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [query, setQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState([]);
+
+  // Status options for filter
+  const statusOptions = [
+    { value: "reserved", label: "Rezervováno" },
+    { value: "cancelled", label: "Zrušeno" },
+    { value: "completed", label: "Dokončeno" },
+    { value: "pending", label: "Čekající" },
+  ];
+
+  // Filtering (pattern as in Users.jsx)
+  const filteredReservations = reservations.filter(r => {
+    let match = true;
+    if (query) {
+      const q = query.toLowerCase();
+      match =
+        (r.user?.username?.toLowerCase().includes(q) ||
+          r.event?.name?.toLowerCase().includes(q) ||
+          String(r.id).includes(q) ||
+          r.status?.toLowerCase().includes(q) ||
+          r.note?.toLowerCase().includes(q));
+    }
+    if (selectedStatus.length > 0) {
+      match = match && selectedStatus.includes(r.status);
+    }
+    return match;
+  });
 
   const fetchReservations = async () => {
     setFetching(true);
@@ -117,46 +146,72 @@ function Reservations() {
   };
 
   const columns = [
-    { accessor: "id", title: "ID", sortable: true },
+    { accessor: "id", title: "#", sortable: true, width: "48px" },
     {
-      accessor: "status",
-      title: "Stav",
-      render: (row) => (
-        <Badge color={statusColors[row.status] || "gray"} variant="light">
-          {row.status}
-        </Badge>
+      accessor: "user",
+      title: "Uživatel",
+      sortable: true,
+      width: "1.5fr",
+      render: row => row.user?.username || row.user || "—",
+      filter: (
+        <TextInput
+          label="Hledat uživatele"
+          placeholder="Např. jméno, email..."
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setQuery("")}>
+              <IconX size={14} />
+            </ActionIcon>
+          }
+          value={query}
+          onChange={e => setQuery(e.currentTarget.value)}
+        />
       ),
+      filtering: query !== "",
     },
     {
       accessor: "event",
       title: "Událost",
-      render: (row) => row.event.name || "Neznámá událost",
-    },
-    {
-      accessor: "user",
-      title: "Uživatel",
-      render: (row) => row.user.username || "Neznámý",
-    },
-    {
-      accessor: "reserved_from",
-      title: "Rezervováno od",
-      render: (row) => dayjs(row.reserved_from).format("DD.MM.YYYY HH:mm"),
       sortable: true,
+      width: "2fr",
+      render: row => row.event?.name || row.event || "—",
     },
     {
-      accessor: "reserved_to",
-      title: "Rezervováno do",
-      render: (row) => dayjs(row.reserved_to).format("DD.MM.YYYY HH:mm"),
+      accessor: "date",
+      title: "Datum",
       sortable: true,
+      width: "1fr",
+      render: row => row.date ? dayjs(row.date).format("DD.MM.YYYY") : (row.reserved_from ? dayjs(row.reserved_from).format("DD.MM.YYYY") : "—"),
     },
     {
-      accessor: "final_price",
-      title: "Cena",
-      render: (row) => `${row.final_price} Kč`,
+      accessor: "status",
+      title: "Stav",
+      sortable: true,
+      width: "1fr",
+      render: row => {
+        const color = statusColors[row.status] || "gray";
+        const label = statusOptions.find(opt => opt.value === row.status)?.label || row.status;
+        return <Badge color={color} variant="light">{label}</Badge>;
+      },
+      filter: (
+        <MultiSelect
+          label="Filtrovat stav"
+          placeholder="Vyber stav(y)"
+          data={statusOptions}
+          value={selectedStatus}
+          onChange={setSelectedStatus}
+          clearable
+          searchable
+          leftSection={<IconSearch size={16} />}
+          comboboxProps={{ withinPortal: false }}
+        />
+      ),
+      filtering: selectedStatus.length > 0,
     },
     {
       accessor: "actions",
       title: "Akce",
+      width: "80px",
       render: (reservation) => (
         <Group gap={4} wrap="nowrap">
           <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowReservationModal(reservation)}>
@@ -361,14 +416,14 @@ function Reservations() {
             <Button component="a" href="" leftSection={<IconPlus size={16} />}>Přidat rezervaci</Button>
           </Group>
           <Table
-            data={reservations}
+            data={filteredReservations}
             columns={columns}
             fetching={fetching}
             withTableBorder
             borderRadius="md"
             highlightOnHover
             verticalAlign="center"
-            onQueryChange={setQuery}
+            titlePadding="4px 8px"
           />
 
           {/* Bootstrap Modal for view */}
