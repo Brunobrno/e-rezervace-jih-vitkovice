@@ -30,6 +30,8 @@ import ReservationCart from "./pages/Reservation-cart"
 
 import { UserProvider } from './context/UserContext';
 
+import Order from "./pages/Order";
+
 function App() {
   return (
     <>
@@ -71,7 +73,7 @@ function App() {
 
             {/* ADMIN */}
             <Route element={<RequireRole roles={["admin"]} />}>
-              <Route path="/test" element={<Test />} />
+              <Route path="/test" element={<Order />} />
             </Route>
 
             {/* SELLER && ADMIN */}
