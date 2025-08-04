@@ -87,13 +87,6 @@ class ReservationSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def validate(self, data):
-
-        errors = {}
-
-        if event is None:
-            logger.error("Reservation validation error: event is None")
-            errors['event'] = ["Událost (event) je povinná."]
-
         logger.debug(f"ReservationSerializer.validate market_slot: {data.get('market_slot')}, event: {data.get('event')}")
         # Get the event object from the provided event id (if present)
         event_id = self.initial_data.get("event")
