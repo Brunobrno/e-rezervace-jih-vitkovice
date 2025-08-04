@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@apidevtools/swagger-parser": "^10.0.2",
+    "@apidevtools/swagger-parser": "^10.1.1",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
@@ -27,6 +27,7 @@
     "lodash": "^4.17.21",
     "mantine-datatable": "^8.1.2",
     "react": "^19.1.0",
+    "react-big-calendar": "^1.19.4",
     "react-bootstrap": "^2.10.10",
     "react-day-picker": "^9.8.1",
     "react-dom": "^19.1.0",
