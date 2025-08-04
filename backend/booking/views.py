@@ -40,7 +40,7 @@ class SquareViewSet(viewsets.ModelViewSet):
         # "psc" je číslo, obvykle do search_fields nepatří, ale můžeš ho filtrovat přes filterset_fields
     ]
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RoleAllowed("admin", "squareManager")]
 
 
 @extend_schema(

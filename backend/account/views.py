@@ -187,7 +187,7 @@ class UserView(viewsets.ModelViewSet):
             "role": {"help_text": "Role uživatele určující jeho oprávnění v systému."},
             "account_type": {"help_text": "Typ účtu – firma nebo fyzická osoba."},
             "email_verified": {"help_text": "Určuje, zda je e-mail ověřen."},
-            "otc": {"help_text": "Jednorázový token k ověření nebo přihlášení."},
+            "otc": {"help_text": "Jednorázový token k ověření nebo přihlášení."}, #FIXME:se nevyuziva
             "create_time": {"help_text": "Datum a čas registrace uživatele (pouze pro čtení).", "read_only": True},
             "var_symbol": {"help_text": "Variabilní symbol pro platby, pokud je vyžadován."},
             "bank_account": {"help_text": "Číslo bankovního účtu uživatele."},
@@ -197,7 +197,7 @@ class UserView(viewsets.ModelViewSet):
             "street": {"help_text": "Ulice a číslo popisné."},
             "PSC": {"help_text": "PSČ místa pobytu / sídla."},
             "GDPR": {"help_text": "Souhlas se zpracováním osobních údajů."},
-            "is_active": {"help_text": "Stav aktivace uživatele.", "read_only": True},
+            "is_active": {"help_text": "Stav aktivace uživatele."},
         }
 
         def get_permissions(self):
@@ -208,7 +208,7 @@ class UserView(viewsets.ModelViewSet):
                 if self.request.user.role in ['cityClerk', 'admin']:
                     return [OnlyRolesAllowed("cityClerk", "admin")()]
                 elif self.kwargs.get('pk') and str(self.request.user.id) == self.kwargs['pk']:
-                    return [IsAuthenticated()]
+                    return [IsAuthenticated]
                 else:
                     # fallback - deny access
                     return [OnlyRolesAllowed("cityClerk", "admin")()]  # or custom DenyAll()
