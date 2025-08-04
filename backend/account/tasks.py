@@ -44,92 +44,128 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.mail import send_mail
 from django.conf import settings
-from rest_framework.response import Response
-from django.utils import timezone
-from datetime import timedelta, datetime
-from django.apps import apps
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from .tokens import *
 
-from trznice.models import SoftDeleteModel
-from booking.models import Reservation, MarketSlot
-from commerce.models import Order
+from .models import CustomUser
 
 logger = get_task_logger(__name__)
 
-def _validate_days_input(years=None, days=None):
-    if years is not None:
-        return years * 365 if years > 0 else 365
-    if days is not None:
-        return days if days > 0 else 365
-    return 365 # default fallback
 
-@shared_task(name="account.tasks.hard_delete_soft_deleted_records")
-def hard_delete_soft_deleted_records(years=None, days=None):
-    """
-    Hard delete všech objektů, které jsou soft-deleted (is_deleted=True)
-    a zároveň byly označeny jako smazané (deleted_at) před více než zadaným časovým obdobím.
-    Jako vstupní argument může být zadán počet let nebo dnů, podle kterého se data skartují.
-    """
-
-    total_days = _validate_days_input(years, days)
-
-    time_period = timezone.now() - timedelta(days=total_days)
-
-    # Pro všechny modely, které dědí z SoftDeleteModel, smaž staré smazané záznamy
-    for model in apps.get_models():
-        if not issubclass(model, SoftDeleteModel):
-            continue
-        if not model._meta.managed or model._meta.abstract:
-            continue
-        if not hasattr(model, "all_objects"):
-            continue
-
-        # Filtrování soft-deleted a starých
-        deleted_qs = model.all_objects.filter(is_deleted=True, deleted_at__lt=time_period)
-        count = deleted_qs.count()
-
-        # Pokud budeme chtit použit custom logiku
-        # for obj in deleted_qs:
-        #     obj.hard_delete()
-
-        deleted_qs.delete()
-
-        if count > 0:
-            logger.info(f"Hard deleted {count} records from {model.__name__}")
-
-
-@shared_task(name="account.tasks.delete_unpayed_reservations")
-def delete_unpayed_reservations(minutes=30):
-    """
-    Smaže Rezervace podle Objednávky, pokud ta nebyla zaplacena v době 30 minut. Tím se uvolní Prodejní Místa pro nové rezervace.
-    Jako vstupní argument může být zadán počet minut, podle kterého nezaplacená rezervaace bude stornovana.
-    """
-    if minutes <= 0:
-        minutes = 30
-
-    thirty_minutes_ago = timezone.now() - timedelta(minutes=minutes)
+# This function sends a password reset email to the user.
+@shared_task(name="send_password_reset_email")
+def send_password_reset_email(user_id):
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+    except user.DoesNotExist:
+        logger.info(f"Task send_password_reset_email has failed. Invalid User ID was sent.")
+        return 0
     
-    ordes_qs = Order.objects.filter(status='pending',
-                                    created_at__lte=thirty_minutes_ago,
-                                    is_paid=False)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = password_reset_token.make_token(user)
+
+    url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}"
+
+    send_email_with_context(
+        subject="Obnova hesla",
+        message=f"Pro obnovu hesla klikni na následující odkaz:\n{url}",
+        recipients=[user.email],
+    )
+
+
+# This function sends an email to the user for email verification after registration.
+@shared_task(name="send_email_verification")
+def send_email_verification(user_id):
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+    except user.DoesNotExist:
+        logger.info(f"Task send_password_reset_email has failed. Invalid User ID was sent.")
+        return 0
     
-    count = ordes_qs.count()
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = account_activation_token.make_token(user)
 
-    for order in ordes_qs:
-        order.status = "cancelled"
-        order.save() # Triggers cascade to reservation and marketSlot
+    url = f"{settings.FRONTEND_URL}/email-verification/?uidb64={uid}&token={token}"
 
-    if count > 0:
-        logger.info(f"Canceled {count} unpaid orders and released their slots.")
+    message = f"Ověřte svůj e-mail kliknutím na odkaz:\n{url}"
+
+    logger.debug(f"\nEMAIL OBSAH:\n {message}\nKONEC OBSAHU")
+
+    send_email_with_context(
+        recipients=user.email,
+        subject="Ověření e-mailu",
+        message=f"{message}"
+    )
 
 
-@shared_task
-def delete_old_reservations():
+@shared_task(name="send_email_clerk_add_var_symbol")
+def send_email_clerk_add_var_symbol(user_id):
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+    except user.DoesNotExist:
+        logger.info(f"Task send_password_reset_email has failed. Invalid User ID was sent.")
+        return 0
+    
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = account_activation_token.make_token(user)
+    # url = f"http://localhost:5173/clerk/add-var-symbol/{uid}/" # NEVIM
+    # TODO: Replace with actual URL once frontend route is ready
+    url = f"{settings.FRONTEND_URL}/clerk/add-var-symbol/{uid}/"
+    message = f"Byl vytvořen nový uživatel:\n {user.firstname} {user.secondname} {user.email} .\n Doplňte variabilní symbol {url} ."
+
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+
+    
+    send_email_with_context(
+        recipients=user.email,
+        subject="Doplnění variabilního symbolu",
+        message=message
+    )
+
+
+@shared_task(name="send_email_clerk_accepted")
+def send_email_clerk_accepted(user_id):
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+    except user.DoesNotExist:
+        logger.info(f"Task send_password_reset_email has failed. Invalid User ID was sent.")
+        return 0
+    
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = account_activation_token.make_token(user)
+
+    message = f"Úředník potvrdil vaší registraci. Můžete se přihlásit."
+
+
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+    
+    send_email_with_context(
+        recipients=user.email,
+        subject="Úředník potvrdil váší registraci",
+        message=message
+    )
+    
+    
+
+def send_email_with_context(recipients, subject, message):
     """
-    Smaže rezervace starší než 10 let počítané od začátku příštího roku.
+    General function to send emails with a specific context.
     """
-    now = timezone.now()
-    next_january_1 = datetime(year=now.year + 1, month=1, day=1, tzinfo=timezone.get_current_timezone())
-    cutoff_date = next_january_1 - timedelta(days=365 * 10)
+    if isinstance(recipients, str):
+        recipients = [recipients]
 
-    deleted, _ = Reservation.objects.filter(created__lt=cutoff_date).delete()
-    print(f"Deleted {deleted} old reservations.")
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=None,
+            recipient_list=recipients,
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        logger.error(f"E-mail se neodeslal: {e}")
+        return False

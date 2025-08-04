@@ -15,6 +15,8 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from account.permissions import *
 
+from .tasks import test_celery_task
+
 
 @extend_schema(
     tags=["Square"],
@@ -44,6 +46,11 @@ class SquareViewSet(viewsets.ModelViewSet):
     ]
 
     permission_classes = [RoleAllowed("admin", "squareManager")]
+
+    def get_queryset(self):
+        test_celery_task.delay()
+        return super().get_queryset()
+    
 
 
 @extend_schema(

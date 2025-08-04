@@ -20,7 +20,7 @@ dont forget to run redis:
 docker run redis
 
 CELERY Terminal 1 
-celery -A trznice worker --loglevel=info
+celery -A trznice worker --pool=solo --loglevel=info
 
 CELERY BEAT Terminal 2
 celery -A trznice beat --loglevel=info

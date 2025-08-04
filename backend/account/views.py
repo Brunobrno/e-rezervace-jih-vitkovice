@@ -262,7 +262,7 @@ class UserRegistrationViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        send_email_verification(user) # posílaní emailu pro potvrzení registrace
+        send_email_verification.delay(user.id) # posílaní emailu pro potvrzení registrace
             
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -311,7 +311,7 @@ class UserActivationViewSet(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        send_email_clerk_accepted(user)
+        send_email_clerk_accepted.delay(user.id)
 
         return Response(serializer.to_representation(user), status=status.HTTP_200_OK)
 
@@ -331,10 +331,15 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
-            user = User.objects.get(email=serializer.validated_data['email'])
-            send_password_reset_email(user, request)
-
+            try:
+                user = User.objects.get(email=serializer.validated_data['email'])
+            except User.DoesNotExist:
+                # Always return 200 even if user doesn't exist to avoid user enumeration
+                return Response({"detail": "E-mail s odkazem byl odeslán."})
+            
+            send_password_reset_email.delay(user.id)
             return Response({"detail": "E-mail s odkazem byl odeslán."})
+        
         return Response(serializer.errors, status=400)
     
 #2. Confirming reset

@@ -401,13 +401,35 @@ else:
 
 #-------------------------------------CELERY 📅------------------------------------
 
-if not DEBUG:
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_TIMEZONE = 'Europe/Prague'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+try:
+    import redis
+    # test connection
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    r.ping()
+except Exception:
+    CELERY_BROKER_URL = 'memory://'
 
-    CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Europe/Prague'
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+# if DEBUG:
+#     CELERY_BROKER_URL = 'redis://localhost:6379/0'
+#     try:
+#         import redis
+#         # test connection
+#         r = redis.Redis(host='localhost', port=6379, db=0)
+#         r.ping()
+#     except Exception:
+#         CELERY_BROKER_URL = 'memory://'
+
+#     CELERY_ACCEPT_CONTENT = ['json']
+#     CELERY_TASK_SERIALIZER = 'json'
+#     CELERY_TIMEZONE = 'Europe/Prague'
+
+#     CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
     # from celery.schedules import crontab
 
@@ -421,9 +443,9 @@ if not DEBUG:
     #         'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
     #     },
     # }
-else:
-    # Nebo nastav dummy broker, aby se úlohy neodesílaly
-    CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
+# else:
+#     # Nebo nastav dummy broker, aby se úlohy neodesílaly
+#     CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
 
 #-------------------------------------END CELERY 📅------------------------------------
 
