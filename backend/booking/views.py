@@ -10,6 +10,9 @@ from .serializers import EventSerializer, ReservationSerializer, MarketSlotSeria
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
+
 from account.permissions import *
 
 
@@ -129,3 +132,27 @@ class ReservationViewSet(viewsets.ModelViewSet):
         if hasattr(user, "role") and user.role == "seller":
             return queryset.filter(user=user)
         return queryset
+    
+    def perform_create(self, serializer):
+        self._check_blocked_permission(serializer.validated_data)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._check_blocked_permission(serializer.validated_data)
+        serializer.save()
+
+    def _check_blocked_permission(self, data):
+        slot_id = data.get("marketSlot")
+
+        if not isinstance(slot_id, int):
+            raise PermissionDenied("Neplatné ID prodejního místa.")
+
+        try:
+            market_slot = MarketSlot.objects.get(pk=slot_id)
+        except ObjectDoesNotExist:
+            raise PermissionDenied("Prodejní místo nebylo nalezeno.")
+
+        if market_slot.status == "blocked":
+            user = self.request.user
+            if getattr(user, "role", None) not in ["admin", "clerk"]:
+                raise PermissionDenied("Toto prodejní místo je zablokované.")

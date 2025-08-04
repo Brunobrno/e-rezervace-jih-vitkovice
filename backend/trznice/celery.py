@@ -11,3 +11,6 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Automaticky najdi tasks.py ve všech appkách
 app.autodiscover_tasks()
+
+# Optional but recommended for beat to use DB scheduler
+# from django_celery_beat.schedulers import DatabaseScheduler

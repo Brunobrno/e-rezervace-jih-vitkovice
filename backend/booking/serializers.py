@@ -80,7 +80,7 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         if "status" in data:
             if self.instance:  # update
-                if data["status"] != self.instance.final_price and user.role not in ["admin", "cityClerk"]:
+                if data["status"] != self.instance.status and user.role not in ["admin", "cityClerk"]:
                     raise serializers.ValidationError({
                         "status": "Pouze administrátor nebo úředník může upravit status rezervace."
                     })

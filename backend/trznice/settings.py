@@ -289,7 +289,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'corsheaders',#cors
+    'corsheaders', #cors
+
+    'django_celery_beat', #slouží k plánování úkolů pro Celery
 
     
     #'chat.apps.GlobalChatCheck', #tohle se spusti při každé django inicializaci (migration, createmigration, runserver)
@@ -405,18 +407,20 @@ if not DEBUG:
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_TIMEZONE = 'Europe/Prague'
 
-    from celery.schedules import crontab
+    CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-    CELERY_BEAT_SCHEDULE = {
-        'hard_delete_soft_deleted_monthly': {
-            'task': 'account.tasks.hard_delete_soft_deleted_records',
-            'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
-        },
-        'delete_old_reservations_monthly': {
-            'task': 'account.tasks.delete_old_reservations',
-            'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
-        },
-    }
+    # from celery.schedules import crontab
+
+    # CELERY_BEAT_SCHEDULE = {
+    #     'hard_delete_soft_deleted_monthly': {
+    #         'task': 'trznice.tasks.hard_delete_soft_deleted_records',
+    #         'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
+    #     },
+    #     'delete_old_reservations_monthly': {
+    #         'task': 'account.tasks.delete_old_reservations',
+    #         'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
+    #     },
+    # }
 else:
     # Nebo nastav dummy broker, aby se úlohy neodesílaly
     CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis

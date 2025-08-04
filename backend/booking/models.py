@@ -295,7 +295,13 @@ class Reservation(SoftDeleteModel):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        self.marketSlot.status = "reserved"
+
+        if (self.status == "reserved"):
+            self.marketSlot.status = "taken"
+        else:
+            self.marketSlot.status = "empty"
+        self.marketSlot.save()
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -307,6 +313,10 @@ class Reservation(SoftDeleteModel):
             order.is_deleted = True
             order.deleted_at = timezone.now()
             order.save()
+
+        if self.marketSlot and self.marketSlot.event.end > timezone.now():
+            self.marketSlot.status = "empty"
+            self.marketSlot.save()
 
         return super().delete(*args, **kwargs)
     
