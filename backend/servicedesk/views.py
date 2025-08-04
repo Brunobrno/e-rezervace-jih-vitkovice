@@ -9,6 +9,8 @@ from .filters import ServiceTicketFilter
 from account.email import send_email_with_context
 
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+
 # from account.permissions import RoleAllowed
 
 

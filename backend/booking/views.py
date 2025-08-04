@@ -10,9 +10,14 @@ from .serializers import EventSerializer, ReservationSerializer, MarketSlotSeria
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
+
 from account.permissions import *
 
 import logging
+
+from .tasks import test_celery_task
 
 
 @extend_schema(
@@ -42,7 +47,12 @@ class SquareViewSet(viewsets.ModelViewSet):
         # "psc" je číslo, obvykle do search_fields nepatří, ale můžeš ho filtrovat přes filterset_fields
     ]
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RoleAllowed("admin", "squareManager")]
+
+    def get_queryset(self):
+        test_celery_task.delay()
+        return super().get_queryset()
+    
 
 
 @extend_schema(
@@ -140,3 +150,27 @@ class ReservationViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Error in ReservationViewSet.create: {e}", exc_info=True)
             raise
+    
+    def perform_create(self, serializer):
+        self._check_blocked_permission(serializer.validated_data)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._check_blocked_permission(serializer.validated_data)
+        serializer.save()
+
+    def _check_blocked_permission(self, data):
+        slot_id = data.get("marketSlot")
+
+        if not isinstance(slot_id, int):
+            raise PermissionDenied("Neplatné ID prodejního místa.")
+
+        try:
+            market_slot = MarketSlot.objects.get(pk=slot_id)
+        except ObjectDoesNotExist:
+            raise PermissionDenied("Prodejní místo nebylo nalezeno.")
+
+        if market_slot.status == "blocked":
+            user = self.request.user
+            if getattr(user, "role", None) not in ["admin", "clerk"]:
+                raise PermissionDenied("Toto prodejní místo je zablokované.")

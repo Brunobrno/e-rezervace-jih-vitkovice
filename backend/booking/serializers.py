@@ -70,7 +70,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             'id', 'event', 'marketSlot', 'market_slot', 'reserved_from', 'reserved_to',
             'used_extension', 'note', 'user'
         ]
-        read_only_fields = ["id", "created_at", "final_price"]
+        read_only_fields = ["id", "created_at"]
         extra_kwargs = {
             "event": {"help_text": "ID a název akce (Event), ke které rezervace patří", "required": True},
             "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False, "allow_null": True},
@@ -78,7 +78,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             "used_extension": {"help_text": "Velikost rozšíření v m², které chce uživatel využít", "required": True},
             "reserved_from": {"help_text": "Datum a čas začátku rezervace", "required": True},
             "reserved_to": {"help_text": "Datum a čas konce rezervace", "required": True},
-            "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False},
+            "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False, "default": "reserved"},
             "note": {"help_text": "Poznámka k rezervaci (volitelné)", "required": False},
         }
 
@@ -176,12 +176,12 @@ class MarketSlotSerializer(serializers.ModelSerializer):
             "number": {"help_text": "Pořadové číslo prodejního místa u Akce, ke které toto místo patří", "required": False},
             "status": {"help_text": "Stav prodejního místa", "required": False},
             "base_size": {"help_text": "Základní velikost (m²)", "required": True},
-            "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": True},
+            "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": False, "default": 0},
             "x": {"help_text": "X souřadnice levého horního rohu", "required": True},
             "y": {"help_text": "Y souřadnice levého horního rohu", "required": True},
             "width": {"help_text": "Šířka Slotu", "required": True},
             "height": {"help_text": "Výška Slotu", "required": True},
-            "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": True},
+            "price_per_m2": {"help_text": "Cena za m² tohoto místa", "required": False, "default": 0},
         }
 
     def validate_base_size(self, value):
@@ -190,6 +190,13 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        price_per_m2 = data.setdefault("price_per_m2", 0)
+        if price_per_m2 < 0:
+            raise serializers.ValidationError("Cena za m² nemůže být záporná.")
+        
+        if data.setdefault("available_extension", 0) < 0:
+            raise serializers.ValidationError("Velikost možného rozšíření musí být větší než nula.")
+
         if data.get("width", 0) <= 0 or data.get("height", 0) <= 0:
             raise serializers.ValidationError("Šířka a výška místa musí být větší než nula.")
         

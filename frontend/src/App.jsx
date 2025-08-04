@@ -12,6 +12,7 @@ import SelectReservation from "./pages/SelectReservation";
 import Test from "./pages/Test";
 import EmailVerificationPage from "./pages/register/EmailVerification";
 import Home from "./pages/Home";
+import PaymentPage from "./pages/PaymentPage";
 import ResetPasswordPage from "./pages/PasswordReset";
 import UserSettings from "./pages/Settings";
 
@@ -66,6 +67,8 @@ function App() {
             
 
             <Route path="/settings" element={<UserSettings />} />
+            
+            <Route path="/payment/:orderId" element={<PaymentPageWrapper />} />
 
             {/* ADMIN */}
             <Route element={<RequireRole roles={["admin"]} />}>
@@ -105,6 +108,12 @@ function App() {
       </footer>
     </>
   );
+}
+import { useParams } from "react-router-dom";
+
+function PaymentPageWrapper() {
+  const { orderId } = useParams();
+  return <PaymentPage orderId={orderId} />;
 }
 
 export default App;
