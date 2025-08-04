@@ -49,6 +49,14 @@ export const updateEvent = async (id, data) => {
   return response.data;
 };
 
+export const createEvent = async (formData) => {
+  const response = await axios_instance.post(`${API_BASE_URL}/`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+
 /**
  * DELETE - odstranění události podle ID.
  * 
@@ -59,3 +67,9 @@ export const deleteEvent = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
+export default {
+  getEvents,
+  getEventById,
+  updateEvent,
+  deleteEvent,
+};

@@ -24,7 +24,8 @@ export const getSquares = async (params = {}) => {
  * @returns {Promise<Object>} - Objekt `Square`
  */
 export const getSquareById = async (id) => {
-  const response = await axios_instance.get(`${SQUARE_API_URL}${id}/`, { params });
+  const response = await axios_instance.get(`${SQUARE_API_URL}${id}/`);
+  console.log(response.data);
   return response.data;
 };
 
@@ -39,6 +40,21 @@ export const getSquareById = async (id) => {
   return response.data;
 };
 
+
+/**
+ * Vytvoří nové náměstí (POST).
+ * @param {Object} data - Objekt náměstí
+ * @returns {Promise<Object>} - Vytvořené náměstí
+ */
+export const createSquare = async (data) => {
+  const response = await axios_instance.post(SQUARE_API_URL, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};
+
+
+
 /**
  * Smaže konkrétní náměstí podle ID.
  * @param {number} id - ID náměstí
@@ -49,3 +65,11 @@ export const deleteSquare = async (id) => {
   return response.data;
 };
 
+
+export default {
+  getSquares,
+  getSquareById,
+  updateSquare,
+  deleteSquare,
+  createSquare
+};

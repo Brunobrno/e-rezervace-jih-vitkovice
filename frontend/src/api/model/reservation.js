@@ -9,13 +9,14 @@ const API_BASE_URL = '/booking/reservations';
  *   - event: {number} ID události
  *   - user: {number} ID uživatele
  *   - status: {'reserved'|'cancelled'} Filtr na stav rezervace
- *   - ordering: {string} např. "-created_at"
+ *   - Reservationing: {string} např. "-created_at"
  *   - search: {string} hledání v poli poznámka, uživatel, název události atd.
  * 
  * @returns {Promise<Array<Reservation>>}
  */
-export const getReservations = (params = {}) => {
-  return axios_instance.get(`${API_BASE_URL}/`, { params });
+export const getReservations = async (params = {}) => {
+  const response = await axios_instance.get(`${API_BASE_URL}/`, { params });
+  return response.data;
 };
 
 /**
@@ -24,8 +25,9 @@ export const getReservations = (params = {}) => {
  * @param {number} id - ID rezervace
  * @returns {Promise<Reservation>}
  */
-export const getReservationById = (id) => {
-  return axios_instance.get(`${API_BASE_URL}/${id}/`);
+export const getReservationById = async (id) => {
+  const response = await axios_instance.get(`${API_BASE_URL}/${id}/`);
+  return response.data;
 };
 
 /**
@@ -40,8 +42,9 @@ export const getReservationById = (id) => {
  * 
  * @returns {Promise<Reservation>}
  */
-export const createReservation = (data) => {
-  return axios_instance.post(`${API_BASE_URL}/`, data);
+export const createReservation = async (data) => {
+  const response = await axios_instance.post(`${API_BASE_URL}/`, data);
+  return response.data;
 };
 
 /**
@@ -55,8 +58,9 @@ export const createReservation = (data) => {
  *   - cells?: {number[]}
  * @returns {Promise<Reservation>}
  */
-export const updateReservation = (id, data) => {
-  return axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
+export const updateReservation = async (id, data) => {
+  const response = await axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
+  return response.data;
 };
 
 /**
@@ -65,7 +69,14 @@ export const updateReservation = (id, data) => {
  * @param {number} id - ID rezervace
  * @returns {Promise<void>} HTTP 204 při úspěchu
  */
-export const deleteReservation = (id) => {
-  return axios_instance.delete(`${API_BASE_URL}/${id}/`);
+export const deleteReservation = async (id) => {
+  await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
+export default {
+  getReservations,
+  getReservationById,
+  createReservation,
+  updateReservation,
+  deleteReservation,
+};

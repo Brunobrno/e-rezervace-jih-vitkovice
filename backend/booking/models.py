@@ -7,7 +7,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from trznice.models import SoftDeleteModel
-
+from trznice.utils import truncate_to_minutes
 
 #náměstí
 class Square(SoftDeleteModel):
@@ -43,6 +43,15 @@ class Square(SoftDeleteModel):
                 
         if self.height <= 0:
             raise ValidationError("Výška náměstí nemůže být menší nebo rovna nule.")
+        
+        if self.grid_rows <= 0:
+            raise ValidationError("Počet řádků mapy nemůže být menší nebo rovna nule.")
+        
+        if self.grid_cols <= 0:
+            raise ValidationError("Počet sloupců mapy nemůže být menší nebo rovna nule.")
+        
+        if self.cellsize <= 0:
+            raise ValidationError("Velikost mapové buňky nemůže být menší nebo rovna nule.")
         
         return super().clean()
 
@@ -81,6 +90,13 @@ class Event(SoftDeleteModel):
 
 
     def clean(self):
+        if not (self.start and self.end):
+            raise ValidationError("Datum začátku a konce musí být neprázné.")
+        
+        # Vynecháme sekunky, mikrosecundy atd.
+        self.start = truncate_to_minutes(self.start)
+        self.end = truncate_to_minutes(self.end)
+
         # Zkontroluj, že začátek je před koncem
         if self.start >= self.end:
             raise ValidationError("Datum začátku musí být před datem konce.")
@@ -194,7 +210,7 @@ class Reservation(SoftDeleteModel):
                                     max_digits=8, 
                                     decimal_places=2, 
                                     validators=[MinValueValidator(0)], 
-                                    help_text="Neuvádět, pokud chcete, aby se vypočitala automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
+                                    help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
                                     )
 
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
@@ -202,14 +218,16 @@ class Reservation(SoftDeleteModel):
     def clean(self):
         if not self.reserved_from or not self.reserved_to:
             raise ValidationError("Čas rezervace nemůže být prázdný.")
-        
+
+        self.reserved_from = truncate_to_minutes(self.reserved_from)
+        self.reserved_to = truncate_to_minutes(self.reserved_to)
+
         if self.reserved_from >= self.reserved_to:
             raise ValidationError("Datum začátku rezervace musí být před datem konce.")
 
         duration = self.reserved_to - self.reserved_from
         duration_days = duration.days
 
-        # Allow only exact 1, 7, or 30 days
         if duration_days not in (1, 7, 30):
             raise ValidationError(
                 "Rezervovat prodejní místo je možno pouze na: den (1 den), týden (7 dnů), nebo měsíc (30 dnů)."
@@ -223,33 +241,44 @@ class Reservation(SoftDeleteModel):
                 reserved_to__gt=self.reserved_from,
                 # status="reserved"
             )
-        # else:
-        #     overlapping = Reservation.objects.exclude(id=self.id).filter(
-        #         event=self.event,
-        #         marketSlot__isnull=True,
-        #         reserved_from__lt=self.reserved_to,
-        #         reserved_to__gt=self.reserved_from,
-        #         # status="reserved"
-        #     )
+        else:
+            raise ValidationError("Rezervace musí mít v sobě prodejní místo (MarketSlot).")
 
-        if overlapping.exists():
-            raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
+            if overlapping.exists():
+                raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
 
-        if self.reserved_from < self.event.start or self.reserved_to > self.event.end:
-            raise ValidationError("Rezervace musí být v rámci trvání akce.")
-        
-        if (self.used_extension > self.marketSlot.available_extension):
+        # Oprava chyby při porovnání timezone-naive vs timezone-aware
+        if self.event:
+            event_start = self.event.start
+            event_end = self.event.end
+
+            if timezone.is_naive(event_start):
+                event_start = timezone.make_aware(event_start)
+
+            if timezone.is_naive(event_end):
+                event_end = timezone.make_aware(event_end)
+
+            reserved_from = (
+                timezone.make_aware(self.reserved_from) if timezone.is_naive(self.reserved_from) else self.reserved_from
+            )
+            reserved_to = (
+                timezone.make_aware(self.reserved_to) if timezone.is_naive(self.reserved_to) else self.reserved_to
+            )
+
+            if reserved_from < event_start or reserved_to > event_end:
+                raise ValidationError("Rezervace musí být v rámci trvání akce.")
+
+        if self.used_extension > self.marketSlot.available_extension:
             raise ValidationError("Požadované rozšíření je větší než možné rožšíření daného prodejního místa.")
-        
-        if self.marketSlot:
-            if self.event != self.marketSlot.event:
-                raise ValidationError(f"Prodejní místo {self.marketSlot} není část této akce, musí být ze stejné akce jako rezervace.")
-        
+
+        if self.marketSlot and self.event != self.marketSlot.event:
+            raise ValidationError(f"Prodejní místo {self.marketSlot} není část této akce, musí být ze stejné akce jako rezervace.")
+
         if self.user:
             if self.user.user_reservations.all().count() > 5:
                 raise ValidationError(f"{self.user} už má 5 rezervací, víc není možno rezervovat pro jednoho uživatele.")
         else:
-            raise ValidationError(f"Rezervace musí mít v sobě uživatele.")
+            raise ValidationError("Rezervace musí mít v sobě uživatele.")
 
         return super().clean()
 
@@ -257,7 +286,7 @@ class Reservation(SoftDeleteModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         if (self.marketSlot):
-            duration = (self.reserved_from - self.reserved_to).days
+            duration = (self.reserved_to - self.reserved_from).days
             self.final_price = duration * (self.marketSlot.price_per_m2 * (
             Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
         ))

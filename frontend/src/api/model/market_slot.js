@@ -10,7 +10,7 @@ const MARKET_SLOTS_API_URL = '/booking/market-slots/';
  *   - ordering: řazení podle pole (např. `x`, `-y`, ...)
  * @returns {Promise<Array>} - Pole objektů `MarketSlot`
  */
-export const getAllMarketSlots = async (params = {}) => {
+export const getMarketSlots = async (params = {}) => {
   const response = await axios_instance.get(MARKET_SLOTS_API_URL, { params });
   return response.data;
 };
@@ -63,4 +63,12 @@ export const updateMarketSlot = async (id, data) => {
 export const deleteMarketSlot = async (id) => {
   const response = await axios_instance.delete(`${MARKET_SLOTS_API_URL}${id}/`);
   return response.data;
+};
+
+export default {
+  getMarketSlots,
+  getMarketSlotById,
+  createMarketSlot,
+  updateMarketSlot,
+  deleteMarketSlot,
 };

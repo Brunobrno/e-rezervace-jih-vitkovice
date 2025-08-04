@@ -3,40 +3,51 @@ import Form from "react-bootstrap/Form";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
-import { faKey } from '@fortawesome/free-solid-svg-icons'
-import ToggleButton from "react-bootstrap/ToggleButton";
-import Container from "react-bootstrap/Container";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { faKey } from '@fortawesome/free-solid-svg-icons';
 import { useState } from "react";
+import Spinner from "react-bootstrap/Spinner";
 
 import { login } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 
-
 function LoginCard() {
-
   const navigate = useNavigate();
 
-  // Stavy pro email a heslo
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Zpracování formuláře
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
     try {
       const success = await login(email, password);
       if (success) {
-        navigate("/home")
+        navigate("/home");
         console.log("Přihlášení bylo úspěšné");
       }
     } catch (error) {
       console.error("Chyba při přihlášení:", error);
-      const err = error.response.data.non_field_errors || "Neočekávaná chyba při přihlášení.";
-      
-      setErrorMessage(err);
+      // Rozlišení typu chyby
+      if (error.response) {
+        if (error.response.status === 0 || error.response.status >= 500) {
+          setErrorMessage("Chyba sítě nebo serveru. Zkuste to později.");
+        } else if (error.response.status === 401 || error.response.status === 400) {
+          setErrorMessage("Neplatné přihlašovací údaje.");
+        } else {
+          setErrorMessage("Neočekávaná chyba při přihlášení.");
+        }
+      } else if (error.request) {
+        setErrorMessage("Nelze se spojit se serverem. Zkontrolujte připojení k internetu.");
+      } else {
+        setErrorMessage("Chyba aplikace: " + error.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,6 +78,7 @@ function LoginCard() {
               name="email"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
+              disabled={loading}
             />
           </Form.Group>
 
@@ -85,10 +97,10 @@ function LoginCard() {
               placeholder=""
               required
               autoComplete="current-password"
-              autoFocus
               name="loginPassword"
               onChange={(e) => setPassword(e.target.value)}
               value={password}
+              disabled={loading}
             />
           </Form.Group>
 
@@ -100,6 +112,7 @@ function LoginCard() {
                   type="checkbox"
                   name="remember"
                   id="remember"
+                  disabled={loading}
                 />
 
                 <label className="custom-control-label" htmlFor="remember">
@@ -110,7 +123,17 @@ function LoginCard() {
           </Form.Group>
 
           <Form.Group className="form-group">
-            <Button type="submit" className="float-right login_btn">
+            <Button type="submit" className="float-right login_btn" disabled={loading}>
+              {loading && (
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  className="me-2"
+                />
+              )}
               Přihlášení
             </Button>
 
@@ -127,8 +150,7 @@ function LoginCard() {
       <Card.Footer>
         <Row>
           <Col className="links">
-            <Button href="/register"variant="success" className="float-right text-white">
-              {" "}
+            <Button href="/register" variant="success" className="float-right text-white" disabled={loading}>
               Vytvořit účet stánkaře
             </Button>
 

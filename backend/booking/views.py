@@ -1,6 +1,9 @@
 from rest_framework import viewsets, filters
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 
 from .models import Event, Reservation, MarketSlot, Square
 from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer
@@ -8,6 +11,7 @@ from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
 from account.permissions import *
+
 
 @extend_schema(
     tags=["Square"],
@@ -36,7 +40,7 @@ class SquareViewSet(viewsets.ModelViewSet):
         # "psc" je číslo, obvykle do search_fields nepatří, ale můžeš ho filtrovat přes filterset_fields
     ]
 
-    permission_classes = [OnlyRolesAllowed("admin", "squareManager")]
+    permission_classes = [IsAuthenticated]
 
 
 @extend_schema(
@@ -125,4 +129,3 @@ class ReservationViewSet(viewsets.ModelViewSet):
         if hasattr(user, "role") and user.role == "seller":
             return queryset.filter(user=user)
         return queryset
-

@@ -73,6 +73,10 @@ npm install @mantine/dates
 npm install dayjs
 npm install lodash
 npm install @tabler/icons-react
+npm install @apidevtools/swagger-parser
+npm install react-big-calendar date-fns
+
+
 
 npm i react-router-dom
 npm audit fix
