@@ -94,18 +94,22 @@ export default function Step3Map({ data, setData, next, prev, duration, setDurat
         } else {
           indices = [...prev, clickedIdx];
         }
+        const chosenSlots = indices.map(i => slots[i]).filter(Boolean);
+        console.log("Vybrané market sloty:", chosenSlots); // <-- log vybraných slotů
         setData((prevData) => ({
           ...prevData,
-          slots: indices.map(i => slots[i]).filter(Boolean)
+          slots: chosenSlots
         }));
         return indices;
       });
     } else {
       const idx = typeof clickedIdx === 'number' ? clickedIdx : null;
+      const chosenSlots = idx !== null && slots[idx] ? [slots[idx]] : [];
+      console.log("Vybraný market slot:", chosenSlots); // <-- log vybraného slotu
       setSelectedIndices(idx !== null ? [idx] : []);
       setData((prevData) => ({
         ...prevData,
-        slots: idx !== null && slots[idx] ? [slots[idx]] : []
+        slots: chosenSlots
       }));
     }
   };
@@ -190,6 +194,7 @@ export default function Step3Map({ data, setData, next, prev, duration, setDurat
 
   const handleNext = () => {
     if (validateSelection()) {
+      // ⬇️ KOMENT: Tady se data (data) posílají do dalšího kroku (např. parent wizard nebo API)
       next();
     }
   };
@@ -238,7 +243,7 @@ export default function Step3Map({ data, setData, next, prev, duration, setDurat
                     </Alert>
                   ) : null}
                 </Row>
-                <Row>
+                {/*<Row>
                   <FormCheck
                     type="switch"
                     id="multiSelectSwitch"
@@ -247,7 +252,7 @@ export default function Step3Map({ data, setData, next, prev, duration, setDurat
                     onChange={() => setMultiSelectEnabled(!multiSelectEnabled)}
                     className="my-5 fs-2"
                   />
-                </Row>
+                </Row>*/}
               </>
             )}
           </Col>

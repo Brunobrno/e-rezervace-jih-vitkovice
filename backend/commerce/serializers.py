@@ -52,10 +52,17 @@ class OrderSerializer(serializers.ModelSerializer):
     reservation = ReservationSerializer(read_only=True)
 
     user_id = serializers.PrimaryKeyRelatedField(
-        queryset=CustomUser.objects.all(), source="user", write_only=True
+        queryset=CustomUser.objects.all(), source="user", write_only=True, required=False, allow_null=True
     )
     reservation_id = serializers.PrimaryKeyRelatedField(
         queryset=Reservation.objects.all(), source="reservation", write_only=True
+    )
+
+    #FIXME: This field is used to store the price to pay, which can be calculated from the reservation.
+    # It should not be deleted from POST/PUT, as it can be derived from the reservation.
+    # its better to perform calculation again with the same serializer above!!!
+    price_to_pay = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
     )
 
     class Meta:
@@ -76,11 +83,15 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "order_number", "status", "price_to_pay", "payed_at"]
         
         extra_kwargs = {
-            "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": True},
+            "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": False},
             "reservation_id": {"help_text": "ID rezervace, ke které se objednávka vztahuje", "required": True},
             "status": {"help_text": "Stav objednávky (např. new / paid / cancelled)", "required": False},
             "note": {"help_text": "Poznámka k objednávce (volitelné)", "required": False},
-            "price_to_pay": {"help_text": "Celková cena, kterou má uživatel zaplatit. Pokud není zadána, převezme se z rezervace.", "required": False},
+            "price_to_pay": {
+                "help_text": "Celková cena, kterou má uživatel zaplatit. Pokud není zadána, převezme se z rezervace.",
+                "required": False,
+                "allow_null": True,
+            },
             "payed_at": {"help_text": "Datum a čas, kdy byla objednávka zaplacena", "required": False},
         }
 
@@ -107,6 +118,20 @@ class OrderSerializer(serializers.ModelSerializer):
         if reservation:
             if self.instance is None and hasattr(reservation, "order"):
                 errors["reservation"] = "Tato rezervace již má přiřazenou objednávku."
+
+
+        user = data.get("user")
+        request_user = self.context["request"].user if "request" in self.context else None
+
+        # If user is not specified, use the logged-in user
+        if user is None and request_user is not None:
+            user = request_user
+            data["user"] = user
+
+        # If user is specified and differs from logged-in user, check permissions
+        if user is not None and request_user is not None and user != request_user:
+            if request_user.role not in ["admin", "cityClerk", "squareManager"]:
+                errors["user"] = "Pouze administrátor, úředník nebo správce tržiště může vytvářet rezervace pro jiné uživatele."
 
         if errors:
             raise serializers.ValidationError(errors)

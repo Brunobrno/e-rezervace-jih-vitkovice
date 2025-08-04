@@ -8,6 +8,8 @@ from .models import Event, Reservation, Square
 from account.models import CustomUser
 from product.serializers import EventProductSerializer
 
+logger = logging.getLogger(__name__)
+
 
 #----------------------SHORT SERIALIZERS---------------------------------
 
@@ -49,67 +51,42 @@ class ReservationSerializer(serializers.ModelSerializer):
     reserved_from = RoundedDateTimeField()
     reserved_to = RoundedDateTimeField()
 
-    event = serializers.PrimaryKeyRelatedField(
-        queryset=Event.objects.all(), required=True
-    )
+    event = EventShortSerializer(read_only=True)
     user = UserShortSerializer(read_only=True)
-
-    # Accept single int or list of ints for marketSlot
-    marketSlot = serializers.ListField(
-        child=serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all()),
-        source='market_slots',
-        write_only=True,
-        required=False,  # allow missing/null for better error reporting
-        allow_null=True
+    market_slot = serializers.PrimaryKeyRelatedField(
+        queryset=MarketSlot.objects.filter(is_deleted=False), required=True
     )
-    market_slot = serializers.PrimaryKeyRelatedField(read_only=True, many=False)
-
+    
     class Meta:
         model = Reservation
         fields = [
-            'id', 'event', 'marketSlot', 'market_slot', 'reserved_from', 'reserved_to',
-            'used_extension', 'note', 'user'
+            "id", "market_slot",
+            "used_extension", "reserved_from", "reserved_to",
+            "created_at", "status", "note", "final_price",
+            "event", "user"
         ]
         read_only_fields = ["id", "created_at"]
         extra_kwargs = {
-            "event": {"help_text": "ID a název akce (Event), ke které rezervace patří", "required": True},
-            "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False, "allow_null": True},
-            "user": {"help_text": "ID a název uživatele, který rezervaci vytváří", "required": False, "allow_null": True},
+            "event": {"help_text": "ID (Event), ke které rezervace patří", "required": True},
+            "market_slot": {"help_text": "ID konkrétního prodejního místa (MarketSlot)", "required": True},
+            "user": {"help_text": "ID a název uživatele, který rezervaci vytváří", "required": True},
             "used_extension": {"help_text": "Velikost rozšíření v m², které chce uživatel využít", "required": True},
             "reserved_from": {"help_text": "Datum a čas začátku rezervace", "required": True},
             "reserved_to": {"help_text": "Datum a čas konce rezervace", "required": True},
             "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False, "default": "reserved"},
             "note": {"help_text": "Poznámka k rezervaci (volitelné)", "required": False},
+            "final_price": {"help_text": "Cena za Rezervaci, počítá se podle plochy prodejního místa a počtů dní.", "required": False, "default": 0},
         }
 
     def to_internal_value(self, data):
-        # Accept both single int and list for marketSlot
-        market_slot = data.get('marketSlot')
-        if market_slot is not None and not isinstance(market_slot, list):
-            data['marketSlot'] = [market_slot]
+        # Accept both "market_slot" and legacy "marketSlot" keys for compatibility
+        if "marketSlot" in data and "market_slot" not in data:
+            data["market_slot"] = data["marketSlot"]
+        # Debug: log incoming data for troubleshooting
+        logger.debug(f"ReservationSerializer.to_internal_value input data: {data}")
         return super().to_internal_value(data)
 
-    def create(self, validated_data):
-        # Set user to current request user if not provided
-        if 'user' not in validated_data or validated_data['user'] is None:
-            request = self.context.get('request')
-            if request and hasattr(request, 'user') and request.user.is_authenticated:
-                validated_data['user'] = request.user
-        market_slots = validated_data.pop('market_slots', [])
-        if market_slots:
-            validated_data['market_slot'] = market_slots[0]
-        instance = Reservation.objects.create(**validated_data)
-        return instance
-
     def validate(self, data):
-        logger = logging.getLogger(__name__)
-        logger.debug(f"ReservationSerializer.validate input data: {data}")
-
-        reserved_from = data.get('reserved_from')
-        reserved_to = data.get('reserved_to')
-        event = data.get('event')
-        market_slots = data.get('market_slots', None)
-        user = data.get('user', None)
 
         errors = {}
 
@@ -117,45 +94,100 @@ class ReservationSerializer(serializers.ModelSerializer):
             logger.error("Reservation validation error: event is None")
             errors['event'] = ["Událost (event) je povinná."]
 
-        if reserved_from is None or reserved_to is None:
-            logger.error("Reservation validation error: reserved_from or reserved_to is None")
-            errors['non_field_errors'] = ["Datum rezervace je povinný."]
+        logger.debug(f"ReservationSerializer.validate market_slot: {data.get('market_slot')}, event: {data.get('event')}")
+        # Get the event object from the provided event id (if present)
+        event_id = self.initial_data.get("event")
+        if event_id:
+            try:
+                event = Event.objects.get(pk=event_id)
+                data["event"] = event
+            except Event.DoesNotExist:
+                raise serializers.ValidationError({"event": "Zadaná akce (event) neexistuje."})
+        else:
+            event = data.get("event")
 
-        if not market_slots:
-            errors['marketSlot'] = ["Pole nemůže být null."]
+        market_slot = data.get("market_slot")
+        # --- FIX: Ensure event is set before permission check in views ---
+        if event is None and market_slot is not None:
+            event = market_slot.event
+            data["event"] = event
+            logger.debug(f"ReservationSerializer.validate auto-filled event from market_slot: {event}")
 
-        if errors:
-            raise serializers.ValidationError(errors)
 
-        # Only check if reserved_from and reserved_to are on the same day (ignore time)
-        if reserved_from and reserved_to:
-            if reserved_from.date() != reserved_to.date():
-                logger.debug("Reservation is not for a single day.")
-                raise serializers.ValidationError(
-                    {"__all__": ["Rezervace musí být pouze na jeden den (datum)."]}
-                )
 
-        if not hasattr(event, "start") or not hasattr(event, "end"):
-            logger.error("Reservation validation error: event missing start/end")
-            raise serializers.ValidationError(
-                {"event": ["Událost nemá správně nastavený začátek nebo konec."]}
-            )
+        user = data.get("user")
+        request_user = self.context["request"].user if "request" in self.context else None
+
+        # If user is not specified, use the logged-in user
+        if user is None and request_user is not None:
+            user = request_user
+            data["user"] = user
+
+        # If user is specified and differs from logged-in user, check permissions
+        if user is not None and request_user is not None and user != request_user:
+            if request_user.role not in ["admin", "cityClerk", "squareManager"]:
+                raise serializers.ValidationError("Pouze administrátor, úředník nebo správce tržiště může vytvářet rezervace pro jiné uživatele.")
+
+
+
+        if user is None:
+            raise serializers.ValidationError("Rezervace musí mít přiřazeného uživatele.")
+        if user.user_reservations.filter(status="reserved").count() >= 5:
+            raise serializers.ValidationError("Uživatel už má 5 aktivních rezervací.")
+
+        reserved_from = data.get("reserved_from")
+        reserved_to = data.get("reserved_to")
+        used_extension = data.get("used_extension", 0)
+        final_price = data.get("final_price", 0)
+
+        if "status" in data:
+            if self.instance:  # update
+                if data["status"] != self.instance.status and user.role not in ["admin", "cityClerk"]:
+                    raise serializers.ValidationError({
+                        "status": "Pouze administrátor nebo úředník může upravit status rezervace."
+                    })
+        else:
+            data["status"] = "reserved"
+
+        if final_price and final_price != 0:
+            if self.instance:  # update
+                if final_price != self.instance.final_price and (not user or user.role not in ["admin", "cityClerk"]):
+                    raise serializers.ValidationError({
+                        "final_price": "Pouze administrátor nebo úředník může upravit finální cenu."
+                    })
+            else:  # create
+                if not user or user.role not in ["admin", "cityClerk"]:
+                    raise serializers.ValidationError({
+                        "final_price": "Pouze administrátor nebo úředník může nastavit finální cenu."
+                    })
+        else:
+            data["final_price"] = 0
+
+        if data.get("final_price") < 0:
+            raise serializers.ValidationError("Cena za m² nemůže být záporná.")
+
+        if reserved_from >= reserved_to:
+            raise serializers.ValidationError("Datum začátku rezervace musí být dříve než její konec.")
+
         if reserved_from < event.start or reserved_to > event.end:
-            raise serializers.ValidationError(
-                {"non_field_errors": ["Rezervace musí být v rámci trvání události."]}
-            )
+            raise serializers.ValidationError("Rezervace musí být v rámci trvání akce.")
 
-        # No overlapping check, allow overlaps
-        # Validate market slots
-        for market_slot in market_slots:
+        overlapping = None 
+        if market_slot:
             if market_slot.event != event:
                 raise serializers.ValidationError("Prodejní místo nepatří do dané akce.")
+            if used_extension > market_slot.available_extension:
+                raise serializers.ValidationError("Požadované rozšíření překračuje dostupné rozšíření.")
+            overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
+                event=event,
+                market_slot=market_slot,
+                reserved_from__lt=reserved_to,
+                reserved_to__gt=reserved_from,
+                status="reserved"
+            )
 
-        if user is not None:
-            request = self.context.get('request')
-            # Only allow manual user assignment for staff or cityClerk role
-            if request and not (request.user.is_staff or (hasattr(request.user, 'role') and request.user.role == 'cityClerk')):
-                raise serializers.ValidationError("Nemáte oprávnění zadat uživatele ručně.")
+        if overlapping is not None and overlapping.exists():
+            raise serializers.ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
 
         return data
 

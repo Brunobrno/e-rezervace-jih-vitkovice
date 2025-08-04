@@ -63,8 +63,6 @@ const ReservationWizard = () => {
         alert('Vyberte termín a slot.');
         return;
       }
-      // Debug: log event before using
-      console.log('DEBUG data.event:', data.event);
 
       // Ensure event is present and valid
       if (!data.event || typeof data.event !== 'object' || !data.event.id) {
@@ -97,7 +95,7 @@ const ReservationWizard = () => {
 
       const reservationData = {
         event: data.event.id,
-        marketSlot: slot.id,
+        market_slot: slot.id, // slot.id should be a number (int)
         reserved_from,
         reserved_to,
         used_extension: slot.used_extension || 0,
@@ -107,18 +105,16 @@ const ReservationWizard = () => {
         reservationData.user = data.user;
       }
 
-      console.log('DEBUG reservationData:', reservationData);
+      console.log('Odesílaná rezervace:', reservationData);
 
       // Create reservation and get its ID
       const ResponseReservation = await reservationAPI.createReservation(reservationData);
-      console.log('DEBUG reservation response:', ResponseReservation);
-
-      console
+      console.log('Response:', ResponseReservation);
 
       const response = await orderAPI.createOrder({
         user_id: data.user || null,
         note: data.note || null,
-        reservation: ResponseReservation.id, // Use the reservation ID
+        reservation_id: ResponseReservation.id, // Use the reservation ID
       });
       alert('Objednávka byla úspěšně odeslána!');
       console.log('📦 Objednáno:', response);

@@ -308,6 +308,10 @@ INSTALLED_APPS = [
 
     'drf_spectacular', #rest framework, grafické zobrazení
 
+    #Nastavení stránky
+    #'constance', 
+    #'constance.backends.database',
+
     'django.contrib.sitemaps',
 
     'tinymce',
@@ -485,8 +489,14 @@ AUTH_USER_MODEL = 'account.CustomUser' #class CustomUser(AbstractUser) best prac
 
 #--------------------------------END DATABASE 💾---------------------------------
 
+#--------------------------------------PAGE SETTINGS -------------------------------------
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
-
+# Configuration for Constance(variables)
+CONSTANCE_CONFIG = {
+    'BITCOIN_WALLET': ('', 'Public BTC wallet address'),
+    'SUPPORT_EMAIL': ('admin@example.com', 'Support email'),
+}
 
 #--------------------------------------EMAIL 📧--------------------------------------
 
@@ -884,8 +894,3 @@ SPECTACULAR_DEFAULTS: Dict[str, Any] = {
     'OAUTH2_REFRESH_URL': None,
     'OAUTH2_SCOPES': None,
 }
-
-# Celery - Pavel
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"

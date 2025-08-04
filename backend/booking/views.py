@@ -105,15 +105,7 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
 @extend_schema(
     tags=["Reservation"],
     description=(
-        "Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd.\n\n"
-        "🔍 **Fulltextové vyhledávání (`?search=`)** prohledává:\n"
-        "- název události (`event.name`)\n"
-        "- název náměstí (`event.square.name`)\n"
-        "- město (`event.square.city`)\n"
-        "- poznámku (`note`)\n"
-        "- e-mail uživatele (`user.email`)\n"
-        "- jméno a příjmení uživatele (`user.first_name`, `user.last_name`)\n\n"
-        "**Příklady:** `?search=jan.novak@example.com`, `?search=Velikonoční`, `?search=Ostrava`"
+        "Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd."
     )
 )
 class ReservationViewSet(viewsets.ModelViewSet):
@@ -160,7 +152,15 @@ class ReservationViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def _check_blocked_permission(self, data):
-        slot_id = data.get("marketSlot")
+        # FIX: Always get the MarketSlot instance, not just the ID
+        # Accept both "market_slot" (object or int) and "marketSlot" (legacy)
+        slot = data.get("market_slot") or data.get("marketSlot")
+
+        # If slot is a MarketSlot instance, get its id
+        if hasattr(slot, "id"):
+            slot_id = slot.id
+        else:
+            slot_id = slot
 
         if not isinstance(slot_id, int):
             raise PermissionDenied("Neplatné ID prodejního místa.")

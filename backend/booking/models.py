@@ -93,7 +93,7 @@ class Event(SoftDeleteModel):
         if not (self.start and self.end):
             raise ValidationError("Datum začátku a konce musí být neprázné.")
         
-        # Vynecháme sekunky, mikrosecundy atd.
+        # Vynecháme sekundy, mikrosecundy atd.
         self.start = truncate_to_minutes(self.start)
         self.end = truncate_to_minutes(self.end)
 
@@ -197,8 +197,8 @@ class Reservation(SoftDeleteModel):
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_reservations", null=False, blank=False)
     market_slot = models.ForeignKey(
-        'marketSlot',
-        on_delete=models.PROTECT,
+        'MarketSlot',
+        on_delete=models.CASCADE,
         related_name='reservations',
         null=True,
         blank=True
@@ -213,16 +213,14 @@ class Reservation(SoftDeleteModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="reserved")
     note = models.TextField(blank=True, null=True)
 
-    final_price = models.DecimalField(
-        blank=True, 
-        default=0, 
-        max_digits=8, 
-        decimal_places=2, 
-        validators=[MinValueValidator(0)], 
-        help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
-    )
+    final_price = models.DecimalField(blank=True, 
+                                    default=0, 
+                                    max_digits=8, 
+                                    decimal_places=2, 
+                                    validators=[MinValueValidator(0)], 
+                                    help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
+                                    )
 
-    # Many-to-many relationship with EventProduct
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
 
     def clean(self):
@@ -234,10 +232,6 @@ class Reservation(SoftDeleteModel):
 
         if self.reserved_from >= self.reserved_to:
             raise ValidationError("Datum začátku rezervace musí být před datem konce.")
-
-        # Only check if reserved_from and reserved_to are on the same day (ignore time)
-        if self.reserved_from.date() != self.reserved_to.date():
-            raise ValidationError("Rezervace musí být pouze na jeden den (datum).")
 
         if self.market_slot:
             overlapping = Reservation.objects.exclude(id=self.id).filter(
@@ -288,8 +282,8 @@ class Reservation(SoftDeleteModel):
         
         if self.final_price == 0:
             duration = (self.reserved_to - self.reserved_from).days
-            self.final_price = duration * (self.marketSlot.price_per_m2 * (
-            Decimal(str(self.marketSlot.base_size)) + Decimal(str(self.used_extension))
+            self.final_price = duration * (self.market_slot.price_per_m2 * (
+            Decimal(str(self.market_slot.base_size)) + Decimal(str(self.used_extension))
             ))
         elif self.final_price < 0:
             raise ValidationError("Cena nemůže být záporná.")
@@ -297,14 +291,17 @@ class Reservation(SoftDeleteModel):
         return super().clean()
 
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
+    def save(self, *args, validate=True, **kwargs):
+        if validate:
+            self.full_clean()
 
-        if (self.status == "reserved"):
-            self.marketSlot.status = "taken"
-        else:
-            self.marketSlot.status = "empty"
-        self.marketSlot.save()
+        # Only update market_slot status if it exists
+        if self.market_slot:
+            if (self.status == "reserved"):
+                self.market_slot.status = "taken"
+            else:
+                self.market_slot.status = "empty"
+            self.market_slot.save()
 
         super().save(*args, **kwargs)
 
@@ -318,9 +315,11 @@ class Reservation(SoftDeleteModel):
             order.deleted_at = timezone.now()
             order.save()
 
-        if self.marketSlot and self.marketSlot.event.end > timezone.now():
-            self.marketSlot.status = "empty"
-            self.marketSlot.save()
+        if self.market_slot and self.market_slot.event.end > timezone.now():
+            self.market_slot.status = "empty"
+            self.market_slot.save()
 
-        return super().delete(*args, **kwargs)
-    
+        # Soft delete without validation
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save(validate=False)
