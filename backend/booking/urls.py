@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import EventViewSet, ReservationViewSet, SquareViewSet, MarketSlotViewSet, ReservationAvailabilityCheckView
+from .views import EventViewSet, ReservationViewSet, SquareViewSet, MarketSlotViewSet, ReservationAvailabilityCheckView, ReservedDaysView
 
 router = DefaultRouter()
 router.register(r'events', EventViewSet, basename='event')
@@ -11,4 +11,5 @@ router.register(r'market-slots', MarketSlotViewSet, basename='market-slot')
 urlpatterns = [
     path('', include(router.urls)),
     path('reservations/check', ReservationAvailabilityCheckView.as_view(), name='event-reservation-check'),
+    path('reservations/reserved-days-check/', ReservedDaysView.as_view(), name='reserved-days'),
 ]

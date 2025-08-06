@@ -195,14 +195,14 @@ function Reservations() {
       title: "Od",
       sortable: true,
       width: "1.2fr",
-      render: row => row.reserved_from ? dayjs(row.reserved_from).format("DD.MM.YYYY HH:mm") : "—",
+      render: row => row.reserved_from ? dayjs(row.reserved_from, "YYYY-MM-DD").format("DD.MM.YYYY") : "—",
     },
     {
       accessor: "reserved_to",
       title: "Do",
       sortable: true,
       width: "1.2fr",
-      render: row => row.reserved_to ? dayjs(row.reserved_to).format("DD.MM.YYYY HH:mm") : "—",
+      render: row => row.reserved_to ? dayjs(row.reserved_to, "YYYY-MM-DD").format("DD.MM.YYYY") : "—",
     },
     {
       accessor: "created_at",
@@ -455,7 +455,7 @@ function Reservations() {
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
             <h1>Rezervace</h1>
-            <Button component="a" href="" leftSection={<IconPlus size={16} />}>Přidat rezervaci</Button>
+            <Button component="a" href="/create-reservation" leftSection={<IconPlus size={16} />}>Přidat rezervaci</Button>
           </Group>
           <Table
             data={filteredReservations}
@@ -480,8 +480,8 @@ function Reservations() {
                   <p><strong>Stav:</strong> {selectedReservation.status}</p>
                   <p><strong>Událost:</strong> {selectedReservation.event?.name || "Neznámá událost"}</p>
                   <p><strong>Uživatel:</strong> {selectedReservation.user?.username || "Neznámý"}</p>
-                  <p><strong>Od:</strong> {dayjs(selectedReservation.reserved_from).format("DD.MM.YYYY HH:mm")}</p>
-                  <p><strong>Do:</strong> {dayjs(selectedReservation.reserved_to).format("DD.MM.YYYY HH:mm")}</p>
+                  <p><strong>Od:</strong> {dayjs(selectedReservation.reserved_from, "YYYY-MM-DD").format("DD.MM.YYYY")}</p>
+                  <p><strong>Do:</strong> {dayjs(selectedReservation.reserved_to, "YYYY-MM-DD").format("DD.MM.YYYY")}</p>
                   <p><strong>Poznámka:</strong> {selectedReservation.note || "—"}</p>
                   <p><strong>Cena:</strong> {selectedReservation.final_price} Kč</p>
                 </>

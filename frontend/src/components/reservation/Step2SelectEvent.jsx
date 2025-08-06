@@ -52,10 +52,10 @@ const Step2SelectEvent = ({ data, setData, next, prev }) => {
   if (events.length === 0) return <p>Pro vybrané náměstí nebyly nalezeny žádné události.</p>;
 
   // Filter events to only show current or future events
-  const now = dayjs();
+  const now = dayjs().startOf('day');
   const filteredEvents = events.filter(event => {
-    // Assume event has 'start' and 'end' fields in ISO format
-    const end = dayjs(event.end);
+    // event.start and event.end are now date strings (YYYY-MM-DD)
+    const end = dayjs(event.end, "YYYY-MM-DD");
     return end.isAfter(now) || end.isSame(now, 'day');
   });
 
@@ -91,7 +91,7 @@ const Step2SelectEvent = ({ data, setData, next, prev }) => {
                 <Card.Body>
                   <Card.Title>{ev.name}</Card.Title>
                   <Card.Subtitle className="mb-2 text-muted">
-                    {new Date(ev.start).toLocaleDateString()} – {new Date(ev.end).toLocaleDateString()}
+                    {ev.start} – {ev.end}
                   </Card.Subtitle>
                   <Card.Text style={{ whiteSpace: 'pre-line', height: 70, overflow: 'hidden' }}>
                     {ev.description}

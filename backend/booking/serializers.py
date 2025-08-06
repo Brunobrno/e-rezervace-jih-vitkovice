@@ -55,8 +55,8 @@ class SquareShortSerializer(serializers.ModelSerializer):
 #--- Reservation ----
 
 class ReservationSerializer(serializers.ModelSerializer):
-    reserved_from = RoundedDateTimeField()
-    reserved_to = RoundedDateTimeField()
+    reserved_from = serializers.DateField()
+    reserved_to = serializers.DateField()
 
     event = EventShortSerializer(read_only=True)
     user = UserShortSerializer(read_only=True)
@@ -151,6 +151,9 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         privileged_roles = ["admin", "cityClerk"]
 
+        # Define max allowed price based on model's decimal constraints (8 digits, 2 decimal places)
+        MAX_FINAL_PRICE = Decimal("999999.99")
+
         if user and getattr(user, "role", None) in privileged_roles:
             # 🧠 Automatický výpočet ceny rezervace pokud není zadána
             if not final_price or final_price == 0:
@@ -158,10 +161,7 @@ class ReservationSerializer(serializers.ModelSerializer):
                 event = data.get("event")
                 reserved_from = data.get("reserved_from")
                 reserved_to = data.get("reserved_to")
-                price_per_m2 = data.get("price_per_m2")
-                base_size = data.get("base_size", 0)
                 used_extension = data.get("used_extension", 0)
-                duration_days = data.get("duration_days", 1)
                 # --- Prefer PriceCalculationSerializer if available ---
                 if PriceCalculationSerializer:
                     try:
@@ -177,15 +177,26 @@ class ReservationSerializer(serializers.ModelSerializer):
                         calculated_price = price_serializer.validated_data.get("final_price")
                         if calculated_price is not None:
                             try:
-                                # Ensure calculated_price is a valid decimal before quantizing
-                                decimal_price = Decimal(str(calculated_price))
-                                data["final_price"] = decimal_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                                # Always quantize to two decimals
+                                decimal_price = Decimal(str(calculated_price)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                                # Clamp value to max allowed and raise error if exceeded
+                                if decimal_price > MAX_FINAL_PRICE:
+                                    logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                                    data["final_price"] = MAX_FINAL_PRICE
+                                    raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                                else:
+                                    data["final_price"] = decimal_price
                             except (InvalidOperation, TypeError, ValueError):
                                 raise serializers.ValidationError("Výsledná cena není platné číslo.")
                         else:
                             raise serializers.ValidationError("Výpočet ceny selhal.")
                     except Exception as e:
                         logger.error(f"PriceCalculationSerializer failed: {e}", exc_info=True)
+                        market_slot = data.get("market_slot")
+                        event = data.get("event")
+                        reserved_from = data.get("reserved_from")
+                        reserved_to = data.get("reserved_to")
+                        used_extension = data.get("used_extension", 0)
                         price_per_m2 = data.get("price_per_m2")
                         if price_per_m2 is None:
                             if market_slot and hasattr(market_slot, "price_per_m2"):
@@ -194,14 +205,24 @@ class ReservationSerializer(serializers.ModelSerializer):
                                 price_per_m2 = event.price_per_m2
                             else:
                                 raise serializers.ValidationError("Cena za m² není dostupná.")
+                        base_size = getattr(market_slot, "base_size", None)
+                        if base_size is None:
+                            raise serializers.ValidationError("Základní velikost (base_size) není dostupná.")
+                        duration_days = (reserved_to - reserved_from).days
                         base_size_decimal = Decimal(str(base_size))
                         used_extension_decimal = Decimal(str(used_extension))
                         duration_days_decimal = Decimal(str(duration_days))
                         price_per_m2_decimal = Decimal(str(price_per_m2))
                         calculated_price = duration_days_decimal * (price_per_m2_decimal * (base_size_decimal + used_extension_decimal))
                         try:
-                            decimal_price = Decimal(str(calculated_price))
-                            data["final_price"] = decimal_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                            decimal_price = Decimal(str(calculated_price)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                            # Clamp value to max allowed and raise error if exceeded
+                            if decimal_price > MAX_FINAL_PRICE:
+                                logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                                data["final_price"] = MAX_FINAL_PRICE
+                                raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                            else:
+                                data["final_price"] = decimal_price
                         except (InvalidOperation, TypeError, ValueError):
                             raise serializers.ValidationError("Výsledná cena není platné číslo.")
                 else:
@@ -213,14 +234,24 @@ class ReservationSerializer(serializers.ModelSerializer):
                             price_per_m2 = event.price_per_m2
                         else:
                             raise serializers.ValidationError("Cena za m² není dostupná.")
-                    base_size_decimal = Decimal(str(base_size))
-                    used_extension_decimal = Decimal(str(used_extension))
-                    duration_days_decimal = Decimal(str(duration_days))
+                    resolution = event.square.cellsize if event and hasattr(event, "square") else 1
+                    width = getattr(market_slot, "width", 1)
+                    height = getattr(market_slot, "height", 1)
+                    # If you want to include used_extension, add it to area
+                    area_m2 = Decimal(width) * Decimal(height) * Decimal(resolution) * Decimal(resolution)
+                    duration_days = (reserved_to - reserved_from).days
+
                     price_per_m2_decimal = Decimal(str(price_per_m2))
-                    calculated_price = duration_days_decimal * (price_per_m2_decimal * (base_size_decimal + used_extension_decimal))
+                    calculated_price = Decimal(duration_days) * area_m2 * price_per_m2_decimal
                     try:
-                        decimal_price = Decimal(str(calculated_price))
-                        data["final_price"] = decimal_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                        decimal_price = Decimal(str(calculated_price)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                        # Clamp value to max allowed and raise error if exceeded
+                        if decimal_price > MAX_FINAL_PRICE:
+                            logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                            data["final_price"] = MAX_FINAL_PRICE
+                            raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                        else:
+                            data["final_price"] = decimal_price
                     except (InvalidOperation, TypeError, ValueError):
                         raise serializers.ValidationError("Výsledná cena není platné číslo.")
             else:
@@ -236,8 +267,13 @@ class ReservationSerializer(serializers.ModelSerializer):
                         })
             if data.get("final_price") is not None:
                 try:
-                    decimal_price = Decimal(str(data["final_price"]))
-                    data["final_price"] = decimal_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    decimal_price = Decimal(str(data["final_price"])).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    # Clamp value to max allowed and raise error if exceeded
+                    if decimal_price > MAX_FINAL_PRICE:
+                        logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                        data["final_price"] = MAX_FINAL_PRICE
+                        raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                    data["final_price"] = decimal_price
                 except (InvalidOperation, TypeError, ValueError):
                     raise serializers.ValidationError("Výsledná cena není platné číslo.")
             if data.get("final_price") < 0:
@@ -388,8 +424,8 @@ class EventSerializer(serializers.ModelSerializer):
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
     event_products = EventProductSerializer(many=True, read_only=True)
 
-    start = RoundedDateTimeField()
-    end = RoundedDateTimeField()
+    start = serializers.DateField()
+    end = serializers.DateField()
 
     class Meta:
         model = Event
@@ -442,6 +478,8 @@ class EventSerializer(serializers.ModelSerializer):
 
 class SquareSerializer(serializers.ModelSerializer):
 
+    image = serializers.ImageField(required=False, allow_null=True)  # Ensure DRF handles image upload
+
     class Meta:
         model = Square
         fields = [
@@ -465,3 +503,41 @@ class SquareSerializer(serializers.ModelSerializer):
         }
 
 #-----------------------------------------------------------------------
+class ReservedDaysSerializer(serializers.Serializer):
+    market_slot_id = serializers.IntegerField()
+    available_days = serializers.ListField(child=serializers.DateField(), read_only=True)
+
+    def to_representation(self, instance):
+        market_slot_id = instance.get("market_slot_id")
+        try:
+            market_slot = MarketSlot.objects.get(id=market_slot_id)
+            event = market_slot.event
+        except MarketSlot.DoesNotExist:
+            return {"market_slot_id": market_slot_id, "available_days": []}
+
+        # Get all reserved days for this slot
+        reservations = Reservation.objects.filter(
+            market_slot_id=market_slot_id,
+            status="reserved"
+        )
+        reserved_days = set()
+        for reservation in reservations:
+            current = reservation.reserved_from.date()
+            end = reservation.reserved_to.date()
+            while current < end:
+                reserved_days.add(current)
+                current += timedelta(days=1)
+
+        # Calculate all possible days in event range
+        all_days = []
+        current = event.start.date()
+        end = event.end.date()
+        while current < end:
+            if current not in reserved_days:
+                all_days.append(current)
+            current += timedelta(days=1)
+
+        return {
+            "market_slot_id": market_slot_id,
+            "available_days": all_days
+        }

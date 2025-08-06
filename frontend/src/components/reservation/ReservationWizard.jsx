@@ -70,24 +70,19 @@ const ReservationWizard = () => {
         return;
       }
 
-      // Use selected date range from Step3Map
-      let reserved_from = dayjs(data.date.start + ' ' + dayjs(data.event.start).format('HH:mm'));
-      let reserved_to = dayjs(data.date.end + ' ' + dayjs(data.event.end).format('HH:mm'));
+      // Use selected date range from Step3Map (date only)
+      let reserved_from = data.date.start;
+      let reserved_to = data.date.end;
 
       // Clamp reserved_from and reserved_to to event boundaries
-      const eventStart = dayjs(data.event.start);
-      const eventEnd = dayjs(data.event.end);
-      if (reserved_from.isBefore(eventStart)) reserved_from = eventStart;
-      if (reserved_to.isAfter(eventEnd)) reserved_to = eventEnd;
-
-      reserved_from = reserved_from.toISOString();
-      reserved_to = reserved_to.toISOString();
-
-
+      const eventStart = dayjs(data.event.start, "YYYY-MM-DD");
+      const eventEnd = dayjs(data.event.end, "YYYY-MM-DD");
+      if (dayjs(reserved_from).isBefore(eventStart)) reserved_from = eventStart.format("YYYY-MM-DD");
+      if (dayjs(reserved_to).isAfter(eventEnd)) reserved_to = eventEnd.format("YYYY-MM-DD");
 
       const reservationData = {
         event: data.event.id,
-        market_slot: slot.id, // slot.id should be a number (int)
+        market_slot: slot.id,
         reserved_from,
         reserved_to,
         used_extension: slot.used_extension || 0,

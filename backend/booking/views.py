@@ -2,12 +2,13 @@ from rest_framework import viewsets, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample
 
 from .models import Event, Reservation, MarketSlot, Square
-from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer
+from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer, ReservedDaysSerializer
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
@@ -38,6 +39,7 @@ from .tasks import test_celery_task
 class SquareViewSet(viewsets.ModelViewSet):
     queryset = Square.objects.prefetch_related("square_events").all().order_by("name")
     serializer_class = SquareSerializer
+    parser_classes = [MultiPartParser, FormParser]  # Accept image uploads
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["city", "psc", "width", "height"]
     ordering_fields = ["name", "width", "height"]
@@ -193,3 +195,42 @@ class ReservationAvailabilityCheckView(APIView):
         if serializer.is_valid():
             return Response({"available": True}, status=status.HTTP_200_OK)
         return Response({"available": False}, status=status.HTTP_200_OK)
+
+logger = logging.getLogger(__name__)
+
+@extend_schema(
+    tags=["Reservation"],
+    summary="Get reserved days for a market slot in an event",
+    description=(
+        "Returns a list of reserved days for a given event and market slot. "
+        "Useful for visualizing slot occupancy and preventing double bookings. "
+        "Provide `event_id` and `market_slot_id` as query parameters."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="market_slot_id",
+            type=int,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="ID of the market slot"
+        ),
+    ],
+    responses={200: ReservedDaysSerializer}
+)
+class ReservedDaysView(APIView):
+    """
+    Returns reserved days for a given event and market slot.
+    GET params: event_id, market_slot_id
+    """
+    def get(self, request, *args, **kwargs):
+        market_slot_id = request.query_params.get("market_slot_id")
+        if not market_slot_id:
+            return Response(
+                {"detail": "market_slot_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = ReservedDaysSerializer({
+            "market_slot_id": market_slot_id
+        })
+        logger.debug(f"ReservedDaysView GET market_slot_id={market_slot_id}")
+        return Response(serializer.data)

@@ -23,6 +23,8 @@ class PriceCalculationSerializer(serializers.Serializer):
     reserved_to = RoundedDateTimeField()
     slots = SlotPriceInputSerializer(many=True)
 
+    final_price = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+
     def validate(self, data):
         from django.utils.timezone import make_aware, is_naive
 
@@ -37,28 +39,37 @@ class PriceCalculationSerializer(serializers.Serializer):
         duration = reserved_to - reserved_from
         days = duration.days + 1  # zahrnujeme první den
 
-        #if days not in (1, 7, 30): (už není potřeba, protože délka rezervace je kontrolována v BookingSerializer)
-        #    raise serializers.ValidationError("Délka rezervace musí být 1, 7 nebo 30 dní.")
-
         data["reserved_from"] = reserved_from
         data["reserved_to"] = reserved_to
         data["duration"] = days
 
-        total_price = Decimal("0.00")
+        event = None
+        market_slot = None
+        # You may need to fetch event/market_slot from data or DB
+        # ...existing code...
 
-        for slot_data in data["slots"]:
-            slot = slot_data["slot_id"]
-            used_extension = Decimal(slot_data.get("used_extension", 0))
-            base_size = Decimal(slot.base_size or 0)
+        # Get square from event
+        if not event or not event.square:
+            raise serializers.ValidationError("Akce musí mít přiřazené náměstí.")
+        square = event.square
+        grid_area = square.grid_rows * square.grid_cols
+        cellsize = square.cellsize
 
-            price_per_m2 = Decimal(slot.price_per_m2 or data["event"].price_per_m2 or 0)
+        # Use market_slot.price_per_m2 if set, else event.price_per_m2
+        price_per_m2 = None
+        if market_slot and market_slot.price_per_m2 and market_slot.price_per_m2 > 0:
+            price_per_m2 = market_slot.price_per_m2
+        else:
+            price_per_m2 = event.price_per_m2
 
-            slot_area = base_size + used_extension
-            slot_price = price_per_m2 * slot_area * days
+        if not price_per_m2 or price_per_m2 < 0:
+            raise serializers.ValidationError("Cena za m² není dostupná nebo je záporná.")
 
-            total_price += slot_price
+        # Calculate final price
+        final_price = Decimal(grid_area) * Decimal(cellsize) * Decimal(price_per_m2)
+        final_price = final_price.quantize(Decimal("0.01"))
 
-        data["total_price"] = total_price
+        data["final_price"] = final_price
         return data
 
 
@@ -172,5 +183,4 @@ class OrderSerializer(serializers.ModelSerializer):
 
         if old_status != "payed" and new_status == "payed":
             validated_data["payed_at"] = timezone.now()
-
         return super().update(instance, validated_data)

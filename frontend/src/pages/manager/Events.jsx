@@ -80,10 +80,10 @@ function Events() {
       setFormState({
         name: selectedEvent.name || "",
         description: selectedEvent.description || "",
-        start: selectedEvent.start ? selectedEvent.start.slice(0, 16) : "", // ISO string YYYY-MM-DDTHH:mm (pro input type=datetime-local)
-        end: selectedEvent.end ? selectedEvent.end.slice(0, 16) : "",
+        start: selectedEvent.start || "", // YYYY-MM-DD
+        end: selectedEvent.end || "",
         price_per_m2: selectedEvent.price_per_m2 || "",
-        image: null, // obrázek nezadáme, pokud chceme změnit, uživatel nahraje nový
+        image: null,
         square_id: selectedEvent.square_id || selectedEvent.square?.id || "",
       });
     }
@@ -119,8 +119,8 @@ function Events() {
       const formData = new FormData();
       formData.append("name", formState.name);
       formData.append("description", formState.description);
-      formData.append("start", new Date(formState.start).toISOString());
-      formData.append("end", new Date(formState.end).toISOString());
+      formData.append("start", formState.start); // YYYY-MM-DD
+      formData.append("end", formState.end);     // YYYY-MM-DD
       formData.append("price_per_m2", formState.price_per_m2);
       formData.append("square_id", formState.square_id);
 
@@ -138,7 +138,6 @@ function Events() {
       fetchEvents();
     } catch (err) {
       console.error("Chyba při ukládání akce:", err);
-      // Můžeš přidat state pro zobrazení chyby uživateli
     }
   };
 
@@ -241,7 +240,7 @@ function Events() {
             />
             <TextInput
               label="Začátek"
-              type="datetime-local"
+              type="date"
               name="start"
               value={formState.start}
               onChange={handleFormChange}
@@ -249,7 +248,7 @@ function Events() {
             />
             <TextInput
               label="Konec"
-              type="datetime-local"
+              type="date"
               name="end"
               value={formState.end}
               onChange={handleFormChange}
@@ -412,7 +411,7 @@ function Events() {
       title: "Začátek",
       sortable: true,
       width: "14%",
-      render: row => row.start ? dayjs(row.start).format("DD.MM.YYYY HH:mm") : "—",
+      render: row => row.start ? dayjs(row.start, "YYYY-MM-DD").format("DD.MM.YYYY") : "—",
       filter: (
         <Group gap={4}>
           <TextInput
@@ -436,7 +435,7 @@ function Events() {
       title: "Konec",
       sortable: true,
       width: "14%",
-      render: row => row.end ? dayjs(row.end).format("DD.MM.YYYY HH:mm") : "—",
+      render: row => row.end ? dayjs(row.end, "YYYY-MM-DD").format("DD.MM.YYYY") : "—",
       filter: (
         <Group gap={4}>
           <TextInput

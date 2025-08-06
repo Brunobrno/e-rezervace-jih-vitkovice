@@ -80,8 +80,8 @@ class Event(SoftDeleteModel):
 
     square = models.ForeignKey(Square, on_delete=models.CASCADE, related_name="square_events", null=False, blank=False)
 
-    start = models.DateTimeField()
-    end = models.DateTimeField()
+    start = models.DateField()
+    end = models.DateField()
 
     price_per_m2 = models.DecimalField(max_digits=8, decimal_places=2, help_text="Cena za m² pro rezervaci", validators=[MinValueValidator(0)], null=False, blank=False)
 
@@ -91,17 +91,12 @@ class Event(SoftDeleteModel):
 
     def clean(self):
         if not (self.start and self.end):
-            raise ValidationError("Datum začátku a konce musí být neprázné.")
-        
-        # Vynecháme sekundy, mikrosecundy atd.
-        self.start = truncate_to_minutes(self.start)
-        self.end = truncate_to_minutes(self.end)
+            raise ValidationError("Datum začátku a konce musí být neprázdné.")
 
-        # Zkontroluj, že začátek je před koncem
+        # Remove truncate_to_minutes and timezone logic
         if self.start >= self.end:
             raise ValidationError("Datum začátku musí být před datem konce.")
 
-        # Zkontroluj, že se událost nepřekrývá s jinou na stejném náměstí
         overlapping = Event.objects.exclude(id=self.id).filter(
             square=self.square,
             start__lt=self.end,
@@ -109,8 +104,7 @@ class Event(SoftDeleteModel):
         )
         if overlapping.exists():
             raise ValidationError("V tomto termínu už na daném náměstí probíhá jiná událost.")
-        
-        # Zavolej rodičovskou validaci (volitelné, pokud nepoužíváš dědičnost)
+
         return super().clean()
 
     def save(self, *args, **kwargs):
@@ -205,48 +199,73 @@ class Reservation(SoftDeleteModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_reservations", null=False, blank=False)
     
     used_extension = models.FloatField(default=0 ,help_text="Použité rozšíření (m2)", validators=[MinValueValidator(0.0)])
-    reserved_from = models.DateTimeField(null=False, blank=False)
-    reserved_to = models.DateTimeField(null=False, blank=False)
+    reserved_from = models.DateField(null=False, blank=False)
+    reserved_to = models.DateField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="reserved")
     note = models.TextField(blank=True, null=True)
 
     final_price = models.DecimalField(
-        blank=True, 
-        default=0, 
-        max_digits=8, 
-        decimal_places=2, 
-        validators=[MinValueValidator(0)], 
+        default=0,
+        blank=False,
+        null=False,
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
         help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
+    )
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        null=False,
+        blank=False
     )
 
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
 
     def calculate_price(self):
-        resolution = self.event.square.cellsize
-        area_m2 = self.market_slot.width * self.market_slot.height * resolution * resolution
-        duration_days = (self.reserved_to - self.reserved_from).days
-        price_per_m2 = self.market_slot.price_per_m2 or self.event.price_per_m2
-        return Decimal(duration_days) * Decimal(area_m2) * Decimal(price_per_m2)
+        # Get square from event
+        if not self.event or not self.event.square:
+            raise ValidationError("Rezervace musí mít přiřazenou akci s náměstím.")
+        square = self.event.square
+        grid_area = square.grid_rows * square.grid_cols
+        cellsize = square.cellsize
+
+        # Use market_slot.price_per_m2 if set, else event.price_per_m2
+        price_per_m2 = None
+        if self.market_slot and self.market_slot.price_per_m2 and self.market_slot.price_per_m2 > 0:
+            price_per_m2 = self.market_slot.price_per_m2
+        else:
+            price_per_m2 = self.event.price_per_m2
+
+        if not price_per_m2 or price_per_m2 < 0:
+            raise ValidationError("Cena za m² není dostupná nebo je záporná.")
+
+        # Calculate final price
+        final_price = Decimal(grid_area) * Decimal(cellsize) * Decimal(price_per_m2)
+        # Always quantize to two decimals
+        final_price = final_price.quantize(Decimal("0.01"))
+        return final_price
 
     def clean(self):
         if not self.reserved_from or not self.reserved_to:
-            raise ValidationError("Čas rezervace nemůže být prázdný.")
+            raise ValidationError("Datum rezervace nemůže být prázdný.")
 
-        self.reserved_from = truncate_to_minutes(self.reserved_from)
-        self.reserved_to = truncate_to_minutes(self.reserved_to)
+        # Remove truncate_to_minutes and timezone logic
+        if self.reserved_from > self.reserved_to:
+            raise ValidationError("Datum začátku rezervace musí být dříve než její konec.")
+        if self.reserved_from == self.reserved_to:
+            raise ValidationError("Začátek a konec rezervace nemohou být stejné.")
 
-        if self.reserved_from >= self.reserved_to:
-            raise ValidationError("Datum začátku rezervace musí být před datem konce.")
-
+        # Only check for overlapping reservations on the same market_slot
         if self.market_slot:
             overlapping = Reservation.objects.exclude(id=self.id).filter(
-                event=self.event,
                 market_slot=self.market_slot,
+                status="reserved",
                 reserved_from__lt=self.reserved_to,
                 reserved_to__gt=self.reserved_from,
-                status="reserved"
             )
         else:
             raise ValidationError("Rezervace musí mít v sobě prodejní místo (MarketSlot).")
@@ -254,25 +273,12 @@ class Reservation(SoftDeleteModel):
         if overlapping.exists():
             raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
 
-        # Oprava chyby při porovnání timezone-naive vs timezone-aware
+        # Check event bounds (date only)
         if self.event:
             event_start = self.event.start
             event_end = self.event.end
 
-            if timezone.is_naive(event_start):
-                event_start = timezone.make_aware(event_start)
-
-            if timezone.is_naive(event_end):
-                event_end = timezone.make_aware(event_end)
-
-            reserved_from = (
-                timezone.make_aware(self.reserved_from) if timezone.is_naive(self.reserved_from) else self.reserved_from
-            )
-            reserved_to = (
-                timezone.make_aware(self.reserved_to) if timezone.is_naive(self.reserved_to) else self.reserved_to
-            )
-
-            if reserved_from < event_start or reserved_to > event_end:
+            if self.reserved_from < event_start or self.reserved_to > event_end:
                 raise ValidationError("Rezervace musí být v rámci trvání akce.")
 
         if self.used_extension > self.market_slot.available_extension:
@@ -287,7 +293,7 @@ class Reservation(SoftDeleteModel):
         else:
             raise ValidationError("Rezervace musí mít v sobě uživatele.")
         
-        if self.final_price == 0:
+        if self.final_price == 0 or self.final_price is None:
             self.final_price = self.calculate_price()
         elif self.final_price < 0:
             raise ValidationError("Cena nemůže být záporná.")
@@ -311,8 +317,9 @@ class Reservation(SoftDeleteModel):
             order.deleted_at = timezone.now()
             order.save()
 
+        # Fix: Use a valid status value for MarketSlot
         if self.market_slot and self.market_slot.event.end > timezone.now():
-            self.market_slot.status = "empty"
+            self.market_slot.status = "allowed"
             self.market_slot.save()
 
         # Soft delete without validation

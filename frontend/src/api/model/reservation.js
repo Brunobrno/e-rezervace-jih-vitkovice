@@ -73,9 +73,23 @@ export const deleteReservation = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
+/**
+ * GET rezervované rozsahy pro konkrétní slot.
+ * 
+ * @param {number} slotId - ID slotu
+ * @returns {Promise<Array<{start: string, end: string}>>}
+ */
+export const getReservedRanges = async (market_slot_id) => {
+  const response = await axios_instance.get(`${API_BASE_URL}/reserved-days-check/`, {
+    params: { market_slot_id: market_slot_id }
+  });
+  return response.data;
+};
+
 export default {
   getReservations,
   getReservationById,
+  getReservedRanges,
   createReservation,
   updateReservation,
   deleteReservation,

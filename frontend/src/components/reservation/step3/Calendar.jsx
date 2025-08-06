@@ -25,6 +25,7 @@ export default function DaySelectorCalendar({
   const normalizeMinDate = (d) => dayjs(d).startOf("day").toDate();
   const normalizeMaxDate = (d) => dayjs(d).endOf("day").toDate();
 
+  // Helper to check if a date is reserved
   const isReserved = (date) =>
     bookedRanges.some(({ start, end }) => {
       const d = dayjs(date);

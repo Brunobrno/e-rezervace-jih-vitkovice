@@ -29,6 +29,7 @@ const DynamicGrid = ({
   static: isStatic = false, //možnost editovaní prostorů
   multiSelect = false, //možnost zvolit více rezervací
   clickableStatic = false, //možnost volit rezervace i ve ,,static,, = true
+  backgroundImage, // <-- add this prop
 }) => {
   const {
     rows = DEFAULT_CONFIG.rows,
@@ -407,6 +408,10 @@ const DynamicGrid = ({
         position: "relative",
         boxSizing: "border-box",
         userSelect: "none",
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+        backgroundSize: "contain",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
       }}
     >
       {/* Grid buňky (pozadí) */}

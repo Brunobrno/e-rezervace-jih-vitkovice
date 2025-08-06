@@ -3,8 +3,10 @@ import { Button, Alert, Spinner, Col, Row, Container, Modal } from "react-bootst
 import DynamicGrid from "../DynamicGrid";
 import eventAPI from "../../api/model/event";
 import orderAPI from "../../api/model/order";
+import reservationAPI from "../../api/model/reservation";
 import { format } from "date-fns";
 import DaySelectorCalendar from "./step3/Calendar";
+import dayjs from "dayjs";
 
 export default function Step3Map({ data, setData, next, prev }) {
   const [slots, setSlots] = useState([]);
@@ -16,6 +18,7 @@ export default function Step3Map({ data, setData, next, prev }) {
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [priceError, setPriceError] = useState(null);
   const [validationError, setValidationError] = useState('');
+  const [bookedRanges, setBookedRanges] = useState([]);
 
   // Load all slots for the selected event on initial load
   useEffect(() => {
@@ -36,13 +39,28 @@ export default function Step3Map({ data, setData, next, prev }) {
   }, [data?.event?.id]);
 
   // When user clicks a slot, open date picker modal (with delay)
-  const handleSlotSelect = (idx) => {
+  const handleSlotSelect = async (idx) => {
     setSelectedSlotIdx(idx);
     setModalSlot(slots[idx]);
     setValidationError('');
     setPrice(null);
     setPriceError(null);
     setSelectedRange(null);
+
+    // Fetch reserved ranges for this slot
+    const slotId = slots[idx]?.id;
+    if (slotId) {
+      try {
+        const res = await reservationAPI.getReservedRanges(slotId);
+        // Expecting array of { start, end } objects
+        setBookedRanges(res ?? []);
+      } catch (e) {
+        setBookedRanges([]);
+      }
+    } else {
+      setBookedRanges([]);
+    }
+
     setTimeout(() => {
       setShowDateModal(true);
       console.log("data:", data);
@@ -57,17 +75,15 @@ export default function Step3Map({ data, setData, next, prev }) {
     setValidationError('');
     
     try {
-      // Submit reservation attempt to backend
-      const reserved_from = new Date(rangeObj.start);
-      reserved_from.setHours(0, 0, 0, 0);
-      const reserved_to = new Date(rangeObj.end);
-      reserved_to.setHours(23, 59, 59, 999);
+      // Use date only (YYYY-MM-DD)
+      const reserved_from = dayjs(rangeObj.start).format("YYYY-MM-DD");
+      const reserved_to = dayjs(rangeObj.end).format("YYYY-MM-DD");
 
       // Call backend to check reservation and get price
       const res = await orderAPI.calculatePrice({
         event: data.event.id,
-        reserved_from: reserved_from.toISOString(),
-        reserved_to: reserved_to.toISOString(),
+        reserved_from,
+        reserved_to,
         slots: [{ slot_id: modalSlot.id, used_extension: 0 }],
       });
 
@@ -78,13 +94,12 @@ export default function Step3Map({ data, setData, next, prev }) {
       } else {
         setPrice(res.total_price ?? null);
         setSelectedRange(rangeObj);
-        // Save selection to parent data (slot + date) only after date is chosen
         setData((prevData) => ({
           ...prevData,
           slots: [{ ...modalSlot }],
           date: {
-            start: format(rangeObj.start, "yyyy-MM-dd"),
-            end: format(rangeObj.end, "yyyy-MM-dd"),
+            start: reserved_from,
+            end: reserved_to,
           },
         }));
         setValidationError('');
@@ -156,6 +171,7 @@ export default function Step3Map({ data, setData, next, prev }) {
         static={true}
         multiSelect={false}
         clickableStatic={true}
+        backgroundImage={data.square?.image} // <-- use image from API if present
         ref={el => {
           if (el) {
             console.log('[Step3Map] DynamicGrid props:', {
@@ -181,6 +197,7 @@ export default function Step3Map({ data, setData, next, prev }) {
             eventStart={data?.event?.start ? new Date(data.event.start) : null}
             eventEnd={data?.event?.end ? new Date(data.event.end) : null}
             defaultDate={data?.event?.start ? new Date(data.event.start) : null}
+            bookedRanges={bookedRanges} // <-- pass reserved ranges here
           />
         </Modal.Body>
       </Modal>
