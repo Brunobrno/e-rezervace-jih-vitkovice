@@ -1,17 +1,19 @@
 from rest_framework import viewsets, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework import status
 
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample
 
 from .models import Event, Reservation, MarketSlot, Square
-from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer
+from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.views import APIView
 
 from account.permissions import *
 
@@ -174,3 +176,20 @@ class ReservationViewSet(viewsets.ModelViewSet):
             user = self.request.user
             if getattr(user, "role", None) not in ["admin", "clerk"]:
                 raise PermissionDenied("Toto prodejní místo je zablokované.")
+
+@extend_schema(
+    tags=["Reservation"],
+    summary="Check reservation availability",
+    request=ReservationAvailabilitySerializer,
+    responses={200: OpenApiExample(
+        'Availability Response',
+        value={"available": True},
+        response_only=True
+    )}
+)
+class ReservationAvailabilityCheckView(APIView):
+    def post(self, request):
+        serializer = ReservationAvailabilitySerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"available": True}, status=status.HTTP_200_OK)
+        return Response({"available": False}, status=status.HTTP_200_OK)

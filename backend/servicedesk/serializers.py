@@ -9,7 +9,7 @@ class ServiceTicketSerializer(serializers.ModelSerializer):
         model = ServiceTicket
         fields = [
             "id", "title", "description", "user",
-            "status", "category", "created_at", "urgency"
+            "status", "category", "created_at"
         ]
         read_only_fields = ["id", "created_at"]
 
@@ -19,7 +19,6 @@ class ServiceTicketSerializer(serializers.ModelSerializer):
             "user": {"help_text": "ID uživatele, který požadavek zadává", "required": True},
             "status": {"help_text": "Stav požadavku (new / in_progress / resolved / closed)", "required": False},
             "category": {"help_text": "Kategorie požadavku (tech / reservation / payment / account / content / suggestion / other)", "required": True},
-            "urgency": {"help_text": "Urgence požadavku (low / medium / high / critical)", "required": False},
         }
 
     def validate(self, data):
@@ -37,10 +36,6 @@ class ServiceTicketSerializer(serializers.ModelSerializer):
         
         if "category" in data and data["category"] not in dict(ServiceTicket.CATEGORY_CHOICES):
             raise serializers.ValidationError({"category": "Neplatná kategorie požadavku."})
-
-
-        if "urgency" in data and data["urgency"] not in dict(ServiceTicket.URGENCY_CHOICES):
-            raise serializers.ValidationError({"urgency": "Neplatná urgence."})
         
         title = data.get("title", "").strip()
         if not title:

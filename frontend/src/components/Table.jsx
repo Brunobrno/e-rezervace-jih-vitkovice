@@ -1,36 +1,10 @@
-import { Nav, Modal } from "react-bootstrap";
-import logo from "/img/logo.png";
 import sortBy from "lodash/sortBy";
-import {
-  ActionIcon,
-  Button,
-  Checkbox,
-  MultiSelect,
-  Stack,
-  TextInput,
-  Anchor,
-  Box,
-  Group,
-  Text,
-} from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
-import { useDebouncedValue } from "@mantine/hooks";
-import {
-  IconSearch,
-  IconX,
-  IconEye,
-  IconEdit,
-  IconTrash,
-  IconPlus,
-  IconCornerDownLeft,
-} from "@tabler/icons-react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
 
@@ -59,7 +33,14 @@ function Table({
   
   const [records, setRecords] = useState([]);
   const [query, setQuery] = useState(initialQuery);
-  const [debouncedQuery] = useDebouncedValue(query, 200);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [query]);
   const [filters, setFilters] = useState({});
   // Remove filter edit state, always show filter fields
   
@@ -137,47 +118,6 @@ function Table({
     manualSorting: true,
   });
 
-  // Prepare filter row for all columns except actions and image fields (for table head)
-  const filterRowTds = withGlobalSearch
-    ? table.getAllLeafColumns().map(col => {
-        const isImage = (col.id && typeof col.id === 'string' && /image|img|photo|picture/i.test(col.id)) ||
-          (col.columnDef.header && typeof col.columnDef.header === 'string' && /image|img|photo|picture/i.test(col.columnDef.header));
-        if (col.id && col.id !== 'actions' && !isImage) {
-          return (
-            <th key={col.id} style={{ padding: '4px 8px', background: 'var(--mantine-color-gray-0)', borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-              <TextInput
-                placeholder={`Search ${col.columnDef.header}`}
-                value={filters[col.id] || ''}
-                onChange={e => {
-                  const value = e.currentTarget.value;
-                  setFilters(f => ({ ...f, [col.id]: value }));
-                }}
-                leftSection={<IconSearch size={16} />}
-                rightSection={
-                  filters[col.id] ? (
-                    <ActionIcon
-                      size="sm"
-                      variant="transparent"
-                      color="dimmed"
-                      onClick={() => setFilters(f => ({ ...f, [col.id]: '' }))}
-                      title="Clear filter"
-                    >
-                      <IconX size={14} />
-                    </ActionIcon>
-                  ) : null
-                }
-                style={{ minWidth: 120, width: '100%' }}
-              />
-            </th>
-          );
-        } else {
-          return (
-            <th key={col.id || Math.random()} style={{ minWidth: 40, background: 'var(--mantine-color-gray-0)', borderBottom: '1px solid var(--mantine-color-gray-3)' }} />
-          );
-        }
-      })
-    : null;
-
   return (
     <div className="custom-table-wrapper">
       <table
@@ -187,8 +127,19 @@ function Table({
           width: "100%",
           borderCollapse: "separate",
           borderSpacing: 0,
+          fontSize: "0.9rem",
+          tableLayout: "fixed",
         }}
       >
+        <colgroup>
+          {columns.map(col => (
+            <col
+              key={col.accessor}
+              style={{ width: col.width || "auto" }}
+            />
+          ))}
+        </colgroup>
+
         <thead>
           <tr>
             {columns.map((col, idx) => (
@@ -197,7 +148,6 @@ function Table({
                 style={{
                   padding: titlePadding,
                   textAlign: col.textAlign || "left",
-                  width: col.width || undefined, // allow fr, %, px, etc.
                   minWidth: col.minWidth || undefined,
                   maxWidth: col.maxWidth || undefined,
                   // ...other style...
@@ -212,7 +162,11 @@ function Table({
         <tbody>
           {table.getRowModel().rows.length === 0 ? (
             <tr>
-              <td colSpan={table.getAllLeafColumns().length} style={{ textAlign: 'center', padding: 24, color: '#888' }}>
+              <td colSpan={table.getAllLeafColumns().length} style={{
+                textAlign: 'center',
+                padding: 24,
+                color: '#888',
+              }}>
                 No data
               </td>
             </tr>
@@ -220,7 +174,14 @@ function Table({
             table.getRowModel().rows.map(row => (
               <tr key={row.id} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
                 {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} style={{ padding: '10px 8px', fontSize: 15 }}>
+                  <td key={cell.id} style={{
+                    padding: '10px 8px',
+                    fontSize: 15,
+                    width: cell.column.getSize(),
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

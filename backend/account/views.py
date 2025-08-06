@@ -35,6 +35,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 # Custom Token obtaining view
 @extend_schema(
     tags=["api"],
+    summary="Obtain JWT access and refresh tokens (cookie-based)",
     request=CustomTokenObtainPairSerializer,
     description="Authentication - získaš Access a Refresh token... lze do <username> vložit E-mail nebo username"
 )
@@ -99,6 +100,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
     
 @extend_schema(
     tags=["api"],
+    summary="Refresh JWT token using cookie",
     description="Refresh JWT token"
 )
 class CookieTokenRefreshView(APIView):
@@ -149,6 +151,7 @@ class CookieTokenRefreshView(APIView):
 
 @extend_schema(
     tags=["api"],
+    summary="Logout user (delete access and refresh token cookies)",
     description="Odhlásí uživatele – smaže access a refresh token cookies"
 )
 class LogoutView(APIView):
@@ -187,7 +190,6 @@ class UserView(viewsets.ModelViewSet):
             "role": {"help_text": "Role uživatele určující jeho oprávnění v systému."},
             "account_type": {"help_text": "Typ účtu – firma nebo fyzická osoba."},
             "email_verified": {"help_text": "Určuje, zda je e-mail ověřen."},
-            "otc": {"help_text": "Jednorázový token k ověření nebo přihlášení."}, #FIXME:se nevyuziva
             "create_time": {"help_text": "Datum a čas registrace uživatele (pouze pro čtení).", "read_only": True},
             "var_symbol": {"help_text": "Variabilní symbol pro platby, pokud je vyžadován."},
             "bank_account": {"help_text": "Číslo bankovního účtu uživatele."},
@@ -248,6 +250,7 @@ class CurrentUserView(APIView):
 #1. registration API
 @extend_schema(
     tags=["User Registration"],
+    summary="Register a new user (company or individual)",
     request=UserRegistrationSerializer,
     responses={201: UserRegistrationSerializer},
     description="1. Registrace nového uživatele(firmy). Uživateli přijde email s odkazem na ověření.",
@@ -270,6 +273,7 @@ class UserRegistrationViewSet(ModelViewSet):
 #2. confirming email
 @extend_schema(
     tags=["User Registration"],
+    summary="Verify user email via link",
     responses={
         200: OpenApiResponse(description="Email úspěšně ověřen."),
         400: OpenApiResponse(description="Chybný nebo expirovaný token.")
@@ -299,6 +303,7 @@ class EmailVerificationView(APIView):
 #3. seller activation API (var_symbol)
 @extend_schema(
     tags=["User Registration"],
+    summary="Activate user and set variable symbol (admin/cityClerk only)",
     request=UserActivationSerializer,
     responses={200: UserActivationSerializer},
     description="3. Aktivace uživatele a zadání variabilního symbolu (pouze pro adminy a úředníky).",
@@ -320,6 +325,7 @@ class UserActivationViewSet(APIView):
 #1. PasswordReset + send Email
 @extend_schema(
     tags=["User password reset"],
+    summary="Request password reset (send email)",
     request=PasswordResetRequestSerializer,
     responses={
         200: OpenApiResponse(description="Odeslán email s instrukcemi."),
@@ -345,6 +351,7 @@ class PasswordResetRequestView(APIView):
 #2. Confirming reset
 @extend_schema(
     tags=["User password reset"],
+    summary="Confirm password reset via token",
     request=PasswordResetConfirmSerializer,
     parameters=[
         OpenApiParameter(name='uidb64', type=str, location=OpenApiParameter.PATH),

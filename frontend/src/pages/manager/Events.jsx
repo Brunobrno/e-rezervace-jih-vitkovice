@@ -23,6 +23,7 @@ import {
 import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconMap } from "@tabler/icons-react";
 import apiEvents from "../../api/model/event";
 import dayjs from "dayjs";
+import "dayjs/locale/cs";
 import { useNavigate } from "react-router-dom";
 
 function Events() {
@@ -45,6 +46,10 @@ function Events() {
   });
   const [squares, setSquares] = useState([]);
   const [squareSearch, setSquareSearch] = useState("");
+
+  const [selectedSquareIds, setSelectedSquareIds] = useState([]);
+  const [startDateRange, setStartDateRange] = useState([null, null]);
+  const [endDateRange, setEndDateRange] = useState([null, null]);
 
   const navigate = useNavigate();
 
@@ -193,6 +198,11 @@ function Events() {
     navigate(`/manage/events/map/${event.id}`);
   };
 
+  // Set dayjs locale to Czech
+  useEffect(() => {
+    dayjs.locale("cs");
+  }, []);
+
   // Upravený renderModalContent s formulářem
   const renderModalContent = () => {
     if (modalType === "view" && selectedEvent) {
@@ -321,6 +331,16 @@ function Events() {
     }
   };
 
+  // Squares for filter
+  const squareOptions = useMemo(() => {
+    if (!Array.isArray(squares)) return [];
+    return squares.map(sq => ({
+      value: String(sq.id),
+      label: `${sq.name} (${sq.city})`
+    }));
+  }, [squares]);
+
+  // Filtering logic update
   const filteredEvents = useMemo(() => {
     let data = Array.isArray(events) ? events : [];
     if (query) {
@@ -336,17 +356,34 @@ function Events() {
     if (selectedStatus.length > 0) {
       data = data.filter(e => selectedStatus.includes(e.status));
     }
+    if (selectedSquareIds.length > 0) {
+      data = data.filter(e =>
+        selectedSquareIds.includes(String(e.square_id || e.square?.id))
+      );
+    }
+    // Začátek (start) date filter: show only events where start date (YYYY-MM-DD) matches the filter
+    if (startDateRange[0]) {
+      data = data.filter(e =>
+        e.start && dayjs(e.start).format("YYYY-MM-DD") === startDateRange[0]
+      );
+    }
+    // Konec (end) date filter: show only events where end date (YYYY-MM-DD) matches the filter
+    if (endDateRange[0]) {
+      data = data.filter(e =>
+        e.end && dayjs(e.end).format("YYYY-MM-DD") === endDateRange[0]
+      );
+    }
     return data;
-  }, [events, query, selectedStatus]);
+  }, [events, query, selectedStatus, selectedSquareIds, startDateRange, endDateRange]);
 
   // Show all fields in the table, based on EventSerializer in backend/booking/serializers.py
   const columns = [
-    { accessor: "id", title: "#", sortable: true, width: "48px" },
+    { accessor: "id", title: "#", sortable: true, width: "4%" },
     {
       accessor: "name",
       title: "Název",
       sortable: true,
-      width: "2fr",
+      width: "15%",
       filter: (
         <TextInput
           label="Hledat název"
@@ -367,59 +404,90 @@ function Events() {
       accessor: "description",
       title: "Popis",
       sortable: false,
-      width: "2fr",
+      width: "10%",
       render: row => row.description || <Text c="dimmed" fs="italic">—</Text>,
     },
     {
       accessor: "start",
       title: "Začátek",
       sortable: true,
-      width: "1.2fr",
+      width: "14%",
       render: row => row.start ? dayjs(row.start).format("DD.MM.YYYY HH:mm") : "—",
+      filter: (
+        <Group gap={4}>
+          <TextInput
+            type="date"
+            label="Datum"
+            value={startDateRange[0] || ""}
+            onChange={e => setStartDateRange([e.target.value || null, null])}
+            style={{ width: 140 }}
+          />
+          {startDateRange[0] && (
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setStartDateRange([null, null])}>
+              <IconX size={14} />
+            </ActionIcon>
+          )}
+        </Group>
+      ),
+      filtering: !!startDateRange[0],
     },
     {
       accessor: "end",
       title: "Konec",
       sortable: true,
-      width: "1.2fr",
+      width: "14%",
       render: row => row.end ? dayjs(row.end).format("DD.MM.YYYY HH:mm") : "—",
+      filter: (
+        <Group gap={4}>
+          <TextInput
+            type="date"
+            label="Datum"
+            value={endDateRange[0] || ""}
+            onChange={e => setEndDateRange([e.target.value || null, null])}
+            style={{ width: 140 }}
+          />
+          {endDateRange[0] && (
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setEndDateRange([null, null])}>
+              <IconX size={14} />
+            </ActionIcon>
+          )}
+        </Group>
+      ),
+      filtering: !!endDateRange[0],
     },
     {
       accessor: "price_per_m2",
       title: "Cena za m²",
       sortable: true,
-      width: "1fr",
+      width: "9%",
       render: row => row.price_per_m2 ? `${row.price_per_m2} Kč` : "—",
     },
     {
       accessor: "square",
       title: "Náměstí",
       sortable: false,
-      width: "1.5fr",
+      width: "16%",
       render: row => row.square?.name ? `${row.square.name}` : <Text c="dimmed" fs="italic">—</Text>,
-    },
-    {
-      accessor: "market_slots",
-      title: "Počet míst",
-      sortable: false,
-      width: "0.8fr",
-      render: row => Array.isArray(row.market_slots) ? row.market_slots.length : "—",
-    },
-    {
-      accessor: "event_products",
-      title: "Produkty",
-      sortable: false,
-      width: "1.2fr",
-      render: row =>
-        Array.isArray(row.event_products) && row.event_products.length > 0
-          ? row.event_products.map(p => p.name).join(", ")
-          : <Text c="dimmed" fs="italic">—</Text>,
+      filter: (
+        <MultiSelect
+          label="Filtrovat náměstí"
+          placeholder="Vyber náměstí"
+          data={squareOptions}
+          value={selectedSquareIds}
+          onChange={setSelectedSquareIds}
+          clearable
+          searchable
+          leftSection={<IconSearch size={16} />}
+          comboboxProps={{ withinPortal: false }}
+        />
+      ),
+      filtering: selectedSquareIds.length > 0,
     },
     {
       accessor: "image",
       title: "Obrázek",
       sortable: false,
-      width: "120px",
+      width: "11%",
       render: row =>
         row.image ? (
           <img src={row.image} alt={row.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} />
@@ -428,58 +496,40 @@ function Events() {
         ),
     },
     {
-      accessor: "status",
-      title: "Stav",
-      sortable: true,
-      width: "1fr",
-      render: row => {
-        const color =
-          row.status === "active"
-            ? "green"
-            : row.status === "archived"
-            ? "gray"
-            : row.status === "draft"
-            ? "yellow"
-            : row.status === "cancelled"
-            ? "red"
-            : "gray";
-        const label = statusOptions.find(opt => opt.value === row.status)?.label || row.status;
-        return <Badge color={color} variant="light">{label}</Badge>;
-      },
-      filter: (
-        <MultiSelect
-          label="Filtrovat stav"
-          placeholder="Vyber stav(y)"
-          data={statusOptions}
-          value={selectedStatus}
-          onChange={setSelectedStatus}
-          clearable
-          searchable
-          leftSection={<IconSearch size={16} />}
-          comboboxProps={{ withinPortal: false }}
-        />
-      ),
-      filtering: selectedStatus.length > 0,
-    },
-    {
       accessor: "actions",
       title: "Akce",
-      width: "120px",
+      width: "5.5%",
       render: (event) => (
-        <Group gap={4} wrap="nowrap">
-          <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowEvent(event)}>
-            <IconEye size={16} />
-          </ActionIcon>
-          <ActionIcon size="sm" variant="subtle" color="blue" onClick={() => handleEditEvent(event)}>
-            <IconEdit size={16} />
-          </ActionIcon>
-          <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleRedirectToMap(event)} title="Mapa">
-            <IconMap size={16} />
-          </ActionIcon>
-          <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDeleteEvent(event)}>
-            <IconTrash size={16} />
-          </ActionIcon>
-        </Group>
+        <Container>
+          <Row>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowEvent(event)}>
+                <IconEye size={16} />
+              </ActionIcon>
+            </Col>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="blue" onClick={() => handleEditEvent(event)}>
+                <IconEdit size={16} />
+              </ActionIcon>
+            </Col>
+          </Row>
+          <Row>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleRedirectToMap(event)} title="Mapa">
+                <IconMap size={16} />
+              </ActionIcon>
+            </Col>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDeleteEvent(event)}>
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Col>
+          </Row>
+        </Container>
+          
+          
+          
+          
       ),
     },
   ];

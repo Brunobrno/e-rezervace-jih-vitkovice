@@ -8,13 +8,15 @@ from account.models import CustomUser
 from booking.models import Event, MarketSlot, Reservation
 from .models import Order
 
+from decimal import Decimal
 
-#počítaní ceny!!!
+
+#počítaní ceny!!! (taky validní)
 class SlotPriceInputSerializer(serializers.Serializer):
     slot_id = serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all())
     used_extension = serializers.FloatField(min_value=0)
 
-#počítaní ceny!!!
+#počítaní ceny!!! (počítá správně!!)
 class PriceCalculationSerializer(serializers.Serializer):
     event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
     reserved_from = RoundedDateTimeField()
@@ -33,15 +35,32 @@ class PriceCalculationSerializer(serializers.Serializer):
             reserved_to = make_aware(reserved_to)
 
         duration = reserved_to - reserved_from
-        days = duration.days
+        days = duration.days + 1  # zahrnujeme první den
 
-        if days not in (1, 7, 30):
-            raise serializers.ValidationError("Délka rezervace musí být 1, 7 nebo 30 dní.")
+        #if days not in (1, 7, 30): (už není potřeba, protože délka rezervace je kontrolována v BookingSerializer)
+        #    raise serializers.ValidationError("Délka rezervace musí být 1, 7 nebo 30 dní.")
 
         data["reserved_from"] = reserved_from
         data["reserved_to"] = reserved_to
         data["duration"] = days
+
+        total_price = Decimal("0.00")
+
+        for slot_data in data["slots"]:
+            slot = slot_data["slot_id"]
+            used_extension = Decimal(slot_data.get("used_extension", 0))
+            base_size = Decimal(slot.base_size or 0)
+
+            price_per_m2 = Decimal(slot.price_per_m2 or data["event"].price_per_m2 or 0)
+
+            slot_area = base_size + used_extension
+            slot_price = price_per_m2 * slot_area * days
+
+            total_price += slot_price
+
+        data["total_price"] = total_price
         return data
+
 
 
 class OrderSerializer(serializers.ModelSerializer):

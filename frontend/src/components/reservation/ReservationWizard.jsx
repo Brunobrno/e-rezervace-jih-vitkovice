@@ -59,7 +59,7 @@ const ReservationWizard = () => {
     try {
       const slot = data.slots[0];
       // Ensure slot and date are present
-      if (!slot || !data.date) {
+      if (!slot || !data.date || !data.date.start || !data.date.end) {
         alert('Vyberte termín a slot.');
         return;
       }
@@ -70,21 +70,13 @@ const ReservationWizard = () => {
         return;
       }
 
-      // Use event's start/end time for reservation boundaries
-      const eventStart = dayjs(data.event.start);
-      const eventEnd = dayjs(data.event.end);
-
-      // Calculate initial reserved_from and reserved_to
-      let reserved_from = dayjs(data.date + ' ' + eventStart.format('HH:mm'));
-      let reserved_to;
-      if (duration === 1) {
-        reserved_to = dayjs(data.date + ' ' + eventEnd.format('HH:mm'));
-      } else {
-        const candidate = dayjs(data.date).add(duration - 1, 'day').format('YYYY-MM-DD') + ' ' + eventEnd.format('HH:mm');
-        reserved_to = dayjs(candidate);
-      }
+      // Use selected date range from Step3Map
+      let reserved_from = dayjs(data.date.start + ' ' + dayjs(data.event.start).format('HH:mm'));
+      let reserved_to = dayjs(data.date.end + ' ' + dayjs(data.event.end).format('HH:mm'));
 
       // Clamp reserved_from and reserved_to to event boundaries
+      const eventStart = dayjs(data.event.start);
+      const eventEnd = dayjs(data.event.end);
       if (reserved_from.isBefore(eventStart)) reserved_from = eventStart;
       if (reserved_to.isAfter(eventEnd)) reserved_to = eventEnd;
 

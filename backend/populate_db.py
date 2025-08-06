@@ -171,7 +171,7 @@ def create_market_slots(events, max_slots=8):
         for _ in range(count):
             slot = MarketSlot(
                 event=event,
-                status=random.choice(["empty", "blocked", "taken"]),
+                status=random.choice(["empty", "blocked"]),
                 base_size=round(random.uniform(2, 10), 2),
                 available_extension=round(random.uniform(0, 5), 2),
                 x=random.randint(0, 30),
@@ -271,7 +271,6 @@ def create_service_tickets(users, n=10):
             user=user,
             status=random.choice(["new", "in_progress", "resolved", "closed"]),
             category=random.choice(["tech", "reservation", "payment", "account", "content", "suggestion", "other"]),
-            urgency=random.choice(["low", "medium", "high", "critical"]),
         )
         try:
             ticket.full_clean()

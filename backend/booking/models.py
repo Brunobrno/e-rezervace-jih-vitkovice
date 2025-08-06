@@ -33,7 +33,7 @@ class Square(SoftDeleteModel):
     #Grid Parameters
     grid_rows = models.PositiveSmallIntegerField(default=60)
     grid_cols = models.PositiveSmallIntegerField(default=45)
-    cellsize = models.PositiveIntegerField(default=10) #FIXME: zkontrolovat jestli je potrebne
+    cellsize = models.PositiveIntegerField(default=10)
 
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
@@ -133,11 +133,10 @@ class MarketSlot(SoftDeleteModel):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_marketSlots", null=False, blank=False)
 
     STATUS_CHOICES = [
-        ("empty", "Nezakoupeno"),
+        ("allowed", "Povoleno"),
         ("blocked", "Zablokováno"),
-        ("taken", "Plné")
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="empty")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="allowed")
     number = models.PositiveSmallIntegerField(default=1, help_text="Pořadové číslo prodejního místa na svém Eventu", editable=False)
 
     base_size = models.FloatField(default=0, help_text="Základní velikost (m²)", validators=[MinValueValidator(0.0)], null=False, blank=False)
@@ -213,15 +212,23 @@ class Reservation(SoftDeleteModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="reserved")
     note = models.TextField(blank=True, null=True)
 
-    final_price = models.DecimalField(blank=True, 
-                                    default=0, 
-                                    max_digits=8, 
-                                    decimal_places=2, 
-                                    validators=[MinValueValidator(0)], 
-                                    help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
-                                    )
+    final_price = models.DecimalField(
+        blank=True, 
+        default=0, 
+        max_digits=8, 
+        decimal_places=2, 
+        validators=[MinValueValidator(0)], 
+        help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
+    )
 
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
+
+    def calculate_price(self):
+        resolution = self.event.square.cellsize
+        area_m2 = self.market_slot.width * self.market_slot.height * resolution * resolution
+        duration_days = (self.reserved_to - self.reserved_from).days
+        price_per_m2 = self.market_slot.price_per_m2 or self.event.price_per_m2
+        return Decimal(duration_days) * Decimal(area_m2) * Decimal(price_per_m2)
 
     def clean(self):
         if not self.reserved_from or not self.reserved_to:
@@ -281,10 +288,7 @@ class Reservation(SoftDeleteModel):
             raise ValidationError("Rezervace musí mít v sobě uživatele.")
         
         if self.final_price == 0:
-            duration = (self.reserved_to - self.reserved_from).days
-            self.final_price = duration * (self.market_slot.price_per_m2 * (
-            Decimal(str(self.market_slot.base_size)) + Decimal(str(self.used_extension))
-            ))
+            self.final_price = self.calculate_price()
         elif self.final_price < 0:
             raise ValidationError("Cena nemůže být záporná.")
 
@@ -294,14 +298,6 @@ class Reservation(SoftDeleteModel):
     def save(self, *args, validate=True, **kwargs):
         if validate:
             self.full_clean()
-
-        # Only update market_slot status if it exists
-        if self.market_slot:
-            if (self.status == "reserved"):
-                self.market_slot.status = "taken"
-            else:
-                self.market_slot.status = "empty"
-            self.market_slot.save()
 
         super().save(*args, **kwargs)
 

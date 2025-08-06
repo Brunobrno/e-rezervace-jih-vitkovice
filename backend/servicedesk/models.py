@@ -10,13 +10,6 @@ class ServiceTicket(SoftDeleteModel):
         ("closed", "Uzavřeno"),
     ]
 
-    URGENCY_CHOICES = [
-        ("low", "Nízká"),
-        ("medium", "Střední"),
-        ("high", "Vysoká"),
-        ("critical", "Kritická"),
-    ]
-
     CATEGORY_CHOICES = [
         ("tech", "Technická chyba"),
         ("reservation", "Chyba při rezervaci"),
@@ -33,7 +26,6 @@ class ServiceTicket(SoftDeleteModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", verbose_name="Stav", blank=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="tech", verbose_name="Kategorie", blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Datum", editable=False)
-    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default="medium", verbose_name="Urgence",     blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"

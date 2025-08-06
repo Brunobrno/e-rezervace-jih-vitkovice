@@ -1,6 +1,7 @@
-
 import React from 'react';
 import { Card, Button, Table, Form } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
+import orderAPI  from '../../api/model/order';
 
 const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
   const { selectedSquare, selectedEvent, selectedSlot } = formData;
@@ -9,15 +10,29 @@ const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
     return <p>Chybí informace o výběru. Vraťte se zpět a doplňte potřebné údaje.</p>;
   }
 
-  // Spočítat celkovou cenu všech slotů
-  const totalPrice = selectedSlot.reduce((acc, slot) => {
-    const pricePerM2 = parseFloat(slot.price_per_m2 || selectedEvent.price_per_m2);
-    const area = slot.width * slot.height;
-    return acc + area * pricePerM2;
-  }, 0);
+  // Spočítat celkovou cenu všech slotů pomocí API (podobně jako ve Step3Map.jsx)
+
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  useEffect(() => {
+    // Volání API pro získání ceny
+    orderAPI.calculatePrice({
+      event: selectedEvent.id,
+      reserved_from: selectedEvent.start,
+      reserved_to: selectedEvent.end,
+      slots: selectedSlot.map(s => ({
+        slot_id: s.id,
+        used_extension: s.used_extension || 0
+      })),
+    }).then((data) => {
+      setTotalPrice(data.total_price);
+    }).catch(() => {
+      setTotalPrice(0);
+    });
+  }, [selectedEvent.id, selectedSlot]);
 
   return (
-    <Card className="p-4">
+    <Card className="p-4" style={{ background: "rgba(255,255,255,0.7)" }}>
       <h3 className="mb-4">🧾 Shrnutí objednávky</h3>
 
       <h5>📍 Náměstí:</h5>
@@ -31,13 +46,16 @@ const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
       </p>
 
       <h5>📦 Vybrané sloty:</h5>
-      <Table bordered size="sm">
+      <div className="mb-2 text-muted" style={{ fontSize: "0.95em" }}>
+        Tabulka níže zobrazuje vybrané sloty, jejich rozměry, cenu za metr čtvereční a vypočtenou cenu za každý slot. Celková cena je vypočtena podle zadaného termínu a pravidel události.
+      </div>
+      <Table bordered size="sm" style={{ background: "rgba(255,255,255,0.85)" }}>
         <thead>
           <tr>
             <th>Číslo slotu</th>
             <th>Rozměry (m)</th>
             <th>Cena/m² (Kč)</th>
-            <th>Celkem (Kč)</th>
+            <th>Celkem za slot (Kč)</th>
           </tr>
         </thead>
         <tbody>
@@ -57,7 +75,9 @@ const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={3} className="text-end"><strong>Celkem:</strong></td>
+            <td colSpan={3} className="text-end">
+              <strong>Celková cena objednávky (včetně všech slotů a termínu):</strong>
+            </td>
             <td><strong>{totalPrice.toFixed(2)} Kč</strong></td>
           </tr>
         </tfoot>

@@ -125,7 +125,6 @@ function Home() {
     },
     { accessor: "status", title: "Stav", sortable: true },
     { accessor: "category", title: "Kategorie", sortable: true },
-    { accessor: "urgency", title: "Urgence", sortable: true },
     {
       accessor: "description",
       title: "Popis",
@@ -175,7 +174,6 @@ function Home() {
       <Text>Vytvořeno: {record.created_at.format("DD.MM.YYYY HH:mm")}</Text>
       <Text>Stav: {record.status}</Text>
       <Text>Kategorie: {record.category}</Text>
-      <Text>Urgence: {record.urgency}</Text>
       <Text>Popis: {record.description}</Text>
       <Group justify="end" mt="sm">
         <Button onClick={close} variant="light">Zavřít</Button>

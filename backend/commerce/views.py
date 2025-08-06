@@ -63,7 +63,7 @@ class CalculateReservationPriceView(APIView):
         request=PriceCalculationSerializer,
         responses={200: {"type": "object", "properties": {"total_price": {"type": "number"}}}},
         tags=["Order"],
-        summary="Spočítej cenu rezervace",
+        summary="Calculate reservation price",
         description="Spočítá celkovou cenu rezervace pro zvolené sloty, použitá rozšíření a trvání rezervace"
     )
     def post(self, request):

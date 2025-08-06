@@ -4,7 +4,7 @@ export const DEFAULT_CONFIG = {
   cols: 20,
   cellSize: 30,
   statusColors: {
-    empty: "rgba(0, 128, 0, 0.6)",
+    allowed: "rgba(0, 128, 0, 0.6)",
     taken: "rgba(255, 165, 0, 0.6)",
     blocked: "rgba(255, 0, 0, 0.6)",
   },
@@ -38,7 +38,7 @@ const DynamicGrid = ({
   } = config;
 
   const statusLabels = {
-    empty: "Aktivní",
+    allowed: "Povoleno",
     taken: "Rezervováno",
     blocked: "Blokováno",
   };
@@ -129,7 +129,7 @@ const DynamicGrid = ({
         const res = reservations[resIndex];
         isReservationClicked = true;
 
-        if (!isStatic || res.status === "empty") {
+        if (!isStatic || res.status === "allowed") {
           if (multiSelect) {
             let newSelected;
             if (selectedIndices.includes(resIndex)) {
@@ -276,7 +276,7 @@ const DynamicGrid = ({
           w,
           h,
           name: `Cell ${reservations.length + 1}`,
-          status: "empty",
+          status: "allowed",
         };
 
         if (
@@ -440,24 +440,24 @@ const DynamicGrid = ({
               textAlign: "center",
               transition: draggedIndex === origIdx || resizingIndex === origIdx ? "none" : "all 0.2s ease",
               zIndex: 2,
-              cursor: isStatic ? (res.status === "empty" ? "pointer" : "default") : "move",
+              cursor: isStatic ? (res.status === "allowed" ? "pointer" : "default") : "move",
               overflow: "hidden",
               userSelect: "none",
             }}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isStatic || (clickableStatic && res.status === "empty")) {
+              if (!isStatic || (clickableStatic && res.status === "allowed")) {
                 // Always notify parent of clicked index; parent manages selection array
                 onSelectedIndexChange(origIdx);
               }
             }}
           >
-            <div className="d-flex flex-column h-100 p-1">
+            <div className="d-flex flex-column h-100 p-1 text-white">
               <div className="flex-grow-1 d-flex align-items-center justify-content-center">
                 <strong>{i + 1}</strong>
               </div>
               {isStatic ? (
-                <div className="status-text text-center">
+                <div className="text-center">
                   {statusLabels[res.status]}
                 </div>
               ) : (
@@ -467,8 +467,7 @@ const DynamicGrid = ({
                   onChange={(e) => handleStatusChange(origIdx, e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <option value="empty">Volné</option>
-                  <option value="taken">Rezervováno</option>
+                  <option value="allowed">Povolené</option>
                   <option value="blocked">Blokováno</option>
                 </select>
               )}

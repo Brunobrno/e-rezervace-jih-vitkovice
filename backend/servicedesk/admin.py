@@ -4,13 +4,13 @@ from trznice.admin import custom_admin_site
 
 
 class ServiceTicketAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "status", "urgency", "user", "created_at", "is_deleted")
-    list_filter = ("status", "urgency", "is_deleted")
+    list_display = ("id", "title", "status", "user", "created_at", "is_deleted")
+    list_filter = ("status", "is_deleted")
     search_fields = ("title", "description", "user__username", "user__email")
     ordering = ("-created_at",)
 
     readonly_fields = ['created_at']
-    base_fields = ['title', 'category', 'description', 'user', 'status', 'urgency', 'created_at']
+    base_fields = ['title', 'category', 'description', 'user', 'status', 'created_at']
 
 
     def get_fields(self, request, obj=None):

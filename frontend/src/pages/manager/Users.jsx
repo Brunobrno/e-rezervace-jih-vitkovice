@@ -29,8 +29,16 @@ function Users() {
   // State
   const [users, setUsers] = useState([]);
   const [fetching, setFetching] = useState(true);
-  const [query, setQuery] = useState("");
+
+  // Separate filter states for each field
+  const [filterUsername, setFilterUsername] = useState("");
+  const [filterEmail, setFilterEmail] = useState("");
+  const [filterFirstName, setFilterFirstName] = useState("");
+  const [filterLastName, setFilterLastName] = useState("");
   const [selectedRoles, setSelectedRoles] = useState([]);
+  const [selectedAccountTypes, setSelectedAccountTypes] = useState([]);
+  const [selectedActive, setSelectedActive] = useState([]);
+
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('view'); // 'view', 'edit'
   const [selectedUser, setSelectedUser] = useState(null);
@@ -100,23 +108,35 @@ function Users() {
   // Filtering
   const filteredUsers = useMemo(() => {
     let data = Array.isArray(users) ? users : [];
-    if (query) {
-      const q = query.toLowerCase();
-      data = data.filter(
-        u =>
-          u.username?.toLowerCase().includes(q) ||
-          u.email?.toLowerCase().includes(q) ||
-          u.first_name?.toLowerCase().includes(q) ||
-          u.last_name?.toLowerCase().includes(q) ||
-          u.city?.toLowerCase().includes(q) ||
-          u.street?.toLowerCase().includes(q)
-      );
+    if (filterUsername) {
+      const q = filterUsername.toLowerCase();
+      data = data.filter(u => u.username?.toLowerCase().includes(q));
+    }
+    if (filterEmail) {
+      const q = filterEmail.toLowerCase();
+      data = data.filter(u => u.email?.toLowerCase().includes(q));
+    }
+    if (filterFirstName) {
+      const q = filterFirstName.toLowerCase();
+      data = data.filter(u => u.first_name?.toLowerCase().includes(q));
+    }
+    if (filterLastName) {
+      const q = filterLastName.toLowerCase();
+      data = data.filter(u => u.last_name?.toLowerCase().includes(q));
     }
     if (selectedRoles.length > 0) {
       data = data.filter(u => selectedRoles.includes(u.role));
     }
+    if (selectedAccountTypes.length > 0) {
+      data = data.filter(u => selectedAccountTypes.includes(u.account_type));
+    }
+    if (selectedActive.length > 0) {
+      data = data.filter(u =>
+        selectedActive.includes(u.is_active ? "true" : "false")
+      );
+    }
     return data;
-  }, [users, query, selectedRoles]);
+  }, [users, filterUsername, filterEmail, filterFirstName, filterLastName, selectedRoles, selectedAccountTypes, selectedActive]);
 
   // Handlers
   const handleShowUser = (user) => {
@@ -204,53 +224,111 @@ function Users() {
 
   // Table columns
   const columns = [
-    { accessor: "id", title: "#", sortable: true, width: "48px" },
+    { accessor: "id",
+      title: "#",
+      sortable: true,
+      width: "2%" },
     {
       accessor: "username",
       title: "Uživatelské jméno",
       sortable: true,
-      width: "1.5fr",
+      width: "7%",
       filter: (
         <TextInput
-          label="Hledat uživatele"
-          placeholder="Např. jmeno, email, město..."
+          label="Filtrovat username"
+          placeholder="Zadej uživatelské jméno"
           leftSection={<IconSearch size={16} />}
           rightSection={
-            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setQuery("")}>
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setFilterUsername("")}>
               <IconX size={14} />
             </ActionIcon>
           }
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
+          value={filterUsername}
+          onChange={(e) => setFilterUsername(e.currentTarget.value)}
         />
       ),
-      filtering: query !== "",
+      filtering: !!filterUsername,
     },
     {
       accessor: "email",
       title: "Email",
       sortable: true,
-      width: "2fr",
+      width: "7%",
+      filter: (
+        <TextInput
+          label="Filtrovat email"
+          placeholder="Zadej email"
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setFilterEmail("")}>
+              <IconX size={14} />
+            </ActionIcon>
+          }
+          value={filterEmail}
+          onChange={(e) => setFilterEmail(e.currentTarget.value)}
+        />
+      ),
+      filtering: !!filterEmail,
     },
     {
       accessor: "first_name",
       title: "Jméno",
       sortable: true,
-      width: "1fr",
+      width: "5%",
+      filter: (
+        <TextInput
+          label="Filtrovat jméno"
+          placeholder="Zadej jméno"
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setFilterFirstName("")}>
+              <IconX size={14} />
+            </ActionIcon>
+          }
+          value={filterFirstName}
+          onChange={(e) => setFilterFirstName(e.currentTarget.value)}
+        />
+      ),
+      filtering: !!filterFirstName,
     },
     {
       accessor: "last_name",
       title: "Příjmení",
       sortable: true,
-      width: "1fr",
+      width: "5%",
+      filter: (
+        <TextInput
+          label="Filtrovat příjmení"
+          placeholder="Zadej příjmení"
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setFilterLastName("")}>
+              <IconX size={14} />
+            </ActionIcon>
+          }
+          value={filterLastName}
+          onChange={(e) => setFilterLastName(e.currentTarget.value)}
+        />
+      ),
+      filtering: !!filterLastName,
     },
     {
       accessor: "role",
       title: "Role",
-      width: "1fr",
+      width: "7%",
       render: (row) =>
         row.role ? (
-          <Badge color="blue" variant="light">{row.role}</Badge>
+          <Badge color="blue" variant="light">
+            {
+              {
+                "admin": "Administrátor",
+                "seller": "Prodejce",
+                "squareManager": "Správce tržiště",
+                "cityClerk": "Úředník",
+                "checker": "Kontrolor",
+              }[row.role] || row.role
+            }
+          </Badge>
         ) : (
           <Text c="dimmed" fs="italic">Žádná</Text>
         ),
@@ -258,7 +336,16 @@ function Users() {
         <MultiSelect
           label="Filtrovat role"
           placeholder="Vyber roli/role"
-          data={roleOptions}
+          data={roleOptions.map(role => ({
+            value: role,
+            label: {
+              "admin": "Administrátor",
+              "seller": "Prodejce",
+              "squareManager": "Správce tržiště",
+              "cityClerk": "Úředník",
+              "checker": "Kontrolor",
+            }[role] || role
+          }))}
           value={selectedRoles}
           onChange={setSelectedRoles}
           clearable
@@ -272,7 +359,7 @@ function Users() {
     {
       accessor: "account_type",
       title: "Typ účtu",
-      width: "1fr",
+      width: "7%",
       render: (row) =>
         row.account_type ? (
           <Badge color="gray" variant="light">{row.account_type}</Badge>
@@ -280,11 +367,31 @@ function Users() {
           <Text c="dimmed" fs="italic">—</Text>
         ),
       sortable: true,
+      filter: (
+        <MultiSelect
+          label="Filtrovat typ účtu"
+          placeholder="Typ účtu"
+          data={accountTypeOptions.map(type => ({
+            value: type,
+            label: {
+              "company": "Firma",
+              "individual": "Fyzická osoba",
+            }[type] || type
+          }))}
+          value={selectedAccountTypes}
+          onChange={setSelectedAccountTypes}
+          clearable
+          searchable
+          leftSection={<IconSearch size={16} />}
+          comboboxProps={{ withinPortal: false }}
+        />
+      ),
+      filtering: selectedAccountTypes.length > 0,
     },
     {
       accessor: "email_verified",
       title: "E-mail ověřen",
-      width: "1fr",
+      width: "4%",
       render: (row) =>
         row.email_verified ? (
           <Badge color="green" variant="light">Ano</Badge>
@@ -296,24 +403,45 @@ function Users() {
     {
       accessor: "is_active",
       title: "Aktivní",
-      width: "0.7fr",
-      render: (row) => row.is_active ? "Ano" : "Ne",
+      width: "4%",
+      render: (row) => row.is_active ? (
+        <Badge color="green" variant="light">Ano</Badge>
+        ) : (
+        <Badge color="red" variant="light">Ne</Badge>
+      ),
       sortable: true,
+      filter: (
+        <MultiSelect
+          label="Filtrovat aktivitu"
+          placeholder="Stav"
+          data={[
+            { value: "true", label: "Ano" },
+            { value: "false", label: "Ne" },
+          ]}
+          value={selectedActive}
+          onChange={setSelectedActive}
+          clearable
+          searchable={false}
+          leftSection={<IconSearch size={16} />}
+          comboboxProps={{ withinPortal: false }}
+        />
+      ),
+      filtering: selectedActive.length > 0,
     },
     {
       accessor: "city",
       title: "Město",
-      width: "1fr",
+      width: "5%",
     },
     {
       accessor: "PSC",
       title: "PSČ",
-      width: "0.7fr",
+      width: "3%",
     },
     {
       accessor: "actions",
       title: "Akce",
-      width: "80px",
+      width: "3.5%",
       render: (user) => (
         <Group gap={4} wrap="nowrap">
           <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowUser(user)}>
@@ -339,8 +467,7 @@ function Users() {
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
             <h1>Uživatelé</h1>
-            {/* Add user button can be implemented if needed */}
-            {/* <Button leftSection={<IconPlus size={16} />}>Přidat uživatele</Button> */}
+            <Button component="a" href="/manage/users/create" leftSection={<IconPlus size={16} />}>Vytvořit uživatele</Button>
           </Group>
 
           <Table
