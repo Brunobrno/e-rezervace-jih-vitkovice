@@ -276,7 +276,8 @@ MY_CREATED_APPS = [
     'booking',
     'product',
     'servicedesk',
-    'commerce'
+    'commerce',
+    'configuration',
 ]
 
 INSTALLED_APPS = [
