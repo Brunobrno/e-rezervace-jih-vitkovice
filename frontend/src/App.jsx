@@ -88,6 +88,7 @@ function App() {
             {/* SELLER && ADMIN */}
             <Route element={<RequireRole roles={["seller", "admin"]} />}>
               <Route path="/create-reservation" element={<ReservationCart />} />
+              <Route path="/order/:id" element={<Order />} />
             </Route>
 
             {/* CLERK & ADMIN */}

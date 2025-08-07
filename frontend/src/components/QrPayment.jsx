@@ -4,17 +4,18 @@ import { UserContext } from "../context/UserContext";
 
 function QrPayment({
   amount,
+  bankAccount,
   constantSymbol,
   specificSymbol,
   variableSymbol,
   message = "Payment",
 }) {
   const { user } = useContext(UserContext) || {};
-
+  
   // Pokud props nejsou definované, vezmeme z usera
-  const resolvedAccountNumber = "4655628722/0100";
+  const resolvedAccountNumber = bankAccount || user?.bank_account;
   const resolvedVariableSymbol = variableSymbol || user?.var_symbol;
-
+bankAccount = resolvedAccountNumber;
   const options = {
     VS: resolvedVariableSymbol?.toString(),
     KS: constantSymbol?.toString(),
