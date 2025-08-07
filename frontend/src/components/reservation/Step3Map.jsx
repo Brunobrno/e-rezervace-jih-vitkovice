@@ -47,13 +47,13 @@ export default function Step3Map({ data, setData, next, prev }) {
     setPriceError(null);
     setSelectedRange(null);
 
-    // Fetch reserved ranges for this slot
+    // Fetch reserved days for this slot (expects array of dates)
     const slotId = slots[idx]?.id;
     if (slotId) {
       try {
         const res = await reservationAPI.getReservedRanges(slotId);
-        // Expecting array of { start, end } objects
-        setBookedRanges(res ?? []);
+        // Expecting { reserved_days: [date1, date2, ...] }
+        setBookedRanges(res?.reserved_days ?? []);
       } catch (e) {
         setBookedRanges([]);
       }
@@ -197,7 +197,7 @@ export default function Step3Map({ data, setData, next, prev }) {
             eventStart={data?.event?.start ? new Date(data.event.start) : null}
             eventEnd={data?.event?.end ? new Date(data.event.end) : null}
             defaultDate={data?.event?.start ? new Date(data.event.start) : null}
-            bookedRanges={bookedRanges} // <-- pass reserved ranges here
+            bookedRanges={bookedRanges} // <-- now array of dates
           />
         </Modal.Body>
       </Modal>

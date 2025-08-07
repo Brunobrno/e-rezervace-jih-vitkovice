@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { ProgressBar } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { ProgressBar, Form, InputGroup, Table, Spinner, Alert, Card, Container, Row, Col } from 'react-bootstrap';
 import dayjs from 'dayjs';
-import { Form } from 'react-bootstrap';
 
 import Step1SelectSquare from './Step1SelectSquare';
 import Step2SelectEvent from './Step2SelectEvent';
@@ -11,10 +10,29 @@ import Step4Summary from './Step4Summary';
 import orderAPI from '../../api/model/order';
 import reservationAPI from '../../api/model/reservation';
 import userAPI from '../../api/model/user';
-
+import { fetchEnumFromSchemaJson } from '../../api/get_chocies';
 
 // TODO: Replace this with real user role detection (e.g., from context or props)
 const isAdminOrClerk = true; // Set to true for demonstration
+
+// List of available filters (should match backend filters.py)
+const USER_FILTERS_BASE = [
+  { key: "role", label: "Role", type: "select" },
+  { key: "account_type", label: "Typ účtu", type: "select" },
+  { key: "email", label: "Email", type: "text" },
+  { key: "phone_number", label: "Telefon", type: "text" },
+  { key: "city", label: "Město", type: "text" },
+  { key: "street", label: "Ulice", type: "text" },
+  { key: "PSC", label: "PSČ", type: "text" },
+  { key: "ICO", label: "IČO", type: "text" },
+  { key: "RC", label: "Rodné číslo", type: "text" },
+  { key: "var_symbol", label: "Variabilní symbol", type: "number" },
+  { key: "bank_account", label: "Bankovní účet", type: "text" },
+  { key: "is_active", label: "Aktivní", type: "checkbox" },
+  { key: "email_verified", label: "Email ověřen", type: "checkbox" },
+  { key: "create_time_after", label: "Vytvořeno po", type: "date" },
+  { key: "create_time_before", label: "Vytvořeno před", type: "date" },
+];
 
 const ReservationWizard = () => {
   const [data, setData] = useState({
@@ -30,21 +48,49 @@ const ReservationWizard = () => {
   const [userResults, setUserResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [duration, setDuration] = useState(1); // 1, 7, or 30
-  // Debounced user search (replace with useDebouncedCallback if available)
-  const handleUserSearch = async (value) => {
-    setUserSearch(value);
-    if (!value) {
-      setUserResults([]);
-      return;
-    }
+  const [userFilters, setUserFilters] = useState({});
+  const [roleChoices, setRoleChoices] = useState([]);
+  const [accountTypeChoices, setAccountTypeChoices] = useState([]);
+
+  // Fetch choices for select fields on mount (inspired by create-user.jsx)
+  useEffect(() => {
+    fetchEnumFromSchemaJson("/api/account/users/", "get", "role")
+      .then((choices) => setRoleChoices(choices))
+      .catch(() => setRoleChoices([
+        { value: "admin", label: "Administrátor" },
+        { value: "seller", label: "Prodejce" },
+        { value: "squareManager", label: "Správce tržiště" },
+        { value: "cityClerk", label: "Úředník" },
+        { value: "checker", label: "Kontrolor" },
+      ]));
+    fetchEnumFromSchemaJson("/api/account/users/", "get", "account_type")
+      .then((choices) => setAccountTypeChoices(choices))
+      .catch(() => setAccountTypeChoices([
+        { value: "company", label: "Firma" },
+        { value: "individual", label: "Fyzická osoba" },
+      ]));
+  }, []);
+
+  // Update filter value
+  const handleFilterChange = (key, value, type) => {
+    setUserFilters(f => ({
+      ...f,
+      [key]: type === "checkbox" ? value.target.checked : value.target.value
+    }));
+  };
+
+  // Search users with all filters
+  const handleUserSearch = async () => {
     setIsSearching(true);
+    // Remove empty values
+    const params = Object.fromEntries(
+      Object.entries(userFilters).filter(([_, v]) => v !== "" && v !== undefined && v !== null)
+    );
     try {
-      let results = await userAPI.searchUsers({ username: value });
-      // If API returns {results: [...]}, extract it
+      let results = await userAPI.searchUsers(params);
       if (results && typeof results === 'object' && !Array.isArray(results) && Array.isArray(results.results)) {
         results = results.results;
       }
-      // Fallback: ensure array
       setUserResults(Array.isArray(results) ? results : []);
     } catch (e) {
       setUserResults([]);
@@ -130,41 +176,128 @@ const ReservationWizard = () => {
     <>
       <ProgressBar now={(step / 4) * 100} className="mb-4" />
 
-      {/* Admin/Clerk user search bar by username */}
+      {/* Admin/Clerk user filter bar */}
       {isAdminOrClerk && (
-        <div style={{ marginBottom: 16 }}>
-          <label htmlFor="user-search">Přidat uživatele (uživatelské jméno): </label>
-          <input
-            id="user-search"
-            type="text"
-            value={userSearch}
-            onChange={e => handleUserSearch(e.target.value)}
-            placeholder="Zadejte uživatelské jméno"
-            style={{ marginRight: 8 }}
-            autoComplete="off"
-          />
-          {isSearching && <span>Hledám...</span>}
-          {userResults.length > 0 && (
-            <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', background: '#f8f9fa', border: '1px solid #ccc', maxWidth: 300 }}>
-              {userResults.map(user => (
-                <li key={user.id} style={{ padding: '4px 8px', cursor: 'pointer' }}
-                  onClick={() => {
-                    setData(d => ({ ...d, user: user.id }));
-                    setUserSearch(user.username);
-                    setUserResults([]);
-                  }}
-                >
-                  {user.username} <span style={{ color: '#888' }}>(ID: {user.id})</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {data.user && (
-            <span style={{ marginLeft: 12, color: 'green' }}>
-              Vybraný uživatel ID: <b>{data.user}</b>
-            </span>
-          )}
-        </div>
+        <Card className="mb-4" style={{ border: '1px solid #dee2e6' }}>
+          <Card.Body>
+            <Alert variant="danger" className="mb-2">
+              <b>Výběr uživatele pro objednávku</b><br />
+              Vyplňte libovolné pole pro filtrování uživatelů. Pokud pole zůstanou prázdná, objednávka bude vytvořena na vaš momentálně přihlášený účet !!!
+            </Alert>
+            <Form>
+              <div className="row">
+                {/* Render non-checkbox fields */}
+                {USER_FILTERS_BASE.filter(f => f.type !== "checkbox").map(f => (
+                  <div className="col-md-4 mb-2" key={f.key}>
+                    <Form.Group controlId={`user-filter-${f.key}`}>
+                      <Form.Label>{f.label}</Form.Label>
+                      {f.type === "select" && f.key === "role" ? (
+                        <Form.Select
+                          value={userFilters[f.key] || ""}
+                          onChange={e => handleFilterChange(f.key, e, f.type)}
+                        >
+                          <option value="">-- Vyberte --</option>
+                          {roleChoices.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </Form.Select>
+                      ) : f.type === "select" && f.key === "account_type" ? (
+                        <Form.Select
+                          value={userFilters[f.key] || ""}
+                          onChange={e => handleFilterChange(f.key, e, f.type)}
+                        >
+                          <option value="">-- Vyberte --</option>
+                          {accountTypeChoices.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </Form.Select>
+                      ) : f.type === "select" ? (
+                        <Form.Select
+                          value={userFilters[f.key] || ""}
+                          onChange={e => handleFilterChange(f.key, e, f.type)}
+                        >
+                          <option value="">-- Vyberte --</option>
+                        </Form.Select>
+                      ) : (
+                        <Form.Control
+                          type={f.type}
+                          value={userFilters[f.key] || ""}
+                          onChange={e => handleFilterChange(f.key, e, f.type)}
+                          autoComplete="off"
+                        />
+                      )}
+                    </Form.Group>
+                  </div>
+                ))}
+              </div>
+              {/* Render each checkbox and label in a separate row */}
+              <Container className="mb-3">
+                {USER_FILTERS_BASE.filter(f => f.type === "checkbox").map(f => (
+                  <Row key={f.key} className="align-items-center mb-2">
+                    <Col xs="auto">
+                      <Form.Check
+                        type="checkbox"
+                        checked={!!userFilters[f.key]}
+                        onChange={e => handleFilterChange(f.key, e, f.type)}
+                        id={`user-filter-${f.key}`}
+                      />
+                    </Col>
+                    <Col>
+                      <Form.Label htmlFor={`user-filter-${f.key}`} className="mb-0">{f.label}</Form.Label>
+                    </Col>
+                  </Row>
+                ))}
+              </Container>
+              <button
+                className="btn btn-primary mt-2"
+                type="button"
+                onClick={handleUserSearch}
+                disabled={isSearching}
+              >
+                Vyhledat uživatele
+                {isSearching && (
+                  <Spinner animation="border" size="sm" className="ms-2" />
+                )}
+              </button>
+            </Form>
+            {userResults.length > 0 && (
+              <Table striped bordered hover size="sm" className="mt-2" style={{ maxWidth: 400 }}>
+                <thead>
+                  <tr>
+                    <th>Uživatelské jméno</th>
+                    <th>ID</th>
+                    <th>Akce</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userResults.map(user => (
+                    <tr key={user.id}>
+                      <td>{user.username}</td>
+                      <td>{user.id}</td>
+                      <td>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => {
+                            setData(d => ({ ...d, user: user.id }));
+                            setUserFilters({ username: user.username });
+                            setUserResults([]);
+                          }}
+                        >
+                          Vybrat
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+            {data.user && (
+              <Alert variant="success" className="mt-2">
+                Vybraný uživatel ID: <b>{data.user}</b>
+              </Alert>
+            )}
+          </Card.Body>
+        </Card>
       )}
 
       {step === 1 && (

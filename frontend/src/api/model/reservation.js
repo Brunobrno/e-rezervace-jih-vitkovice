@@ -80,7 +80,7 @@ export const deleteReservation = async (id) => {
  * @returns {Promise<Array<{start: string, end: string}>>}
  */
 export const getReservedRanges = async (market_slot_id) => {
-  const response = await axios_instance.get(`${API_BASE_URL}/reserved-days-check/`, {
+  const response = await axios_instance.get(`/booking/reserved-days-check/`, {
     params: { market_slot_id: market_slot_id }
   });
   return response.data;

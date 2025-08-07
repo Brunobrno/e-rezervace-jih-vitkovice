@@ -505,39 +505,41 @@ class SquareSerializer(serializers.ModelSerializer):
 #-----------------------------------------------------------------------
 class ReservedDaysSerializer(serializers.Serializer):
     market_slot_id = serializers.IntegerField()
-    available_days = serializers.ListField(child=serializers.DateField(), read_only=True)
+    reserved_days = serializers.ListField(child=serializers.DateField(), read_only=True)
 
     def to_representation(self, instance):
-        market_slot_id = instance.get("market_slot_id")
+        # Accept instance as dict or int
+        if isinstance(instance, dict):
+            market_slot_id = instance.get("market_slot_id")
+        else:
+            market_slot_id = instance  # assume int
+
         try:
             market_slot = MarketSlot.objects.get(id=market_slot_id)
-            event = market_slot.event
         except MarketSlot.DoesNotExist:
-            return {"market_slot_id": market_slot_id, "available_days": []}
+            return {"market_slot_id": market_slot_id, "reserved_days": []}
 
-        # Get all reserved days for this slot
+        # Get all reserved days for this slot, return each day individually
         reservations = Reservation.objects.filter(
             market_slot_id=market_slot_id,
             status="reserved"
         )
         reserved_days = set()
         for reservation in reservations:
-            current = reservation.reserved_from.date()
-            end = reservation.reserved_to.date()
-            while current < end:
+            current = reservation.reserved_from
+            end = reservation.reserved_to
+            # Convert to date if it's a datetime
+            if hasattr(current, "date"):
+                current = current.date()
+            if hasattr(end, "date"):
+                end = end.date()
+            # Include both start and end dates
+            while current <= end:
                 reserved_days.add(current)
                 current += timedelta(days=1)
 
-        # Calculate all possible days in event range
-        all_days = []
-        current = event.start.date()
-        end = event.end.date()
-        while current < end:
-            if current not in reserved_days:
-                all_days.append(current)
-            current += timedelta(days=1)
-
+        # Return reserved days as a sorted list of individual dates
         return {
             "market_slot_id": market_slot_id,
-            "available_days": all_days
+            "reserved_days": sorted(reserved_days)
         }

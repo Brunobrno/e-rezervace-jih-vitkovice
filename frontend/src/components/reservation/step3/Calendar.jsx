@@ -15,7 +15,7 @@ export default function DaySelectorCalendar({
   bookedRanges = [],
   eventStart,
   eventEnd,
-  defaultDate, // <-- add prop
+  defaultDate,
 }) {
   const [range, setRange] = useState([null, null]);
   const [mode, setMode] = useState("manual");
@@ -26,16 +26,15 @@ export default function DaySelectorCalendar({
   const normalizeMaxDate = (d) => dayjs(d).endOf("day").toDate();
 
   // Helper to check if a date is reserved
-  const isReserved = (date) =>
-    bookedRanges.some(({ start, end }) => {
-      const d = dayjs(date);
-      const s = dayjs(start);
-      const e = dayjs(end);
-      return (
-        (d.isAfter(s, "day") || d.isSame(s, "day")) &&
-        (d.isBefore(e, "day") || d.isSame(e, "day"))
-      );
+  const isReserved = (date) => {
+    // bookedRanges is now array of dates (string or Date)
+    return bookedRanges.some((reserved) => {
+      // Normalize both to YYYY-MM-DD for comparison
+      const d = dayjs(date).format("YYYY-MM-DD");
+      const r = dayjs(reserved).format("YYYY-MM-DD");
+      return d === r;
     });
+  };
 
   const isOutOfBounds = (date) => {
     if (eventStart && dayjs(date).isBefore(dayjs(eventStart), "day")) return true;

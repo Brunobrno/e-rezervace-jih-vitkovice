@@ -11,5 +11,5 @@ router.register(r'market-slots', MarketSlotViewSet, basename='market-slot')
 urlpatterns = [
     path('', include(router.urls)),
     path('reservations/check', ReservationAvailabilityCheckView.as_view(), name='event-reservation-check'),
-    path('reservations/reserved-days-check/', ReservedDaysView.as_view(), name='reserved-days'),
+    path('reserved-days-check/', ReservedDaysView.as_view(), name='reserved-days'),
 ]
