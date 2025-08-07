@@ -42,7 +42,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "GDPR",
             "is_active",
         ]
-        read_only_fields = ["id", "create_time", "GDPR", "username", "account_type"]
+        read_only_fields = ["id", "create_time", "GDPR", "username"]  # <-- removed "account_type"
 
         def update(self, instance, validated_data):
             user = self.context["request"].user

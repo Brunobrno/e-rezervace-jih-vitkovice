@@ -465,9 +465,6 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         if data.get("width", 0) <= 0 or data.get("height", 0) <= 0:
             raise serializers.ValidationError("Šířka a výška místa musí být větší než nula.")
         
-        if data.get("x", 0) <= 0 or data.get("y", 0) <= 0:
-            raise serializers.ValidationError("Souřadnice X a Y musí být větší než nula.")
-        
         return data
 
 

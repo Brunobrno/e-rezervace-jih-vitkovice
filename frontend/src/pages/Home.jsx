@@ -3,7 +3,8 @@ import {
   Card,
   Badge,
   Button,
-  Tabs, Tab
+  Tabs, Tab,
+  Modal, Form, Alert
 } from "react-bootstrap";
 import { faGear, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -14,9 +15,12 @@ import dayjs from "dayjs";
 
 import Table from "../components/Table";
 
-import { getReservations } from "../api/model/reservation"
-import { getOrders } from "../api/model/order"
-import { getServiceTickets } from "../api/model/ticket"
+import ordersAPI from "../api/model/order";
+import reservationsAPI from "../api/model/reservation";
+import ticketsAPI from "../api/model/ticket";
+import { IconEye, IconEdit, IconTrash, IconCreditCard } from "@tabler/icons-react";
+import { Group, ActionIcon, Text, Stack } from "@mantine/core";
+import { useNavigate } from "react-router-dom";
 
 
 function Home() {
@@ -26,19 +30,21 @@ function Home() {
   const [user_orders, setOrders] = useState([]);
   const [user_tickets, setTickets] = useState([]);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchReservations = async () => {
       try {
-        var data = await getReservations({ user: user.id });
+        var data = await reservationsAPI.getReservations({ user: user.id });
         setReservations(data);
-        data=undefined;
+        data = undefined;
 
-        data = await getOrders({ user: user.id });
+        data = await ordersAPI.getOrders({ user: user.id });
         setOrders(data);
-        data=undefined;
+        data = undefined;
 
-        data = await getServiceTickets({ user: user.id });
-        setOrders(data);
+        data = await ticketsAPI.getServiceTickets({ user: user.id });
+        setTickets(data); // <-- FIX: was setOrders(data)
       } catch (err) {
         console.error("Chyba při načítání:", err);
       }
@@ -48,6 +54,106 @@ function Home() {
       fetchReservations();
     }
   }, [user?.id]);
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(""); // 'view', 'edit'
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Reservation actions
+  const handleShowReservation = (record) => {
+    setSelectedRecord(record);
+    setModalType("view-reservation");
+    setShowModal(true);
+  };
+  const handleEditReservation = (record) => {
+    setSelectedRecord(record);
+    setFormData({
+      ...record,
+      // Add more fields if needed
+    });
+    setModalType("edit-reservation");
+    setShowModal(true);
+    setError(null);
+  };
+  const handleDeleteReservation = async (record) => {
+    if (window.confirm(`Opravdu smazat rezervaci #${record.id}?`)) {
+      // Implement delete API call here
+      // await reservationAPI.deleteReservation(record.id);
+      setReservations((prev) => prev.filter(r => r.id !== record.id));
+    }
+  };
+
+  // Order actions
+  const handleShowOrder = (record) => {
+    setSelectedRecord(record);
+    setModalType("view-order");
+    setShowModal(true);
+  };
+  const handleEditOrder = (record) => {
+    setSelectedRecord(record);
+    setFormData({
+      ...record,
+      // Add more fields if needed
+    });
+    setModalType("edit-order");
+    setShowModal(true);
+    setError(null);
+  };
+  const handleDeleteOrder = async (record) => {
+    if (window.confirm(`Opravdu smazat objednávku #${record.id}?`)) {
+      // Implement delete API call here
+      // await orderAPI.deleteOrder(record.id);
+      setOrders((prev) => prev.filter(r => r.id !== record.id));
+    }
+  };
+  const handlePayOrder = (record) => {
+    navigate(`/payment/${record.id}`);
+  };
+
+  // Ticket actions
+  const handleShowTicket = (record) => {
+    setSelectedRecord(record);
+    setModalType("view-ticket");
+    setShowModal(true);
+  };
+  const handleEditTicket = (record) => {
+    setSelectedRecord(record);
+    setFormData({
+      ...record,
+      // Add more fields if needed
+    });
+    setModalType("edit-ticket");
+    setShowModal(true);
+    setError(null);
+  };
+  const handleDeleteTicket = async (record) => {
+    if (window.confirm(`Opravdu smazat ticket #${record.id}?`)) {
+      // Implement delete API call here
+      // await ticketAPI.deleteTicket(record.id);
+      setTickets((prev) => prev.filter(r => r.id !== record.id));
+    }
+  };
+
+  // Edit modal submit handlers (example for reservation)
+  const handleEditModalSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      // Implement update API call here, e.g.:
+      // await reservationAPI.updateReservation(selectedRecord.id, formData);
+      setShowModal(false);
+      // Refresh data if needed
+    } catch (err) {
+      setError("Chyba při ukládání: " + (err.message || "Neznámá chyba"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const reservation_columns = [
     { accessor: "id", title: "ID", sortable: true },
@@ -73,6 +179,24 @@ function Home() {
       render: ({ final_price }) => `${Number(final_price).toFixed(2)} Kč`,
     },
     { accessor: "status", title: "Stav", sortable: true },
+    {
+      accessor: "actions",
+      title: "Akce",
+      width: "5.5%",
+      render: (record) => (
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowReservation(record)}>
+            <IconEye size={16} />
+          </ActionIcon>
+          <ActionIcon size="sm" variant="subtle" color="blue" onClick={() => handleEditReservation(record)}>
+            <IconEdit size={16} />
+          </ActionIcon>
+          <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDeleteReservation(record)}>
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Group>
+      ),
+    },
   ];
 
   const order_columns = [
@@ -111,6 +235,21 @@ function Home() {
       sortable: false,
       render: ({ note }) => note?.slice(0, 50) || "-",
     },
+    {
+      accessor: "actions",
+      title: "Akce",
+      width: "7%",
+      render: (record) => (
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowOrder(record)}>
+            <IconEye size={16} />
+          </ActionIcon>
+          <ActionIcon size="sm" variant="subtle" color="orange" onClick={() => handlePayOrder(record)} title="Zaplatit">
+            <IconCreditCard size={16} />
+          </ActionIcon>
+        </Group>
+      ),
+    },
   ];
 
 
@@ -130,6 +269,24 @@ function Home() {
       title: "Popis",
       sortable: false,
       render: ({ description }) => description?.slice(0, 50) || "-",
+    },
+    {
+      accessor: "actions",
+      title: "Akce",
+      width: "5.5%",
+      render: (record) => (
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowTicket(record)}>
+            <IconEye size={16} />
+          </ActionIcon>
+          <ActionIcon size="sm" variant="subtle" color="blue" onClick={() => handleEditTicket(record)}>
+            <IconEdit size={16} />
+          </ActionIcon>
+          <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDeleteTicket(record)}>
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Group>
+      ),
     },
   ];
 
@@ -154,22 +311,23 @@ function Home() {
 
   const OrderModalContent = (record, close) => (
     <Stack gap="xs">
-      <Text fw={700}>Detail Objedávky</Text>
+      <Text fw={700}>Detail Objednávky</Text>
       <Text>Rezervace: {record.reservation?.name}</Text>
-      <Text>Vytvořeno: {record.created_at.format("DD.MM.YYYY HH:mm")}</Text>
-      <Text>Částka k zaplacení: {record.price_to_pay}</Text>
-      <Text>Zaplaceno v čase: {dayjs(record.payed_at).format("DD.MM.YYYY HH:mm")}</Text>
+      <Text>Vytvořeno: {dayjs(record.created_at).format("DD.MM.YYYY HH:mm")}</Text>
+      <Text>Částka k zaplacení: {Number(record.price_to_pay).toFixed(2)} Kč</Text>
+      <Text>Zaplaceno v čase: {record.payed_at ? dayjs(record.payed_at).format("DD.MM.YYYY HH:mm") : "-"}</Text>
       <Text>Stav: {record.status}</Text>
       <Text>Poznámka: {record.note}</Text>
       <Group justify="end" mt="sm">
         <Button onClick={close} variant="light">Zavřít</Button>
+        <Button variant="success" onClick={() => handlePayOrder(record)}>Zaplatit</Button>
       </Group>
     </Stack>
   );
 
   const TicketModalContent = (record, close) => (
     <Stack gap="xs">
-      <Text fw={700}>Detail Objedávky</Text>
+      <Text fw={700}>Detail Objednávky</Text>
       <Text>Název: {record.title}</Text>
       <Text>Vytvořeno: {record.created_at.format("DD.MM.YYYY HH:mm")}</Text>
       <Text>Stav: {record.status}</Text>
@@ -360,11 +518,152 @@ function Home() {
             </Tab>
           )}
         </Tabs>
-
       </Row>
+
+      {/* Bootstrap Modal for view/edit */}
+      <Modal show={showModal && modalType === "view-reservation"} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Detail rezervace</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedRecord && (
+            <>
+              <p><strong>ID:</strong> {selectedRecord.id}</p>
+              <p><strong>Událost:</strong> {selectedRecord.event?.name}</p>
+              <p><strong>Slot:</strong> {selectedRecord.marketSlot}</p>
+              <p><strong>Prodlouženo:</strong> {selectedRecord.used_extension ? "Ano" : "Ne"}</p>
+              <p><strong>Od:</strong> {dayjs(selectedRecord.reserved_from).format("DD.MM.YYYY HH:mm")}</p>
+              <p><strong>Do:</strong> {dayjs(selectedRecord.reserved_to).format("DD.MM.YYYY HH:mm")}</p>
+              <p><strong>Stav:</strong> {selectedRecord.status}</p>
+              <p><strong>Poznámka:</strong> {selectedRecord.note}</p>
+              <p><strong>Cena:</strong> {Number(selectedRecord.final_price).toFixed(2)} Kč</p>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Zavřít</Button>
+          <Button variant="primary" onClick={() => { setShowModal(false); handleEditReservation(selectedRecord); }}>Upravit</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showModal && modalType === "edit-reservation"} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Upravit rezervaci</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleEditModalSubmit}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Poznámka</Form.Label>
+              <Form.Control
+                name="note"
+                value={formData.note || ""}
+                onChange={e => setFormData(f => ({ ...f, note: e.target.value }))}
+              />
+            </Form.Group>
+            {/* Add more editable fields as needed */}
+            {error && <Alert variant="danger">{error}</Alert>}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>Zrušit</Button>
+            <Button type="submit" variant="primary" disabled={submitting}>Uložit změny</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      <Modal show={showModal && modalType === "view-order"} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Detail objednávky</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedRecord && (
+            <>
+              <p><strong>ID:</strong> {selectedRecord.id}</p>
+              <p><strong>Rezervace:</strong> {selectedRecord.reservation?.name}</p>
+              <p><strong>Vytvořeno:</strong> {dayjs(selectedRecord.created_at).format("DD.MM.YYYY HH:mm")}</p>
+              <p><strong>Částka k zaplacení:</strong> {selectedRecord.price_to_pay}</p>
+              <p><strong>Zaplaceno v čase:</strong> {selectedRecord.payed_at ? dayjs(selectedRecord.payed_at).format("DD.MM.YYYY HH:mm") : "-"}</p>
+              <p><strong>Stav:</strong> {selectedRecord.status}</p>
+              <p><strong>Poznámka:</strong> {selectedRecord.note}</p>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Zavřít</Button>
+          <Button variant="success" onClick={() => handlePayOrder(selectedRecord)}>Zaplatit</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showModal && modalType === "edit-order"} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Upravit objednávku</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleEditModalSubmit}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Poznámka</Form.Label>
+              <Form.Control
+                name="note"
+                value={formData.note || ""}
+                onChange={e => setFormData(f => ({ ...f, note: e.target.value }))}
+              />
+            </Form.Group>
+            {/* Add more editable fields as needed */}
+            {error && <Alert variant="danger">{error}</Alert>}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>Zrušit</Button>
+            <Button type="submit" variant="primary" disabled={submitting}>Uložit změny</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      <Modal show={showModal && modalType === "view-ticket"} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Detail ticketu</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedRecord && (
+            <>
+              <p><strong>ID:</strong> {selectedRecord.id}</p>
+              <p><strong>Název:</strong> {selectedRecord.title}</p>
+              <p><strong>Vytvořeno:</strong> {dayjs(selectedRecord.created_at).format("DD.MM.YYYY HH:mm")}</p>
+              <p><strong>Stav:</strong> {selectedRecord.status}</p>
+              <p><strong>Kategorie:</strong> {selectedRecord.category}</p>
+              <p><strong>Popis:</strong> {selectedRecord.description}</p>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Zavřít</Button>
+          <Button variant="primary" onClick={() => { setShowModal(false); handleEditTicket(selectedRecord); }}>Upravit</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showModal && modalType === "edit-ticket"} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Upravit ticket</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleEditModalSubmit}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Popis</Form.Label>
+              <Form.Control
+                name="description"
+                value={formData.description || ""}
+                onChange={e => setFormData(f => ({ ...f, description: e.target.value }))}
+              />
+            </Form.Group>
+            {/* Add more editable fields as needed */}
+            {error && <Alert variant="danger">{error}</Alert>}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>Zrušit</Button>
+            <Button type="submit" variant="primary" disabled={submitting}>Uložit změny</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </Container>
     
   );
 }
-
 export default Home;

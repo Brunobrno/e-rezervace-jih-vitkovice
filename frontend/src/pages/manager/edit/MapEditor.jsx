@@ -164,6 +164,7 @@ function MapEditor() {
             selectedIndex={selectedIndex}
             onSelectedIndexChange={setSelectedIndex}
             marketSlots={marketSlots}
+            backgroundImage={squareObject?.image}
           />
         </Col>
         <Col sm={6} md={4}>
