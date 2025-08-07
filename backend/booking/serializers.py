@@ -9,7 +9,7 @@ except ImportError:
     PriceCalculationSerializer = None
 
 from trznice.utils import RoundedDateTimeField
-from .models import Event, Reservation, Square
+from .models import Event, MarketSlot, Reservation, Square, ReservationCheck
 from account.models import CustomUser
 from product.serializers import EventProductSerializer
 
@@ -45,6 +45,19 @@ class SquareShortSerializer(serializers.ModelSerializer):
             "name": {"read_only": True, "help_text": "Název náměstí"}
         }
 
+class ReservationShortSerializer(serializers.ModelSerializer):
+    user = UserShortSerializer(read_only=True)
+    event = EventShortSerializer(read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ["id", "user", "event"]
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "user": {"read_only": True, "help_text": "Majitel rezervace"},
+            "event": {"read_only": True, "help_text": "Akce na které je vytvořena rezervace"}
+        }
+
 #------------------------------------------------------------------------
 
 
@@ -52,7 +65,36 @@ class SquareShortSerializer(serializers.ModelSerializer):
 
 #------------------------NORMAL SERIALIZERS------------------------------
 
-#--- Reservation ----
+class ReservationCheckSerializer(serializers.ModelSerializer):
+    reservation = serializers.PrimaryKeyRelatedField(
+        queryset=Reservation.objects.all(),
+        write_only=True,
+        help_text="ID rezervace, která se kontroluje."
+    )
+    reservation_info = ReservationShortSerializer(source="reservation", read_only=True)
+
+    checker = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    checker_info = UserShortSerializer(source="checker", read_only=True)
+
+    class Meta:
+        model = ReservationCheck
+        fields = [
+            "id", "reservation", "reservation_info",
+            "checker", "checker_info", "checked_at"
+        ]
+        read_only_fields = ["id", "checked_at"]
+
+    def validate_reservation(self, value):
+        if value.status != "reserved":
+            raise serializers.ValidationError("Rezervaci lze kontrolovat pouze pokud je ve stavu 'reserved'.")
+        return value
+    
+    def validate_checker(self, value):
+        user = self.context["request"].user
+        if not user.is_staff and value != user:
+            raise serializers.ValidationError("Pouze administrátor může nastavit jiného uživatele jako kontrolora.")
+        return value
+
 
 class ReservationSerializer(serializers.ModelSerializer):
     reserved_from = serializers.DateField()
@@ -63,6 +105,8 @@ class ReservationSerializer(serializers.ModelSerializer):
     market_slot = serializers.PrimaryKeyRelatedField(
         queryset=MarketSlot.objects.filter(is_deleted=False), required=True
     )
+
+    last_checked_by = UserShortSerializer(read_only=True)
     
     class Meta:
         model = Reservation
@@ -70,9 +114,9 @@ class ReservationSerializer(serializers.ModelSerializer):
             "id", "market_slot",
             "used_extension", "reserved_from", "reserved_to",
             "created_at", "status", "note", "final_price",
-            "event", "user"
+            "event", "user", "is_checked", "last_checked_by", "last_checked_at"
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "is_checked", "last_checked_by", "last_checked_at"]
         extra_kwargs = {
             "event": {"help_text": "ID (Event), ke které rezervace patří", "required": True},
             "market_slot": {"help_text": "ID konkrétního prodejního místa (MarketSlot)", "required": True},
@@ -83,7 +127,20 @@ class ReservationSerializer(serializers.ModelSerializer):
             "status": {"help_text": "Stav rezervace (reserved / cancelled)", "required": False, "default": "reserved"},
             "note": {"help_text": "Poznámka k rezervaci (volitelné)", "required": False},
             "final_price": {"help_text": "Cena za Rezervaci, počítá se podle plochy prodejního místa a počtů dní.", "required": False, "default": 0},
+            
+            "is_checked": {"help_text": "Stav je True, pokud již byla provedena aspoň jedna kontrola.", "required": False, "read_only": True},
+            "last_checked_by": {"help_text": "Kontrolor, který provedl poslední kontrolu.", "required": False, "read_only": True},
+            "last_checked_at": {"help_text": "Čas kdy byla provedena poslední kontrola.", "required": False, "read_only": True}
         }
+
+    def to_internal_value(self, data):
+        # Accept both "market_slot" and legacy "marketSlot" keys for compatibility
+        if "marketSlot" in data and "market_slot" not in data:
+            data["market_slot"] = data["marketSlot"]
+        # Debug: log incoming data for troubleshooting
+        logger.debug(f"ReservationSerializer.to_internal_value input data: {data}")
+        return super().to_internal_value(data)
+    
 
     def to_internal_value(self, data):
         # Accept both "market_slot" and legacy "marketSlot" keys for compatibility

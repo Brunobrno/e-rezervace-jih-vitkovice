@@ -9,6 +9,7 @@ from django.utils import timezone
 from trznice.models import SoftDeleteModel
 from trznice.utils import truncate_to_minutes
 
+
 #náměstí
 class Square(SoftDeleteModel):
     name = models.CharField(max_length=255, default="", null=False, blank=False)
@@ -115,9 +116,10 @@ class Event(SoftDeleteModel):
         return self.name
     
     def delete(self, *args, **kwargs):
-
-        self.event_marketSlots.all().update(is_deleted=True, deleted_at=timezone.now())
-        self.event_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
+        for market_slot in self.event_marketSlots.all():
+            market_slot.delete()
+        # self.event_marketSlots.all().update(is_deleted=True, deleted_at=timezone.now())
+        # self.event_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
         self.event_products.all().update(is_deleted=True, deleted_at=timezone.now())
 
         return super().delete(*args, **kwargs)
@@ -176,7 +178,9 @@ class MarketSlot(SoftDeleteModel):
     
     def delete(self, *args, **kwargs):
 
-        self.marketslot_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
+        for reservation in self.marketslot_reservations.all():
+            reservation.delete()
+        # self.marketslot_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
 
         return super().delete(*args, **kwargs)
     
@@ -224,6 +228,29 @@ class Reservation(SoftDeleteModel):
     )
 
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
+
+    # Datails about checking 
+    #TODO: Dodelat frontend
+    is_checked = models.BooleanField(default=False)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    last_checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reservations_checker"
+    )
+
+    def update_check_status(self):
+        last_check = self.checks.filter(is_deleted=False).order_by("-checked_at").first()
+        if last_check:
+            self.is_checked = True
+            self.last_checked_at = last_check.checked_at
+            self.last_checked_by = last_check.checker
+        else:
+            self.is_checked = False
+            self.last_checked_at = None
+            self.last_checked_by = None
 
     def calculate_price(self):
         # Use market_slot width and height for area
@@ -315,16 +342,51 @@ class Reservation(SoftDeleteModel):
     def delete(self, *args, **kwargs):
         order = getattr(self, "order", None)
         if order is not None:
-            order.is_deleted = True
-            order.deleted_at = timezone.now()
-            order.save()
+            order.delete()
 
         # Fix: Use a valid status value for MarketSlot
         if self.market_slot and self.market_slot.event.end > timezone.now():
             self.market_slot.status = "allowed"
             self.market_slot.save()
 
-        # Soft delete without validation
+        self.checks.all().update(is_deleted=True, deleted_at=timezone.now())
+
+        return super().delete(*args, **kwargs)
+    
+
+class ReservationCheck(SoftDeleteModel):
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.CASCADE,
+        related_name="checks"
+    )
+    checker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="performed_checks"
+    )
+    checked_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        # Check checker role
+        if not self.checker or not hasattr(self.checker, "role") or self.checker.role not in ["admin", "checker"]:
+            raise ValidationError("Uživatel není Kontrolor.")
+
+        # Validate reservation existence (safe check)
+        if not Reservation.objects.filter(pk=self.reservation_id).exists():
+            raise ValidationError("Neplatné ID Rezervace.")
+
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
         self.is_deleted = True
         self.deleted_at = timezone.now()
-        self.save(validate=False)
+        self.save()
+        from .signals import update_reservation_check_status
+        # Simulate post_delete behavior
+        update_reservation_check_status(sender=ReservationCheck, instance=self)

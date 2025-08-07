@@ -13,7 +13,7 @@ from account.tasks import send_email_with_context
 
 logger = get_task_logger(__name__)
 
-@shared_task(name="test")
+@shared_task
 def test_celery_task():
     logger.info("✅ Test task executed successfully!")
     return "Hello from Celery!"
@@ -26,8 +26,8 @@ def _validate_days_input(years=None, days=None):
         return days if days > 0 else 365
     return 365 # default fallback
 
-@shared_task(name="hard_delete_soft_deleted_records")
-def hard_delete_soft_deleted_records(years=None, days=None):
+@shared_task
+def hard_delete_soft_deleted_records_task(years=None, days=None):
     """
     Hard delete všech objektů, které jsou soft-deleted (is_deleted=True)
     a zároveň byly označeny jako smazané (deleted_at) před více než zadaným časovým obdobím.
@@ -59,10 +59,12 @@ def hard_delete_soft_deleted_records(years=None, days=None):
 
         if count > 0:
             logger.info(f"Hard deleted {count} records from {model.__name__}")
+        
+    return "Successfully completed hard_delete_soft_deleted_records_task"
 
 
-@shared_task(name="delete_unpayed_reservations")
-def delete_unpayed_reservations(minutes=30):
+@shared_task
+def cancel_unpayed_reservations_task(minutes=30):
     """
     Smaže Rezervace podle Objednávky, pokud ta nebyla zaplacena v době 30 minut. Tím se uvolní Prodejní Místa pro nové rezervace.
     Jako vstupní argument může být zadán počet minut, podle kterého nezaplacená rezervaace bude stornovana.
@@ -75,7 +77,7 @@ def delete_unpayed_reservations(minutes=30):
     orders_qs = Order.objects.select_related("user", "reservation__event").filter(
         status="pending",
         created_at__lte=cutoff_time,
-        is_paid=False
+        payed_at__isnull=True
     )
 
     count = orders_qs.count()
@@ -95,10 +97,11 @@ def delete_unpayed_reservations(minutes=30):
     if count > 0:
         logger.info(f"Canceled {count} unpaid orders and released their slots.")
 
+    return "Successfully completed delete_unpayed_reservations_task"
 
 
-# @shared_task(name="delete_old_reservations")
-# def delete_old_reservations():
+# @shared_task
+# def delete_old_reservations_task():
 #     """
 #     Smaže rezervace starší než 10 let počítané od začátku příštího roku.
 #     """
@@ -108,3 +111,6 @@ def delete_unpayed_reservations(minutes=30):
 
 #     deleted, _ = Reservation.objects.filter(created__lt=cutoff_date).delete()
 #     print(f"Deleted {deleted} old reservations.")
+
+    # return "Successfully completed delete_old_reservations_task"
+

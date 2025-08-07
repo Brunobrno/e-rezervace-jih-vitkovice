@@ -7,8 +7,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample
 
-from .models import Event, Reservation, MarketSlot, Square
-from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer, ReservedDaysSerializer
+from .models import Event, Reservation, MarketSlot, Square, ReservationCheck
+from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer, ReservedDaysSerializer, ReservationCheckSerializer
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
@@ -20,7 +20,9 @@ from account.permissions import *
 
 import logging
 
-from .tasks import test_celery_task
+import logging
+
+from account.tasks import send_email_verification_task
 
 
 @extend_schema(
@@ -54,7 +56,7 @@ class SquareViewSet(viewsets.ModelViewSet):
     permission_classes = [RoleAllowed("admin", "squareManager")]
 
     def get_queryset(self):
-        test_celery_task.delay()
+        send_email_verification_task.delay(1)
         return super().get_queryset()
     
 
