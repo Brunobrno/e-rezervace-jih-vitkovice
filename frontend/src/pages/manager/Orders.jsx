@@ -19,7 +19,7 @@ import {
   Stack,
   Button
 } from "@mantine/core";
-import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconReceipt2 } from "@tabler/icons-react";
 import orderAPI from "../../api/model/order";
 import userAPI from "../../api/model/user";
 
@@ -270,7 +270,10 @@ function Orders() {
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
-            <h1>Objednávky</h1>
+            <h1>
+              <IconReceipt2 size={30} style={{ marginRight: 10, marginTop: -4 }} />
+              Objednávky
+            </h1>
             {/* You can add a button for creating new orders if needed */}
           </Group>
 

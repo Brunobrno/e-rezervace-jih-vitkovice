@@ -22,7 +22,7 @@ import {
   Badge,
   Tooltip,
 } from "@mantine/core";
-import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconReceipt2 } from "@tabler/icons-react";
 import userAPI from "../../api/model/user";
 
 function Users() {
@@ -466,7 +466,10 @@ function Users() {
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
-            <h1>Uživatelé</h1>
+            <h1>
+              <IconReceipt2 size={30} style={{ marginRight: 10, marginTop: -4 }} />
+              Uživatelé
+            </h1>
             <Button component="a" href="/manage/users/create" leftSection={<IconPlus size={16} />}>Vytvořit uživatele</Button>
           </Group>
 

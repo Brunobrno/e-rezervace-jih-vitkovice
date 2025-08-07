@@ -1,7 +1,7 @@
 import Table from "../../components/Table";
 import Sidebar from "../../components/Sidebar";
 import { getReservations, deleteReservation, updateReservation } from "../../api/model/reservation";
-import { IconEye, IconEdit, IconTrash, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
+import { IconEye, IconEdit, IconTrash, IconPlus, IconSearch, IconX, IconReceipt2 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Container, Row, Col, Form, Modal, Button as BootstrapButton } from "react-bootstrap";
 import {
@@ -454,7 +454,10 @@ function Reservations() {
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
-            <h1>Rezervace</h1>
+            <h1>
+              <IconReceipt2 size={30} style={{ marginRight: 10, marginTop: -4 }} />
+              Rezervace
+            </h1>
             <Button component="a" href="/create-reservation" leftSection={<IconPlus size={16} />}>Přidat rezervaci</Button>
           </Group>
           <Table

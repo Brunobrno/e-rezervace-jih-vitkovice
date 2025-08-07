@@ -111,3 +111,9 @@ class Order(SoftDeleteModel):
         #     self.price_to_pay = self.reservation.final_price
         
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.reservation.status = "cancelled"
+        self.reservation.save()
+        
+        return super().delete(*args, **kwargs)
