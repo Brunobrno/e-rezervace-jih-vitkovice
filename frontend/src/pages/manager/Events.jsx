@@ -20,7 +20,7 @@ import {
   Button,
   Badge
 } from "@mantine/core";
-import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconMap } from "@tabler/icons-react";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconMap, IconCalendarEvent } from "@tabler/icons-react";
 import apiEvents from "../../api/model/event";
 import dayjs from "dayjs";
 import "dayjs/locale/cs";
@@ -541,7 +541,10 @@ function Events() {
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
-            <h1>Akce</h1>
+            <h1>
+              <IconCalendarEvent size={28} style={{ marginRight: 8, marginBottom: 0 }} />
+              Akce
+            </h1>
             <Button component="a" href="/manage/events/create" leftSection={<IconPlus size={16} />}>Přidat akci</Button>
           </Group>
           <Table

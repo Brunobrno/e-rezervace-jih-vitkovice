@@ -29,6 +29,8 @@ import SquareDesigner from "./pages/manager/create/SquareDesigner"; {/* Square d
 
 import Reservations from "./pages/manager/Reservations";
 
+import Orders from "./pages/manager/Orders";
+
 import Ticket from "./pages/Ticket";
 
 import Users from "./pages/manager/Users";
@@ -104,6 +106,8 @@ function App() {
               <Route path="/manage/events/:id" element={<Events />} />
               <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
               <Route path="/manage/events/create" element={<CreateEvent />} />
+
+              <Route path="/manage/orders" element={<Orders />} />
               
             </Route>
           </Route>

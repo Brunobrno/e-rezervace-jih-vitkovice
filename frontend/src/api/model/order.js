@@ -52,8 +52,8 @@ export const createOrder = async (data) => {
  *
  * @returns {Promise<Order>}
  */
-export const updateOrder = async (uuid, data) => {
-  const response = await axios_instance.patch(`${API_BASE_URL}/${uuid}/`, data);
+export const updateOrder = async (id, data) => {
+  const response = await axios_instance.patch(`${API_BASE_URL}/${id}/`, data);
   return response.data;
 };
 
@@ -63,8 +63,8 @@ export const updateOrder = async (uuid, data) => {
  * @param {string} uuid - UUID objednávky
  * @returns {Promise<void>} HTTP 204 při úspěchu
  */
-export const deleteOrder = async (uuid) => {
-  await axios_instance.delete(`${API_BASE_URL}/${uuid}/`);
+export const deleteOrder = async (id) => {
+  await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
 
