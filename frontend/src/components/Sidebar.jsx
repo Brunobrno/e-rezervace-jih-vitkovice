@@ -23,17 +23,22 @@ function Sidebar() {
           Home
         </Nav.Link>
         <hr />
+        <Nav.Link href="/manage/squares" eventKey="link-3">
+          <IconMapPin size={18} style={{ marginRight: 8, marginBottom: 2 }} />
+          Náměstí
+        </Nav.Link>
         <Nav.Link href="/manage/events" eventKey="link-1">
           <IconCalendarEvent size={18} style={{ marginRight: 8, marginBottom: 2 }} />
           Akce
         </Nav.Link>
+        <hr />
         <Nav.Link href="/manage/reservations" eventKey="link-2">
           <IconClipboardList size={18} style={{ marginRight: 8, marginBottom: 2 }} />
           Rezervace
         </Nav.Link>
-        <Nav.Link href="/manage/squares" eventKey="link-3">
-          <IconMapPin size={18} style={{ marginRight: 8, marginBottom: 2 }} />
-          Náměstí
+        <Nav.Link href="/manage/orders" eventKey="link-5">
+          <IconClipboardList size={18} style={{ marginRight: 8, marginBottom: 2 }} />
+          Objednávky
         </Nav.Link>
         <hr />
         <Nav.Link href="/manage/users" eventKey="link-4">

@@ -236,3 +236,23 @@ class ReservedDaysView(APIView):
         })
         logger.debug(f"ReservedDaysView GET market_slot_id={market_slot_id}")
         return Response(serializer.data)
+    
+
+
+@extend_schema(
+    tags=["Reservation Checks"],
+    description="Správa kontrol rezervací – vytváření záznamů o kontrole a jejich výpis."
+)
+class ReservationCheckViewSet(viewsets.ModelViewSet):
+    queryset = ReservationCheck.objects.select_related("reservation", "checker").all().order_by("-checked_at")
+    serializer_class = ReservationCheckSerializer
+    permission_classes = [OnlyRolesAllowed("admin", "checker")]  # Only checkers & admins can use it
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "role") and user.role == "checker":
+            return self.queryset.filter(checker=user)  # Checkers only see their own logs
+        return self.queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
