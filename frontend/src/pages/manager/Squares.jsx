@@ -119,10 +119,30 @@ function Squares() {
     fetchData();
   }, []);
 
+  // City options for filter
   const cityOptions = useMemo(() => {
-    const uniqueCities = new Set(squares.map((r) => r.city));
-    return [...uniqueCities];
+    if (!Array.isArray(squares)) return [];
+    const uniqueCities = [...new Set(squares.map(r => r.city).filter(Boolean))];
+    return uniqueCities;
   }, [squares]);
+
+  // Filtering (same pattern as Users.jsx)
+  const filteredSquares = useMemo(() => {
+    let data = Array.isArray(squares) ? squares : [];
+    if (query) {
+      const q = query.toLowerCase();
+      data = data.filter(
+        r =>
+          r.name?.toLowerCase().includes(q) ||
+          r.street?.toLowerCase().includes(q) ||
+          r.city?.toLowerCase().includes(q)
+      );
+    }
+    if (selectedCities.length > 0) {
+      data = data.filter(r => selectedCities.includes(r.city));
+    }
+    return data;
+  }, [squares, query, selectedCities]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -137,16 +157,13 @@ function Squares() {
     setShowModal(true);
   };
 
-  // (removed duplicate handleEditSquare)
-
-
   const columns = [
-    { accessor: "id", title: "#", sortable: true },
-    { accessor: "street", title: "Ulice", sortable: true },
+    { accessor: "id", title: "#", sortable: true, width: "2%" },
     {
       accessor: "name",
       title: "Název",
       sortable: true,
+      width: "15%",
       filter: (
         <TextInput
           label="Hledat názvy"
@@ -163,10 +180,9 @@ function Squares() {
       ),
       filtering: query !== "",
     },
-    {
-      accessor: "city",
-      title: "Město",
-      sortable: true,
+    { accessor: "description", title: "Popis", width: "18%" },
+    { accessor: "street", title: "Ulice", sortable: true, width: "12%" },
+    { accessor: "city", title: "Město", sortable: true, width: "15%",
       filter: (
         <MultiSelect
           label="Filtrovat města"
@@ -182,9 +198,18 @@ function Squares() {
       ),
       filtering: selectedCities.length > 0,
     },
+    { accessor: "psc", title: "PSČ", width: "4%" },
+    {
+      accessor: "velikost",
+      title: "Velikost m²",
+      width: "6%",
+      render: (row) => (row.width && row.height ? row.width * row.height  + " m²" : "—"),
+    },
+    { accessor: "cellsize", title: "Velikost buňky (m²)", width: "6%" },
     {
       accessor: "image",
       title: "Obrázek",
+      width: "8%",
       render: (row) =>
         row.image ? (
           <img src={row.image} alt={row.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} />
@@ -197,7 +222,7 @@ function Squares() {
     {
       accessor: "events",
       title: "Počet událostí",
-      width: "0%",
+      width: "5%",
       textAlign: "center",
       render: (row) => row.events?.length || 0,
       sortable: true,
@@ -205,8 +230,7 @@ function Squares() {
     {
       accessor: "actions",
       title: "Akce",
-      width: "0%",
-
+      width: "5.5%",
       render: (square) => (
         <Group gap={4} wrap="nowrap">
           <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowSquare(square)}>
@@ -242,13 +266,14 @@ function Squares() {
           </Group>
 
           <Table
-            data={squares}
+            data={filteredSquares}
             columns={columns}
             fetching={fetching}
             withTableBorder
             borderRadius="md"
             highlightOnHover
             verticalAlign="center"
+            titlePadding="4px 8px"
           />
 
           {/* Mantine modal for add only */}
@@ -273,12 +298,21 @@ function Squares() {
                   <p><strong>ID:</strong> {selectedSquare.id}</p>
                   <p><strong>Název:</strong> {selectedSquare.name}</p>
                   <p><strong>Popis:</strong> {selectedSquare.description || "—"}</p>
-                  <p><strong>Ulice:</strong> {selectedSquare.street || "—"}</p>
-                  <p><strong>Město:</strong> {selectedSquare.city || "—"}</p>
-                  <p><strong>PSC:</strong> {selectedSquare.psc || "—"}</p>
-                  <p><strong>Rozměry:</strong> {selectedSquare.width} x {selectedSquare.height}</p>
-                  <p><strong>Grid:</strong> {selectedSquare.grid_rows} x {selectedSquare.grid_cols}, cellsize: {selectedSquare.cellsize}</p>
+                  <p><strong>Ulice:</strong> {selectedSquare.street || "Ulice není zadaná"}</p>
+                  <p><strong>Město:</strong> {selectedSquare.city || "Město není zadané"}</p>
+                  <p><strong>PSC:</strong> {selectedSquare.psc || 12345}</p>
+                  <p><strong>Šířka:</strong> {selectedSquare.width ?? 10}</p>
+                  <p><strong>Výška:</strong> {selectedSquare.height ?? 10}</p>
+                  <p><strong>Grid řádky:</strong> {selectedSquare.grid_rows ?? 60}</p>
+                  <p><strong>Grid sloupce:</strong> {selectedSquare.grid_cols ?? 45}</p>
+                  <p><strong>Velikost buňky:</strong> {selectedSquare.cellsize ?? 10}</p>
                   <p><strong>Počet událostí:</strong> {selectedSquare.events?.length || 0}</p>
+                  <p><strong>Obrázek:</strong><br />
+                    {selectedSquare.image
+                      ? <img src={selectedSquare.image} alt={selectedSquare.name} style={{ width: "100px", borderRadius: "8px" }} />
+                      : <span style={{ color: "#888", fontStyle: "italic" }}>Žádný obrázek</span>
+                    }
+                  </p>
                 </>
               )}
             </Modal.Body>

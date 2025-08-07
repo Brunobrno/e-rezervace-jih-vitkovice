@@ -68,7 +68,6 @@ class CustomUser(SoftDeleteModel, AbstractUser):
     )
     
     email = models.EmailField(unique=True, db_index=True)
-    otc = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True) #FIXME:se nevyuziva
     create_time = models.DateTimeField(auto_now_add=True)
 
     var_symbol = models.PositiveIntegerField(null=True, blank=True, validators=[

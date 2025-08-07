@@ -1,35 +1,40 @@
+import React, { useEffect, useMemo, useState } from "react";
 import Table from "../../components/Table";
 import Sidebar from "../../components/Sidebar";
-import { IconEye, IconEdit, IconTrash, IconMap, IconPlus } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Button as BootstrapButton,
+  Modal,
+  Form,
+  Alert,
+} from "react-bootstrap";
 import {
   ActionIcon,
-  Button,
-  Checkbox,
+  Group,
+  TextInput,
+  Text,
   MultiSelect,
   Stack,
-  TextInput,
-  Anchor,
-  Box,
-  Group,
-  Text,
-  Modal,
+  Button,
+  Badge
 } from "@mantine/core";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconMap } from "@tabler/icons-react";
+import apiEvents from "../../api/model/event";
+import dayjs from "dayjs";
+import "dayjs/locale/cs";
 import { useNavigate } from "react-router-dom";
 
-import apiEvent from "../../api/model/event";
-
 function Events() {
-  const navigate = useNavigate();
-
   const [events, setEvents] = useState([]);
   const [fetching, setFetching] = useState(true);
+  const [query, setQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState([]);
+
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("view");
-  const [query, setQuery] = useState("");
-
   const [formState, setFormState] = useState({
     name: "",
     description: "",
@@ -41,6 +46,21 @@ function Events() {
   });
   const [squares, setSquares] = useState([]);
   const [squareSearch, setSquareSearch] = useState("");
+
+  const [selectedSquareIds, setSelectedSquareIds] = useState([]);
+  const [startDateRange, setStartDateRange] = useState([null, null]);
+  const [endDateRange, setEndDateRange] = useState([null, null]);
+
+  const navigate = useNavigate();
+
+  // Status options for filter (adjust as needed)
+  const statusOptions = [
+    { value: "active", label: "Aktivní" },
+    { value: "archived", label: "Archivováno" },
+    { value: "draft", label: "Koncept" },
+    { value: "cancelled", label: "Zrušeno" },
+  ];
+
   // Fetch squares for dropdown
   useEffect(() => {
     const fetchSquares = async () => {
@@ -60,10 +80,10 @@ function Events() {
       setFormState({
         name: selectedEvent.name || "",
         description: selectedEvent.description || "",
-        start: selectedEvent.start ? selectedEvent.start.slice(0, 16) : "", // ISO string YYYY-MM-DDTHH:mm (pro input type=datetime-local)
-        end: selectedEvent.end ? selectedEvent.end.slice(0, 16) : "",
+        start: selectedEvent.start || "", // YYYY-MM-DD
+        end: selectedEvent.end || "",
         price_per_m2: selectedEvent.price_per_m2 || "",
-        image: null, // obrázek nezadáme, pokud chceme změnit, uživatel nahraje nový
+        image: null,
         square_id: selectedEvent.square_id || selectedEvent.square?.id || "",
       });
     }
@@ -99,8 +119,8 @@ function Events() {
       const formData = new FormData();
       formData.append("name", formState.name);
       formData.append("description", formState.description);
-      formData.append("start", new Date(formState.start).toISOString());
-      formData.append("end", new Date(formState.end).toISOString());
+      formData.append("start", formState.start); // YYYY-MM-DD
+      formData.append("end", formState.end);     // YYYY-MM-DD
       formData.append("price_per_m2", formState.price_per_m2);
       formData.append("square_id", formState.square_id);
 
@@ -109,16 +129,15 @@ function Events() {
       }
 
       if (modalType === "edit" && selectedEvent) {
-        await apiEvent.updateEvent(selectedEvent.id, formData);
+        await apiEvents.updateEvent(selectedEvent.id, formData);
       } else {
-        await apiEvent.createEvent(formData);
+        await apiEvents.createEvent(formData);
       }
 
       setShowModal(false);
       fetchEvents();
     } catch (err) {
       console.error("Chyba při ukládání akce:", err);
-      // Můžeš přidat state pro zobrazení chyby uživateli
     }
   };
 
@@ -126,7 +145,7 @@ function Events() {
     setFetching(true);
     try {
       const params = { search: query };
-      const data = await apiEvent.getEvents(params);
+      const data = await apiEvents.getEvents(params);
       setEvents(data);
     } finally {
       setFetching(false);
@@ -139,34 +158,49 @@ function Events() {
 
   const handleShowEvent = (event) => {
     setSelectedEvent(event);
-    setModalType("view");
+    setModalType('view');
     setShowModal(true);
   };
 
   const handleEditEvent = (event) => {
     setSelectedEvent(event);
-    setModalType("edit");
+    setFormState({
+      name: event.name || "",
+      description: event.description || "",
+      start: event.start ? event.start.slice(0, 16) : "",
+      end: event.end ? event.end.slice(0, 16) : "",
+      price_per_m2: event.price_per_m2 || "",
+      image: null,
+      square_id: event.square_id || event.square?.id || "",
+    });
+    setModalType('edit');
     setShowModal(true);
+    // Optionally clear error state if you add error handling
   };
 
   const handleDeleteEvent = async (event) => {
     if (window.confirm(`Opravdu smazat akci: ${event.name}?`)) {
-      await apiEvent.deleteEvent(event.id);
+      await apiEvents.deleteEvent(event.id);
       fetchEvents();
     }
   };
 
   const handleConfirmDelete = async () => {
     if (selectedEvent) {
-      await apiEvent.deleteEvent(selectedEvent.id);
+      await apiEvents.deleteEvent(selectedEvent.id);
       setShowModal(false);
       fetchEvents();
     }
   };
 
-  const handleRedirectToMap = async (event) => {
+  const handleRedirectToMap = (event) => {
     navigate(`/manage/events/map/${event.id}`);
   };
+
+  // Set dayjs locale to Czech
+  useEffect(() => {
+    dayjs.locale("cs");
+  }, []);
 
   // Upravený renderModalContent s formulářem
   const renderModalContent = () => {
@@ -177,7 +211,6 @@ function Events() {
           <Text><strong>Název:</strong> {selectedEvent.name}</Text>
           <Text><strong>Popis:</strong> {selectedEvent.description || "—"}</Text>
           <Text><strong>Náměstí:</strong> {selectedEvent.square?.name || "Neznámé"}</Text>
-          <Text><strong>Město:</strong> {selectedEvent.square?.city || "—"}</Text>
           <Text><strong>Začátek:</strong> {new Date(selectedEvent.start).toLocaleString()}</Text>
           <Text><strong>Konec:</strong> {new Date(selectedEvent.end).toLocaleString()}</Text>
           <Group mt="md">
@@ -207,7 +240,7 @@ function Events() {
             />
             <TextInput
               label="Začátek"
-              type="datetime-local"
+              type="date"
               name="start"
               value={formState.start}
               onChange={handleFormChange}
@@ -215,7 +248,7 @@ function Events() {
             />
             <TextInput
               label="Konec"
-              type="datetime-local"
+              type="date"
               name="end"
               value={formState.end}
               onChange={handleFormChange}
@@ -297,142 +330,267 @@ function Events() {
     }
   };
 
+  // Squares for filter
+  const squareOptions = useMemo(() => {
+    if (!Array.isArray(squares)) return [];
+    return squares.map(sq => ({
+      value: String(sq.id),
+      label: `${sq.name} (${sq.city})`
+    }));
+  }, [squares]);
+
+  // Filtering logic update
+  const filteredEvents = useMemo(() => {
+    let data = Array.isArray(events) ? events : [];
+    if (query) {
+      const q = query.toLowerCase();
+      data = data.filter(
+        e =>
+          e.name?.toLowerCase().includes(q) ||
+          e.location?.toLowerCase().includes(q) ||
+          String(e.id).includes(q) ||
+          e.status?.toLowerCase().includes(q)
+      );
+    }
+    if (selectedStatus.length > 0) {
+      data = data.filter(e => selectedStatus.includes(e.status));
+    }
+    if (selectedSquareIds.length > 0) {
+      data = data.filter(e =>
+        selectedSquareIds.includes(String(e.square_id || e.square?.id))
+      );
+    }
+    // Začátek (start) date filter: show only events where start date (YYYY-MM-DD) matches the filter
+    if (startDateRange[0]) {
+      data = data.filter(e =>
+        e.start && dayjs(e.start).format("YYYY-MM-DD") === startDateRange[0]
+      );
+    }
+    // Konec (end) date filter: show only events where end date (YYYY-MM-DD) matches the filter
+    if (endDateRange[0]) {
+      data = data.filter(e =>
+        e.end && dayjs(e.end).format("YYYY-MM-DD") === endDateRange[0]
+      );
+    }
+    return data;
+  }, [events, query, selectedStatus, selectedSquareIds, startDateRange, endDateRange]);
+
+  // Show all fields in the table, based on EventSerializer in backend/booking/serializers.py
   const columns = [
-    { accessor: "id", title: "#", sortable: true },
-    { accessor: "name", title: "Název", sortable: true },
+    { accessor: "id", title: "#", sortable: true, width: "4%" },
+    {
+      accessor: "name",
+      title: "Název",
+      sortable: true,
+      width: "15%",
+      filter: (
+        <TextInput
+          label="Hledat název"
+          placeholder="Např. Trh, Koncert..."
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setQuery("")}>
+              <IconX size={14} />
+            </ActionIcon>
+          }
+          value={query}
+          onChange={e => setQuery(e.currentTarget.value)}
+        />
+      ),
+      filtering: query !== "",
+    },
     {
       accessor: "description",
       title: "Popis",
-      render: (row) =>
-        row.description || (
-          <Text c="dimmed" fs="italic">
-            Bez popisu
-          </Text>
-        ),
-    },
-    {
-      accessor: "square",
-      title: "Náměstí",
-      render: (row) =>
-        row.square?.name || (
-          <Text c="dimmed" fs="italic">
-            Neznámé
-          </Text>
-        ),
+      sortable: false,
+      width: "10%",
+      render: row => row.description || <Text c="dimmed" fs="italic">—</Text>,
     },
     {
       accessor: "start",
       title: "Začátek",
-      render: (row) => new Date(row.start).toLocaleString(),
       sortable: true,
+      width: "14%",
+      render: row => row.start ? dayjs(row.start, "YYYY-MM-DD").format("DD.MM.YYYY") : "—",
+      filter: (
+        <Group gap={4}>
+          <TextInput
+            type="date"
+            label="Datum"
+            value={startDateRange[0] || ""}
+            onChange={e => setStartDateRange([e.target.value || null, null])}
+            style={{ width: 140 }}
+          />
+          {startDateRange[0] && (
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setStartDateRange([null, null])}>
+              <IconX size={14} />
+            </ActionIcon>
+          )}
+        </Group>
+      ),
+      filtering: !!startDateRange[0],
     },
     {
       accessor: "end",
       title: "Konec",
-      render: (row) => new Date(row.end).toLocaleString(),
       sortable: true,
+      width: "14%",
+      render: row => row.end ? dayjs(row.end, "YYYY-MM-DD").format("DD.MM.YYYY") : "—",
+      filter: (
+        <Group gap={4}>
+          <TextInput
+            type="date"
+            label="Datum"
+            value={endDateRange[0] || ""}
+            onChange={e => setEndDateRange([e.target.value || null, null])}
+            style={{ width: 140 }}
+          />
+          {endDateRange[0] && (
+            <ActionIcon size="sm" variant="transparent" c="dimmed" onClick={() => setEndDateRange([null, null])}>
+              <IconX size={14} />
+            </ActionIcon>
+          )}
+        </Group>
+      ),
+      filtering: !!endDateRange[0],
+    },
+    {
+      accessor: "price_per_m2",
+      title: "Cena za m²",
+      sortable: true,
+      width: "9%",
+      render: row => row.price_per_m2 ? `${row.price_per_m2} Kč` : "—",
+    },
+    {
+      accessor: "square",
+      title: "Náměstí",
+      sortable: false,
+      width: "16%",
+      render: row => row.square?.name ? `${row.square.name}` : <Text c="dimmed" fs="italic">—</Text>,
+      filter: (
+        <MultiSelect
+          label="Filtrovat náměstí"
+          placeholder="Vyber náměstí"
+          data={squareOptions}
+          value={selectedSquareIds}
+          onChange={setSelectedSquareIds}
+          clearable
+          searchable
+          leftSection={<IconSearch size={16} />}
+          comboboxProps={{ withinPortal: false }}
+        />
+      ),
+      filtering: selectedSquareIds.length > 0,
+    },
+    {
+      accessor: "image",
+      title: "Obrázek",
+      sortable: false,
+      width: "11%",
+      render: row =>
+        row.image ? (
+          <img src={row.image} alt={row.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} />
+        ) : (
+          <Text c="dimmed" fs="italic">Žádný obrázek</Text>
+        ),
     },
     {
       accessor: "actions",
       title: "Akce",
+      width: "5.5%",
       render: (event) => (
-        <Group gap={4} wrap="nowrap" className="">
-          <Container className="d-flex">
-            <Row>
-              <Col className="p-0">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="green"
-                  onClick={() => handleShowEvent(event)}
-                >
-                  <IconEye size={16} />
-                </ActionIcon>
-              </Col>
-              <Col className="p-0">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="blue"
-                  onClick={() => handleEditEvent(event)}
-                >
-                  <IconEdit size={16} />
-                </ActionIcon>
-              </Col>
-            </Row>
-            <Row>
-              <Col className="p-0 pl-3">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="red"
-                  onClick={() => handleDeleteEvent(event)}
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Col>
-              <Col className="p-0 pl-3">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="red"
-                  onClick={() => handleRedirectToMap(event)}
-                >
-                  <IconMap size={16} />
-                </ActionIcon>
-              </Col>
-            </Row>
-          </Container>
-        </Group>
+        <Container>
+          <Row>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleShowEvent(event)}>
+                <IconEye size={16} />
+              </ActionIcon>
+            </Col>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="blue" onClick={() => handleEditEvent(event)}>
+                <IconEdit size={16} />
+              </ActionIcon>
+            </Col>
+          </Row>
+          <Row>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="green" onClick={() => handleRedirectToMap(event)} title="Mapa">
+                <IconMap size={16} />
+              </ActionIcon>
+            </Col>
+            <Col style={{ padding: 0, textAlign: "center", flexGrow: 0 }}>
+              <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDeleteEvent(event)}>
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Col>
+          </Row>
+        </Container>
+          
+          
+          
+          
       ),
     },
   ];
 
   return (
-    <Container
-      fluid
-      className="p-0 d-flex flex-column"
-      style={{ overflowX: "hidden", height: "100vh" }}
-    >
+    <Container fluid className="p-0 d-flex flex-column" style={{ overflowX: "hidden", height: "100vh" }}>
       <Row className="mx-0 flex-grow-1">
         <Col xs={2} className="px-0 bg-light" style={{ minWidth: 0 }}>
           <Sidebar />
         </Col>
-        <Col
-          xs={10}
-          className="px-0 bg-white d-flex flex-column"
-          style={{ minWidth: 0 }}
-        >
+        <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
             <h1>Akce</h1>
-            <Button leftSection={<IconPlus size={16} />} onClick={() => {
-              setModalType("edit");
-              setSelectedEvent(null);
-              setShowModal(true);
-            }}>
-              Přidat akci
-            </Button>
+            <Button component="a" href="/manage/events/create" leftSection={<IconPlus size={16} />}>Přidat akci</Button>
           </Group>
-
           <Table
-            data={events}
+            data={filteredEvents}
             columns={columns}
             fetching={fetching}
             withTableBorder
             borderRadius="md"
             highlightOnHover
             verticalAlign="center"
-            onQueryChange={setQuery}
+            titlePadding="4px 8px"
           />
-
           <Modal
-            opened={showModal}
-            onClose={() => setShowModal(false)}
+            show={showModal}
+            onHide={() => setShowModal(false)}
             title={modalType === "edit" && !selectedEvent ? "Přidat akci" : getModalTitle()}
             size="lg"
             centered
           >
-            {renderModalContent()}
+            {modalType === "view" ? (
+              <Modal.Body>
+                {selectedEvent && (
+                  <>
+                    <p><strong>ID:</strong> {selectedEvent.id}</p>
+                    <p><strong>Název:</strong> {selectedEvent.name}</p>
+                    <p><strong>Popis:</strong> {selectedEvent.description || "—"}</p>
+                    <p><strong>Náměstí:</strong> {selectedEvent.square?.name || "Neznámé"}</p>
+                    <p><strong>Začátek:</strong> {selectedEvent.start ? dayjs(selectedEvent.start).format("DD.MM.YYYY HH:mm") : "—"}</p>
+                    <p><strong>Konec:</strong> {selectedEvent.end ? dayjs(selectedEvent.end).format("DD.MM.YYYY HH:mm") : "—"}</p>
+                    <p><strong>Cena za m²:</strong> {selectedEvent.price_per_m2 ? `${selectedEvent.price_per_m2} Kč` : "—"}</p>
+                    <p><strong>Počet míst:</strong> {Array.isArray(selectedEvent.market_slots) ? selectedEvent.market_slots.length : "—"}</p>
+                    <p><strong>Produkty:</strong> {Array.isArray(selectedEvent.event_products) && selectedEvent.event_products.length > 0
+                      ? selectedEvent.event_products.map(p => p.name).join(", ")
+                      : "—"}</p>
+                    <p><strong>Obrázek:</strong> {selectedEvent.image ? <img src={selectedEvent.image} alt={selectedEvent.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} /> : "Žádný obrázek"}</p>
+                  </>
+                )}
+              </Modal.Body>
+            ) : (
+              <Modal.Body>
+                {renderModalContent()}
+              </Modal.Body>
+            )}
+            <Modal.Footer>
+              <BootstrapButton variant="secondary" onClick={() => setShowModal(false)}>Zavřít</BootstrapButton>
+              {modalType === "view" && (
+                <BootstrapButton variant="primary" onClick={() => { setShowModal(false); handleEditEvent(selectedEvent); }}>Upravit</BootstrapButton>
+              )}
+            </Modal.Footer>
           </Modal>
         </Col>
       </Row>

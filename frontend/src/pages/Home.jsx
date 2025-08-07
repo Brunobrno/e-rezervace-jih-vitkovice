@@ -10,14 +10,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
 import { useState, useEffect, useContext } from "react";
+import dayjs from "dayjs";
 
 import Table from "../components/Table";
 
 import { getReservations } from "../api/model/reservation"
 import { getOrders } from "../api/model/order"
 import { getServiceTickets } from "../api/model/ticket"
-
-import dayjs from "dayjs";
 
 
 function Home() {
@@ -126,7 +125,6 @@ function Home() {
     },
     { accessor: "status", title: "Stav", sortable: true },
     { accessor: "category", title: "Kategorie", sortable: true },
-    { accessor: "urgency", title: "Urgence", sortable: true },
     {
       accessor: "description",
       title: "Popis",
@@ -176,7 +174,6 @@ function Home() {
       <Text>Vytvořeno: {record.created_at.format("DD.MM.YYYY HH:mm")}</Text>
       <Text>Stav: {record.status}</Text>
       <Text>Kategorie: {record.category}</Text>
-      <Text>Urgence: {record.urgency}</Text>
       <Text>Popis: {record.description}</Text>
       <Group justify="end" mt="sm">
         <Button onClick={close} variant="light">Zavřít</Button>

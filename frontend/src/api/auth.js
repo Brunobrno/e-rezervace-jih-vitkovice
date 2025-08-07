@@ -37,7 +37,21 @@ axios_instance.interceptors.request.use((config) => {
   return config;
 });
 
-
+// Přidej globální response interceptor pro redirect na login při 401 s detail hláškou
+axios_instance.interceptors.response.use(
+  response => response,
+  error => {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      error.response.data &&
+      error.response.data.detail === "Nebyly zadány přihlašovací údaje."
+    ) {
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 // 🔄 Obnova access tokenu pomocí refresh cookie
 export const refreshAccessToken = async () => {

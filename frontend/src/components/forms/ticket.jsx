@@ -12,12 +12,10 @@ function TicketForm() {
   const { user } = useContext(UserContext) || {};
 
   const [categoryOptions, setCategoryOptions] = useState([]);
-  const [urgencyOptions, setUrgencyOptions] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
-    urgency: "",
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -29,10 +27,8 @@ function TicketForm() {
       try {
         const [categories, urgencies] = await Promise.all([
           fetchEnumFromSchemaJson("/api/service-tickets/", "get", "category"),
-          fetchEnumFromSchemaJson("/api/service-tickets/", "get", "urgency"),
         ]);
         setCategoryOptions(categories);
-        setUrgencyOptions(urgencies);
       } catch (err) {
         console.error("Chyba při načítání enum hodnot:", err);
         setError("Nepodařilo se načíst možnosti formuláře.");
@@ -66,7 +62,6 @@ function TicketForm() {
         title: "",
         description: "",
         category: "",
-        urgency: "",
       });
     } catch (err) {
       console.error(err);
@@ -123,23 +118,6 @@ function TicketForm() {
         >
           <option value="">Vyberte kategorii</option>
           {categoryOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Form.Select>
-      </Form.Group>
-
-      <Form.Group className="mb-3">
-        <Form.Label>Urgence</Form.Label>
-        <Form.Select
-          name="urgency"
-          value={formData.urgency}
-          onChange={handleChange}
-          required
-        >
-          <option value="">Vyberte urgenci</option>
-          {urgencyOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>

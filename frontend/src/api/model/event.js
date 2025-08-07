@@ -72,4 +72,5 @@ export default {
   getEventById,
   updateEvent,
   deleteEvent,
+  createEvent,
 };

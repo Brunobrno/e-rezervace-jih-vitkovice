@@ -19,8 +19,7 @@ psycopg[binary] #PostgreSQL database adapter for the Python
 
 django-filter
 
-faker #generates fake data for testing purposes
-
+django-constance #allows you to store and manage settings of page in the Django admin interface!!!!
 
 # -- OBJECT STORAGE -- 
 Pillow #adds image processing capabilities to your Python interpreter
@@ -70,6 +69,7 @@ django-tinymce
 django-cors-headers #csfr
 
 celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčistit cache atd.)
+django-celery-beat #slouží k plánování úkolů pro Celery
 
 
 # -- EDITING photos, gifs, videos --
@@ -83,3 +83,5 @@ celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčis
 weasyprint #tvoření PDFek z html dokumentu + css styly
 
 ## -- MISCELLANEOUS --
+
+faker #generates fake data for testing purposes

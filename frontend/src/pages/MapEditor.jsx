@@ -51,7 +51,9 @@ function MapEditor() {
           w: slot.width || 1,
           h: slot.height || 1,
           locked: slot.locked || false,
-          status: slot.status
+          status: slot.status,
+          base_size: slot.base_size ?? undefined,
+          available_extension: slot.available_extension ?? 0,
         }));
 
         setReservations(loadedReservations);
@@ -100,9 +102,9 @@ function MapEditor() {
         // Připrav data ve formátu API
         const data = {
           event: eventId,
-          status: res.status || "active", // nebo jiný výchozí stav
-          base_size: (res.w || 1) * (res.h || 1), // pokud máš pole base_size
-          available_extension: 0, // nebo něco rozumného, pokud nemáš
+          status: res.status || "active",
+          base_size: res.base_size ?? (res.w || 1) * (res.h || 1),
+          available_extension: res.available_extension ?? 0,
           x: res.x,
           y: res.y,
           width: res.w,
@@ -167,7 +169,7 @@ function MapEditor() {
         <Col sm={6} md={4}>
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Seznam rezervací</h5>
+              <h5 className="mb-0">Seznam slotu</h5>
               <span className="badge bg-info text-white">
                 {reservations.length}
               </span>
@@ -190,6 +192,50 @@ function MapEditor() {
                   </div>
                   <div className="text-muted mt-1">
                     [{res.x},{res.y}] → [{res.x + res.w - 1},{res.y + res.h - 1}]
+                  </div>
+                  {/* Editable fields */}
+                  <div className="mt-2">
+                    <label className="form-label mb-1" style={{ fontSize: "0.95em" }}>
+                      Základní velikost (m²):
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        style={{ width: "100px", display: "inline-block", marginLeft: "8px" }}
+                        value={res.base_size ?? ""}
+                        min={0}
+                        onChange={e => {
+                          const value = e.target.value === "" ? undefined : Number(e.target.value);
+                          setReservations(prev =>
+                            prev.map((r, idx) =>
+                              idx === i ? { ...r, base_size: value } : r
+                            )
+                          );
+                        }}
+                        placeholder="volitelné"
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-2">
+                    <label className="form-label mb-1" style={{ fontSize: "0.95em" }}>
+                      Možnost rozšíření (m²):
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        style={{ width: "100px", display: "inline-block", marginLeft: "8px" }}
+                        value={res.available_extension ?? ""}
+                        min={0}
+                        required
+                        onChange={e => {
+                          const value = Number(e.target.value);
+                          setReservations(prev =>
+                            prev.map((r, idx) =>
+                              idx === i ? { ...r, available_extension: value } : r
+                            )
+                          );
+                        }}
+                        placeholder="povinné"
+                      />
+                    </label>
                   </div>
                 </ListGroup.Item>
               ))}

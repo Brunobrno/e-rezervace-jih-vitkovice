@@ -101,6 +101,12 @@ class Order(SoftDeleteModel):
     def save(self, *args, **kwargs):
         self.full_clean()
 
+        if self.status == "cancelled":
+            self.reservation.status = "cancelled"
+        else:
+            self.reservation.status = "reserved"
+        self.reservation.save()
+
         # if self.reservation:
         #     self.price_to_pay = self.reservation.final_price
         

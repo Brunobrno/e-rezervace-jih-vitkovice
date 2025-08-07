@@ -1,4 +1,3 @@
-
 # Renewed populate_db.py: fills all models with relations and validation
 import os
 import django
@@ -171,7 +170,7 @@ def create_market_slots(events, max_slots=8):
         for _ in range(count):
             slot = MarketSlot(
                 event=event,
-                status=random.choice(["empty", "blocked", "taken"]),
+                status=random.choice(["allowed", "blocked"]),  # <-- fix status values
                 base_size=round(random.uniform(2, 10), 2),
                 available_extension=round(random.uniform(0, 5), 2),
                 x=random.randint(0, 30),
@@ -214,6 +213,7 @@ def create_reservations(users, slots, event_products, max_per_user=2):
             base_size = Decimal(str(slot.base_size))
             price_per_m2 = slot.price_per_m2
             final_price = (price_per_m2 * (base_size + Decimal(str(used_extension))) * Decimal(duration_days)).quantize(Decimal("0.01"))
+            price = final_price  # <-- set price field as well
             if final_price >= Decimal("1000000.00"):
                 continue
             if user.user_reservations.count() >= 5:
@@ -221,13 +221,14 @@ def create_reservations(users, slots, event_products, max_per_user=2):
             try:
                 res = Reservation(
                     event=event,
-                    marketSlot=slot,
+                    market_slot=slot,  # <-- fix field name
                     user=user,
                     used_extension=used_extension,
                     reserved_from=start,
                     reserved_to=end,
                     status="reserved",
                     final_price=final_price,
+                    price=price,  # <-- set price field
                 )
                 res.full_clean()
                 res.save()
@@ -271,7 +272,6 @@ def create_service_tickets(users, n=10):
             user=user,
             status=random.choice(["new", "in_progress", "resolved", "closed"]),
             category=random.choice(["tech", "reservation", "payment", "account", "content", "suggestion", "other"]),
-            urgency=random.choice(["low", "medium", "high", "critical"]),
         )
         try:
             ticket.full_clean()

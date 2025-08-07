@@ -8,18 +8,22 @@ from account.models import CustomUser
 from booking.models import Event, MarketSlot, Reservation
 from .models import Order
 
+from decimal import Decimal
 
-#počítaní ceny!!!
+
+#počítaní ceny!!! (taky validní)
 class SlotPriceInputSerializer(serializers.Serializer):
     slot_id = serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all())
     used_extension = serializers.FloatField(min_value=0)
 
-#počítaní ceny!!!
+#počítaní ceny!!! (počítá správně!!)
 class PriceCalculationSerializer(serializers.Serializer):
-    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
+    slot = serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all())
     reserved_from = RoundedDateTimeField()
     reserved_to = RoundedDateTimeField()
-    slots = SlotPriceInputSerializer(many=True)
+    used_extension = serializers.FloatField(min_value=0, required=False)
+
+    final_price = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
 
     def validate(self, data):
         from django.utils.timezone import make_aware, is_naive
@@ -33,15 +37,33 @@ class PriceCalculationSerializer(serializers.Serializer):
             reserved_to = make_aware(reserved_to)
 
         duration = reserved_to - reserved_from
-        days = duration.days
-
-        if days not in (1, 7, 30):
-            raise serializers.ValidationError("Délka rezervace musí být 1, 7 nebo 30 dní.")
+        days = duration.days + 1  # zahrnujeme první den
 
         data["reserved_from"] = reserved_from
         data["reserved_to"] = reserved_to
         data["duration"] = days
+
+        market_slot = data["slot"]
+        event = market_slot.event if hasattr(market_slot, "event") else None
+
+        if not event or not event.square:
+            raise serializers.ValidationError("Slot musí být přiřazen k akci, která má náměstí.")
+
+        # Get width and height from market_slot
+        area = market_slot.width * market_slot.height
+
+        price_per_m2 = market_slot.price_per_m2 if market_slot.price_per_m2 and market_slot.price_per_m2 > 0 else event.price_per_m2
+
+        if not price_per_m2 or price_per_m2 < 0:
+            raise serializers.ValidationError("Cena za m² není dostupná nebo je záporná.")
+
+        # Calculate final price using slot area and reserved days
+        final_price = Decimal(area) * Decimal(price_per_m2) * Decimal(days)
+        final_price = final_price.quantize(Decimal("0.01"))
+
+        data["final_price"] = final_price
         return data
+
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -52,10 +74,17 @@ class OrderSerializer(serializers.ModelSerializer):
     reservation = ReservationSerializer(read_only=True)
 
     user_id = serializers.PrimaryKeyRelatedField(
-        queryset=CustomUser.objects.all(), source="user", write_only=True
+        queryset=CustomUser.objects.all(), source="user", write_only=True, required=False, allow_null=True
     )
     reservation_id = serializers.PrimaryKeyRelatedField(
         queryset=Reservation.objects.all(), source="reservation", write_only=True
+    )
+
+    #FIXME: This field is used to store the price to pay, which can be calculated from the reservation.
+    # It should not be deleted from POST/PUT, as it can be derived from the reservation.
+    # its better to perform calculation again with the same serializer above!!!
+    price_to_pay = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
     )
 
     class Meta:
@@ -76,11 +105,15 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "order_number", "status", "price_to_pay", "payed_at"]
         
         extra_kwargs = {
-            "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": True},
+            "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": False},
             "reservation_id": {"help_text": "ID rezervace, ke které se objednávka vztahuje", "required": True},
             "status": {"help_text": "Stav objednávky (např. new / paid / cancelled)", "required": False},
             "note": {"help_text": "Poznámka k objednávce (volitelné)", "required": False},
-            "price_to_pay": {"help_text": "Celková cena, kterou má uživatel zaplatit. Pokud není zadána, převezme se z rezervace.", "required": False},
+            "price_to_pay": {
+                "help_text": "Celková cena, kterou má uživatel zaplatit. Pokud není zadána, převezme se z rezervace.",
+                "required": False,
+                "allow_null": True,
+            },
             "payed_at": {"help_text": "Datum a čas, kdy byla objednávka zaplacena", "required": False},
         }
 
@@ -108,6 +141,20 @@ class OrderSerializer(serializers.ModelSerializer):
             if self.instance is None and hasattr(reservation, "order"):
                 errors["reservation"] = "Tato rezervace již má přiřazenou objednávku."
 
+
+        user = data.get("user")
+        request_user = self.context["request"].user if "request" in self.context else None
+
+        # If user is not specified, use the logged-in user
+        if user is None and request_user is not None:
+            user = request_user
+            data["user"] = user
+
+        # If user is specified and differs from logged-in user, check permissions
+        if user is not None and request_user is not None and user != request_user:
+            if request_user.role not in ["admin", "cityClerk", "squareManager"]:
+                errors["user"] = "Pouze administrátor, úředník nebo správce tržiště může vytvářet rezervace pro jiné uživatele."
+
         if errors:
             raise serializers.ValidationError(errors)
 
@@ -128,5 +175,4 @@ class OrderSerializer(serializers.ModelSerializer):
 
         if old_status != "payed" and new_status == "payed":
             validated_data["payed_at"] = timezone.now()
-
         return super().update(instance, validated_data)

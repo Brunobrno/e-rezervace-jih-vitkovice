@@ -289,7 +289,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'corsheaders',#cors
+    'corsheaders', #cors
+
+    'django_celery_beat', #slouží k plánování úkolů pro Celery
 
     
     #'chat.apps.GlobalChatCheck', #tohle se spusti při každé django inicializaci (migration, createmigration, runserver)
@@ -305,6 +307,10 @@ INSTALLED_APPS = [
     'rest_framework_api_key',
 
     'drf_spectacular', #rest framework, grafické zobrazení
+
+    #Nastavení stránky
+    #'constance', 
+    #'constance.backends.database',
 
     'django.contrib.sitemaps',
 
@@ -399,27 +405,51 @@ else:
 
 #-------------------------------------CELERY 📅------------------------------------
 
-if not DEBUG:
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_TIMEZONE = 'Europe/Prague'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+try:
+    import redis
+    # test connection
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    r.ping()
+except Exception:
+    CELERY_BROKER_URL = 'memory://'
 
-    from celery.schedules import crontab
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Europe/Prague'
 
-    CELERY_BEAT_SCHEDULE = {
-        'hard_delete_soft_deleted_monthly': {
-            'task': 'account.tasks.hard_delete_soft_deleted_records',
-            'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
-        },
-        'delete_old_reservations_monthly': {
-            'task': 'account.tasks.delete_old_reservations',
-            'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
-        },
-    }
-else:
-    # Nebo nastav dummy broker, aby se úlohy neodesílaly
-    CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+# if DEBUG:
+#     CELERY_BROKER_URL = 'redis://localhost:6379/0'
+#     try:
+#         import redis
+#         # test connection
+#         r = redis.Redis(host='localhost', port=6379, db=0)
+#         r.ping()
+#     except Exception:
+#         CELERY_BROKER_URL = 'memory://'
+
+#     CELERY_ACCEPT_CONTENT = ['json']
+#     CELERY_TASK_SERIALIZER = 'json'
+#     CELERY_TIMEZONE = 'Europe/Prague'
+
+#     CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+    # from celery.schedules import crontab
+
+    # CELERY_BEAT_SCHEDULE = {
+    #     'hard_delete_soft_deleted_monthly': {
+    #         'task': 'trznice.tasks.hard_delete_soft_deleted_records',
+    #         'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
+    #     },
+    #     'delete_old_reservations_monthly': {
+    #         'task': 'account.tasks.delete_old_reservations',
+    #         'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
+    #     },
+    # }
+# else:
+#     # Nebo nastav dummy broker, aby se úlohy neodesílaly
+#     CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
 
 #-------------------------------------END CELERY 📅------------------------------------
 
@@ -459,8 +489,14 @@ AUTH_USER_MODEL = 'account.CustomUser' #class CustomUser(AbstractUser) best prac
 
 #--------------------------------END DATABASE 💾---------------------------------
 
+#--------------------------------------PAGE SETTINGS -------------------------------------
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
-
+# Configuration for Constance(variables)
+CONSTANCE_CONFIG = {
+    'BITCOIN_WALLET': ('', 'Public BTC wallet address'),
+    'SUPPORT_EMAIL': ('admin@example.com', 'Support email'),
+}
 
 #--------------------------------------EMAIL 📧--------------------------------------
 
@@ -858,8 +894,3 @@ SPECTACULAR_DEFAULTS: Dict[str, Any] = {
     'OAUTH2_REFRESH_URL': None,
     'OAUTH2_SCOPES': None,
 }
-
-# Celery - Pavel
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"

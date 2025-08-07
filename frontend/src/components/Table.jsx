@@ -1,36 +1,10 @@
-import { Nav, Modal } from "react-bootstrap";
-import logo from "/img/logo.png";
 import sortBy from "lodash/sortBy";
-import {
-  ActionIcon,
-  Button,
-  Checkbox,
-  MultiSelect,
-  Stack,
-  TextInput,
-  Anchor,
-  Box,
-  Group,
-  Text,
-} from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
-import { useDebouncedValue } from "@mantine/hooks";
-import {
-  IconSearch,
-  IconX,
-  IconEye,
-  IconEdit,
-  IconTrash,
-  IconPlus,
-  IconCornerDownLeft,
-} from "@tabler/icons-react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 
 
@@ -45,6 +19,11 @@ function Table({
   initialQuery = "",
   withGlobalSearch = true,
   withActionsColumn = true,
+  withTableBorder,
+  borderRadius,
+  highlightOnHover,
+  verticalAlign,
+  titlePadding = "6px 8px", // default smaller padding
   ...props
 }) {
   const [sortStatus, setSortStatus] = useState({
@@ -54,7 +33,14 @@ function Table({
   
   const [records, setRecords] = useState([]);
   const [query, setQuery] = useState(initialQuery);
-  const [debouncedQuery] = useDebouncedValue(query, 200);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [query]);
   const [filters, setFilters] = useState({});
   // Remove filter edit state, always show filter fields
   
@@ -158,109 +144,79 @@ function Table({
     manualSorting: true,
   });
 
-  // Prepare filter row for all columns except actions and image fields (for table head)
-  const filterRowTds = withGlobalSearch
-    ? table.getAllLeafColumns().map(col => {
-        const isImage = (col.id && typeof col.id === 'string' && /image|img|photo|picture/i.test(col.id)) ||
-          (col.columnDef.header && typeof col.columnDef.header === 'string' && /image|img|photo|picture/i.test(col.columnDef.header));
-        if (col.id && col.id !== 'actions' && !isImage) {
-          return (
-            <th key={col.id} style={{ padding: '4px 8px', background: 'var(--mantine-color-gray-0)', borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-              <TextInput
-                placeholder={`Search ${col.columnDef.header}`}
-                value={filters[col.id] || ''}
-                onChange={e => {
-                  const value = e.currentTarget.value;
-                  setFilters(f => ({ ...f, [col.id]: value }));
-                }}
-                leftSection={<IconSearch size={16} />}
-                rightSection={
-                  filters[col.id] ? (
-                    <ActionIcon
-                      size="sm"
-                      variant="transparent"
-                      color="dimmed"
-                      onClick={() => setFilters(f => ({ ...f, [col.id]: '' }))}
-                      title="Clear filter"
-                    >
-                      <IconX size={14} />
-                    </ActionIcon>
-                  ) : null
-                }
-                style={{ minWidth: 120, width: '100%' }}
-              />
-            </th>
-          );
-        } else {
-          return (
-            <th key={col.id || Math.random()} style={{ minWidth: 40, background: 'var(--mantine-color-gray-0)', borderBottom: '1px solid var(--mantine-color-gray-3)' }} />
-          );
-        }
-      })
-    : null;
-
   return (
-    <Box className="d-flex flex-column h-100" style={{ minHeight: 400 }}>
-      <Box style={{ overflowX: 'auto', flex: 1 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--mantine-color-body)', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <thead>
+    <div className="custom-table-wrapper">
+      <table
+        className={`custom-table${withTableBorder ? " table-bordered" : ""}`}
+        style={{
+          borderRadius,
+          width: "100%",
+          borderCollapse: "separate",
+          borderSpacing: 0,
+          fontSize: "0.9rem",
+          tableLayout: "fixed",
+        }}
+      >
+        <colgroup>
+          {columns.map(col => (
+            <col
+              key={col.accessor}
+              style={{ width: col.width || "auto" }}
+            />
+          ))}
+        </colgroup>
+
+        <thead>
+          <tr>
+            {columns.map((col, idx) => (
+              <th
+                key={col.accessor || idx}
+                style={{
+                  padding: titlePadding,
+                  textAlign: col.textAlign || "left",
+                  minWidth: col.minWidth || undefined,
+                  maxWidth: col.maxWidth || undefined,
+                  // ...other style...
+                }}
+              >
+                {col.title}
+                {col.filter && <div style={{ marginTop: 2 }}>{col.filter}</div>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.length === 0 ? (
             <tr>
-              {table.getHeaderGroups()[0].headers.map(header => (
-                <th
-                  key={header.id}
-                  style={{
-                    padding: '12px 8px',
-                    background: 'var(--mantine-color-gray-0)',
-                    borderBottom: '1px solid var(--mantine-color-gray-3)',
-                    fontWeight: 600,
-                    fontSize: 15,
-                    textAlign: 'left',
-                  }}
-                  onClick={() => {
-                    if (header.column.getCanSort()) {
-                      const desc = sortStatus.columnAccessor === header.column.id ? sortStatus.direction !== 'desc' : false;
-                      setSortStatus({ columnAccessor: header.column.id, direction: desc ? 'desc' : 'asc' });
-                    }
-                  }}
-                  role={header.column.getCanSort() ? 'button' : undefined}
-                  tabIndex={header.column.getCanSort() ? 0 : undefined}
-                  aria-sort={sortStatus.columnAccessor === header.column.id ? (sortStatus.direction === 'desc' ? 'descending' : 'ascending') : undefined}
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {header.column.getCanSort() && (
-                    <IconCornerDownLeft size={28} style={{ marginLeft: 6, opacity: 0.5, transform: sortStatus.columnAccessor === header.column.id && sortStatus.direction === 'desc' ? 'rotate(180deg)' : undefined }} />
-                  )}
-                </th>
-              ))}
+              <td colSpan={table.getAllLeafColumns().length} style={{
+                textAlign: 'center',
+                padding: 24,
+                color: '#888',
+              }}>
+                No data
+              </td>
             </tr>
-            {withGlobalSearch && (
-              <tr>
-                {filterRowTds}
+          ) : (
+            table.getRowModel().rows.map(row => (
+              <tr key={row.id} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id} style={{
+                    padding: '10px 8px',
+                    fontSize: 15,
+                    width: cell.column.getSize(),
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
               </tr>
-            )}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td colSpan={table.getAllLeafColumns().length} style={{ textAlign: 'center', padding: 24, color: '#888' }}>
-                  No data
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map(row => (
-                <tr key={row.id} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} style={{ padding: '10px 8px', fontSize: 15 }}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </Box>
-    </Box>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 from django.contrib.admin import AdminSite
 from django.contrib import admin
-# from booking.models import Event, Reservation, Space  # add all your models here
+from django_celery_beat.models import PeriodicTask, IntervalSchedule, CrontabSchedule, SolarSchedule, ClockedSchedule
 
 
 class RoleBasedAdminSite(AdminSite):
@@ -35,42 +35,14 @@ class RoleBasedAdminSite(AdminSite):
 
         return app_list
 
-    # def get_app_list(self, request):
-    #     app_dict = self._build_app_dict(request)
-
-    #     # Return custom ordered app/model list
-    #     return [
-    #         {
-    #             'name': 'Account',
-    #             'app_label': 'your_app_name',
-    #             'models': [
-    #                 app_dict['your_app_name']['models_dict']['User'],
-    #             ],
-    #         },
-    #         {
-    #             'name': 'Booking',
-    #             'app_label': 'your_app_name',
-    #             'models': [
-    #                 app_dict['your_app_name']['models_dict']['Event'],
-    #                 app_dict['your_app_name']['models_dict']['MarketSlot'],
-    #                 app_dict['your_app_name']['models_dict']['Reservation'],
-    #                 app_dict['your_app_name']['models_dict']['Square'],
-    #             ],
-    #         },
-    #         {
-    #             'name': 'Product',
-    #             'app_label': 'your_app_name',
-    #             'models': [
-    #                 app_dict['your_app_name']['models_dict']['EventProduct'],
-    #                 app_dict['your_app_name']['models_dict']['Product'],
-    #             ],
-    #         },
-    #     ]
 
 # Initialize the custom admin site
 custom_admin_site = RoleBasedAdminSite(name='custom_admin')
 
+
 # # Register your models to the custom admin site
-# custom_admin_site.register(Event)
-# custom_admin_site.register(Reservation)
-# custom_admin_site.register(Space)
+custom_admin_site.register(PeriodicTask)
+custom_admin_site.register(IntervalSchedule)
+custom_admin_site.register(CrontabSchedule)
+custom_admin_site.register(SolarSchedule)
+custom_admin_site.register(ClockedSchedule)

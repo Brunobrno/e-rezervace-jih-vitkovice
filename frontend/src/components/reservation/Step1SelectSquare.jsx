@@ -5,7 +5,6 @@ import squareAPI from '../../api/model/square';
 const Step1SelectSquare = ({ data, setData, next }) => {
   const [squares, setSquares] = useState([]);
   const [loading, setLoading] = useState(true);
-  console.log("Data: ", data);
 
   useEffect(() => {
     squareAPI.getSquares()

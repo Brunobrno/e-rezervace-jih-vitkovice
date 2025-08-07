@@ -22,10 +22,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 #NEMĚNIT CUSTOM SBÍRANÍ COOKIE TOKENU
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
-        print("Cookies:", request.COOKIES)
 
         raw_token = request.COOKIES.get('access_token')
-        print("Token z cookie:", raw_token)
 
         if not raw_token:
             return None
