@@ -4,7 +4,7 @@ from trznice.admin import custom_admin_site
 from .models import Order
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "order_number", "status", "user", "price_to_pay", "reservation")
+    list_display = ("id", "order_number", "status", "user", "price_to_pay", "reservation", "is_deleted")
     list_filter = ("user", "status", "reservation", "is_deleted")
     search_fields = ("order_number", "user__email", "reservation__event")
     ordering = ("id",)

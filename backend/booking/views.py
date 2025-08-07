@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 
-from .models import Event, Reservation, MarketSlot, Square
-from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer
+from .models import Event, Reservation, MarketSlot, Square, ReservationCheck
+from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationCheckSerializer
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from account.permissions import *
 
-from .tasks import test_celery_task
+from account.tasks import send_email_verification_task
 
 
 @extend_schema(
@@ -48,7 +48,7 @@ class SquareViewSet(viewsets.ModelViewSet):
     permission_classes = [RoleAllowed("admin", "squareManager")]
 
     def get_queryset(self):
-        test_celery_task.delay()
+        send_email_verification_task.delay(1)
         return super().get_queryset()
     
 
@@ -163,3 +163,22 @@ class ReservationViewSet(viewsets.ModelViewSet):
             user = self.request.user
             if getattr(user, "role", None) not in ["admin", "clerk"]:
                 raise PermissionDenied("Toto prodejní místo je zablokované.")
+
+
+@extend_schema(
+    tags=["Reservation Checks"],
+    description="Správa kontrol rezervací – vytváření záznamů o kontrole a jejich výpis."
+)
+class ReservationCheckViewSet(viewsets.ModelViewSet):
+    queryset = ReservationCheck.objects.select_related("reservation", "checker").all().order_by("-checked_at")
+    serializer_class = ReservationCheckSerializer
+    permission_classes = [OnlyRolesAllowed("admin", "checker")]  # Only checkers & admins can use it
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "role") and user.role == "checker":
+            return self.queryset.filter(checker=user)  # Checkers only see their own logs
+        return self.queryset
+
+    def perform_create(self, serializer):
+        serializer.save()

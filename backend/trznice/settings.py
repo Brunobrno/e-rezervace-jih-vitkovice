@@ -401,7 +401,10 @@ else:
 
 #-------------------------------------CELERY 📅------------------------------------
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+
 try:
     import redis
     # test connection
@@ -410,11 +413,11 @@ try:
 except Exception:
     CELERY_BROKER_URL = 'memory://'
 
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Europe/Prague'
+CELERY_ACCEPT_CONTENT = os.getenv("CELERY_ACCEPT_CONTENT")
+CELERY_TASK_SERIALIZER = os.getenv("CELERY_TASK_SERIALIZER")
+CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE")
 
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER")
 # if DEBUG:
 #     CELERY_BROKER_URL = 'redis://localhost:6379/0'
 #     try:
@@ -500,12 +503,12 @@ else:
 
 EMAIL_HOST = os.getenv("EMAIL_HOST_DEV")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT_DEV", 465))
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = False
+EMAIL_USE_TLS = True           # ❌ Keep this OFF when using SSL
+EMAIL_USE_SSL = False          # ✅ Must be True for port 465
 EMAIL_HOST_USER = os.getenv("EMAIL_USER_DEV")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_USER_PASSWORD_DEV")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 1
+EMAIL_TIMEOUT = 10
 
 print("---------EMAIL----------\nEMAIL_HOST =", os.getenv("EMAIL_HOST_DEV"))
 print("EMAIL_PORT =", os.getenv("EMAIL_PORT_DEV"))
@@ -884,8 +887,3 @@ SPECTACULAR_DEFAULTS: Dict[str, Any] = {
     'OAUTH2_REFRESH_URL': None,
     'OAUTH2_SCOPES': None,
 }
-
-# Celery - Pavel
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"

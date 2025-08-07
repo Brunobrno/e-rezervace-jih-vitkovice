@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Event, Reservation, MarketSlot, Square
+from .models import Event, Reservation, MarketSlot, Square, ReservationCheck
 from .forms import ReservationAdminForm
 from trznice.admin import custom_admin_site
 
@@ -57,13 +57,13 @@ custom_admin_site.register(Event, EventAdmin)
 class ReservationAdmin(admin.ModelAdmin):
     form = ReservationAdminForm
 
-    list_display = ("id", "event", "user", "reserved_from", "reserved_to", "status", "created_at", "is_deleted")
+    list_display = ("id", "event", "user", "reserved_from", "reserved_to", "status", "created_at", "is_checked", "is_deleted")
     list_filter = ("status", "user", "event", "is_deleted")
     search_fields = ("user__username", "user__email", "event__name", "note")
     ordering = ("-created_at",)
     filter_horizontal = ['event_products']  # adds a nice widget for selection
 
-    base_fields = ['event', 'marketSlot', 'user', 'status', 'used_extension', 'event_products', 'reserved_to', 'reserved_from', 'final_price', 'note'] 
+    base_fields = ['event', 'marketSlot', 'user', 'status', 'used_extension', 'event_products', 'reserved_to', 'reserved_from', 'final_price', 'note', "is_checked", "last_checked_at", "last_checked_by"] 
 
     def get_fields(self, request, obj=None):
         fields = self.base_fields.copy()
@@ -107,3 +107,29 @@ class MarketSlotAdmin(admin.ModelAdmin):
         return qs
 
 custom_admin_site.register(MarketSlot, MarketSlotAdmin)
+
+
+class ReservationCheckAdmin(admin.ModelAdmin):
+    list_display = ("id", "reservation", "checker", "checked_at", "is_deleted")
+    list_filter = ("reservation", "checker", "is_deleted")
+    search_fields = ("checker__email", "reservation__event__name")
+    ordering = ("-checked_at",)
+
+    base_fields = ["reservation", "checker", "checked_at"] 
+    
+    readonly_fields = ("id", "checked_at")  # zde
+
+    def get_fields(self, request, obj=None):
+        fields = self.base_fields.copy()
+        if request.user.role == "admin":
+            fields += ['is_deleted', 'deleted_at']
+        return fields
+    
+    def get_queryset(self, request):
+        # Use the all_objects manager to show even soft-deleted entries
+        if request.user.role == "admin":
+            qs = self.model.all_objects.all()
+        else:
+            qs = self.model.objects.all()
+        return qs
+custom_admin_site.register(ReservationCheck, ReservationCheckAdmin)
