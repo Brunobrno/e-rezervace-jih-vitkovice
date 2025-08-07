@@ -23,12 +23,11 @@ from .models import Order
     description=(
         "Správa objednávek – vytvoření, úprava a výpis. Filtrování podle rezervace, uživatele atd.\n\n"
         "🔍 **Fulltextové vyhledávání (`?search=`)** prohledává:\n"
-        "- číslo objednávky (`order_number`)\n"
         "- poznámku (`note`)\n"
         "- e-mail uživatele (`user.email`)\n"
         "- jméno a příjmení uživatele (`user.first_name`, `user.last_name`)\n"
         "- poznámku rezervace (`reservation.note`)\n\n"
-        "**Příklady:** `?search=OBJ-123456`, `?search=jan.novak@example.com`, `?search=poznámka`"
+        "**Příklady:** `?search=jan.novak@example.com`, `?search=poznámka`"
     )
 )
 class OrderViewSet(viewsets.ModelViewSet):
@@ -38,7 +37,6 @@ class OrderViewSet(viewsets.ModelViewSet):
     filterset_class = OrderFilter
     ordering_fields = ["created_at", "price_to_pay", "payed_at"]
     search_fields = [
-        "order_number",
         "note",
         "user__email",
         "user__first_name",

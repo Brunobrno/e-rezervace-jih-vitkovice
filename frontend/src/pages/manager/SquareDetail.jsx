@@ -41,9 +41,6 @@ export default function SquareDesigner() {
   const cellWidth = safeWidth / grid_cols;
   const cellHeight = safeHeight / grid_rows;
 
-  // Demo: select N cells (for preview only)
-  const [selectedCells, setSelectedCells] = useState([]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((old) => ({ ...old, [name]: value }));
@@ -101,7 +98,6 @@ export default function SquareDesigner() {
     setImage(null);
     setImageUrl("");
     setStep(1);
-    setSelectedCells([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -149,13 +145,12 @@ export default function SquareDesigner() {
                     }}
                     reservations={[]}
                     static={true}
-                    backgroundImage={imageUrl}
+                    backgroundImage={imageUrl} // <-- pass imageUrl here
                   />
                 )}
               </div>
               <div className="mt-2 mb-4">
                 <div>Každá buňka: <b>{cellWidth.toFixed(2)}m × {cellHeight.toFixed(2)}m</b> ({cellArea} m²)</div>
-                <div>Vybráno buněk: <b>{selectedCells.length}</b></div>
                 <div>Počet řádků: <b>{grid_rows}</b> | Počet sloupců: <b>{grid_cols}</b></div>
               </div>
             </Col>
@@ -226,6 +221,7 @@ export default function SquareDesigner() {
                       setTimeout(() => {
                         setShowSuccessModal(false);
                         navigate("/manage/squares");
+                        window.location.reload(); // <-- force reload after redirect
                       }, 1400);
                     } catch (err) {
                       setError("Chyba při vytváření náměstí. Zkontrolujte data.");

@@ -80,9 +80,6 @@ class OrderSerializer(serializers.ModelSerializer):
         queryset=Reservation.objects.all(), source="reservation", write_only=True
     )
 
-    #FIXME: This field is used to store the price to pay, which can be calculated from the reservation.
-    # It should not be deleted from POST/PUT, as it can be derived from the reservation.
-    # its better to perform calculation again with the same serializer above!!!
     price_to_pay = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False, allow_null=True
     )
@@ -91,7 +88,6 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             "id",
-            "order_number",
             "user",             # nested read-only
             "user_id",          # required in POST/PUT
             "reservation",      # nested read-only
@@ -102,7 +98,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "price_to_pay",
             "payed_at",
         ]
-        read_only_fields = ["id", "created_at", "order_number", "status", "price_to_pay", "payed_at"]
+        read_only_fields = ["id", "created_at", "status", "price_to_pay", "payed_at"]
         
         extra_kwargs = {
             "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": False},

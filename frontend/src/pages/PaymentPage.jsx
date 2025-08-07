@@ -65,7 +65,7 @@ export default function PaymentPage({ orderId }) {
                 <tr><td><strong>Účet:</strong></td><td>{bankAccount}</td></tr>
                 <tr><td><strong>Var. symbol:</strong></td><td>{varSymbol}</td></tr>
                 <tr><td><strong>Částka:</strong></td><td>{amount} CZK</td></tr>
-                <tr><td><strong>Objednávka:</strong></td><td>{order?.order_number}</td></tr>
+                <tr><td><strong>Číslo objednávky:</strong></td><td>{order?.id}</td></tr>
                 <tr><td><strong>Status:</strong></td><td>{statusMap[order?.status] || "Neznámý"}</td></tr>
               </tbody>
             </Table>

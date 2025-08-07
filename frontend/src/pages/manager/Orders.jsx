@@ -26,8 +26,8 @@ import userAPI from "../../api/model/user";
 function Orders() {
   // Delete handler
   const handleDeleteOrder = async (order) => {
-    if (window.confirm(`Opravdu smazat objednávku: ${order.order_number}?`)) {
-      await orderAPI.deleteOrder(order.id); // use id instead of order_number
+    if (window.confirm(`Opravdu smazat objednávku: ${order.id}?`)) {
+      await orderAPI.deleteOrder(order.id);
       const data = await orderAPI.getOrders();
       setOrders(data);
     }
@@ -52,7 +52,7 @@ function Orders() {
     setError(null);
     setSubmitting(true);
     try {
-      await orderAPI.updateOrder(selectedOrder.id, formData); // use id instead of order_number
+      await orderAPI.updateOrder(selectedOrder.id, formData);
       setShowEditModal(false);
       setFormData({
         note: "",
@@ -182,7 +182,7 @@ function Orders() {
   };
 
   const columns = [
-    { accessor: "order_number", title: "Číslo objednávky", sortable: true, width: "14%" },
+    { accessor: "id", title: "ID objednávky", sortable: true, width: "14%" },
     {
       accessor: "user",
       title: "Uživatel",
@@ -307,7 +307,7 @@ function Orders() {
             <Modal.Body>
               {selectedOrder && (
                 <>
-                  <p><strong>Číslo objednávky:</strong> {selectedOrder.order_number}</p>
+                  <p><strong>ID objednávky:</strong> {selectedOrder.id}</p>
                   <p><strong>Uživatel:</strong> {selectedOrder.user ? `${selectedOrder.user.first_name} ${selectedOrder.user.last_name} (${selectedOrder.user.email})` : "—"}</p>
                   <p><strong>Rezervace:</strong> {selectedOrder.reservation ? `ID: ${selectedOrder.reservation.id}` : "—"}</p>
                   <p><strong>Vytvořeno:</strong> {selectedOrder.created_at}</p>

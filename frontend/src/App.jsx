@@ -21,7 +21,7 @@ import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
 {/* manager */}
 import Events from "./pages/manager/Events";
-import MapEditor from "./pages/MapEditor"; {/* Map editor for events */ }
+import MapEditor from "./pages/manager/edit/MapEditor"; {/* Map editor for events */ }
 import CreateEvent from "./pages/manager/create/create-event";
 
 import Squares from "./pages/manager/Squares";

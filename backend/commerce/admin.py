@@ -4,14 +4,14 @@ from trznice.admin import custom_admin_site
 from .models import Order
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "order_number", "status", "user", "price_to_pay", "reservation", "is_deleted")
+    list_display = ("id", "status", "user", "price_to_pay", "reservation", "is_deleted")
     list_filter = ("user", "status", "reservation", "is_deleted")
-    search_fields = ("order_number", "user__email", "reservation__event")
+    search_fields = ("user__email", "reservation__event")
     ordering = ("id",)
 
-    base_fields = ["order_number", "status", "reservation", "created_at", "user", "price_to_pay", "payed_at", "note"] 
+    base_fields = ["status", "reservation", "created_at", "user", "price_to_pay", "payed_at", "note"] 
     
-    readonly_fields = ("id", "order_number", "created_at", "payed_at")
+    readonly_fields = ("id", "created_at", "payed_at")
     
     def get_fields(self, request, obj=None):
         fields = self.base_fields.copy()

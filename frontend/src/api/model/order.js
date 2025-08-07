@@ -46,7 +46,7 @@ export const createOrder = async (data) => {
 /**
  * PATCH - částečná aktualizace objednávky.
  *
- * @param {string} uuid - UUID objednávky
+ * @param {number} id - ID objednávky
  * @param {Object} data - Libovolné pole z:
  *   - price?: {string}
  *
@@ -60,20 +60,17 @@ export const updateOrder = async (id, data) => {
 /**
  * DELETE - smazání objednávky.
  *
- * @param {string} uuid - UUID objednávky
+ * @param {number} id - ID objednávky
  * @returns {Promise<void>} HTTP 204 při úspěchu
  */
 export const deleteOrder = async (id) => {
   await axios_instance.delete(`${API_BASE_URL}/${id}/`);
 };
 
-
-
 export const calculatePrice = async (data) => {
   const res = await axios_instance.post("/commerce/calculate_price/", data);
   return res.data;
 };
-
 
 export default {
   calculatePrice,
