@@ -226,16 +226,16 @@ class Reservation(SoftDeleteModel):
     event_products = models.ManyToManyField("product.EventProduct", related_name="reservations", blank=True)
 
     def calculate_price(self):
-        # Get square from event
+        # Use market_slot width and height for area
         if not self.event or not self.event.square:
             raise ValidationError("Rezervace musí mít přiřazenou akci s náměstím.")
-        square = self.event.square
-        grid_area = square.grid_rows * square.grid_cols
-        cellsize = square.cellsize
+        if not self.market_slot:
+            raise ValidationError("Rezervace musí mít přiřazené prodejní místo.")
 
-        # Use market_slot.price_per_m2 if set, else event.price_per_m2
+        area = self.market_slot.width * self.market_slot.height
+
         price_per_m2 = None
-        if self.market_slot and self.market_slot.price_per_m2 and self.market_slot.price_per_m2 > 0:
+        if self.market_slot.price_per_m2 and self.market_slot.price_per_m2 > 0:
             price_per_m2 = self.market_slot.price_per_m2
         else:
             price_per_m2 = self.event.price_per_m2
@@ -243,9 +243,11 @@ class Reservation(SoftDeleteModel):
         if not price_per_m2 or price_per_m2 < 0:
             raise ValidationError("Cena za m² není dostupná nebo je záporná.")
 
-        # Calculate final price
-        final_price = Decimal(grid_area) * Decimal(cellsize) * Decimal(price_per_m2)
-        # Always quantize to two decimals
+        # Calculate number of days
+        days = (self.reserved_to - self.reserved_from).days + 1
+
+        # Calculate final price using slot area and reserved days
+        final_price = Decimal(area) * Decimal(price_per_m2) * Decimal(days)
         final_price = final_price.quantize(Decimal("0.01"))
         return final_price
 

@@ -16,20 +16,36 @@ const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
 
   useEffect(() => {
     // Volání API pro získání ceny
-    orderAPI.calculatePrice({
-      event: selectedEvent.id,
-      reserved_from: selectedEvent.start,
-      reserved_to: selectedEvent.end,
-      slots: selectedSlot.map(s => ({
-        slot_id: s.id,
-        used_extension: s.used_extension || 0
-      })),
-    }).then((data) => {
-      setTotalPrice(data.total_price);
-    }).catch(() => {
-      setTotalPrice(0);
-    });
+    async function fetchTotalPrice() {
+      if (!selectedSlot || selectedSlot.length === 0) {
+        setTotalPrice(0);
+        return;
+      }
+      let total = 0;
+      for (const s of selectedSlot) {
+        try {
+          const data = await orderAPI.calculatePrice({
+            slot: s.id,
+            reserved_from: selectedEvent.start,
+            reserved_to: selectedEvent.end,
+            used_extension: s.used_extension || 0,
+          });
+          total += parseFloat(data.final_price || 0);
+        } catch {
+          // fallback: ignore error, continue
+        }
+      }
+      setTotalPrice(total);
+    }
+    fetchTotalPrice();
   }, [selectedEvent.id, selectedSlot]);
+
+  // Helper to calculate reserved days
+  function getReservedDays(start, end) {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  }
 
   return (
     <Card className="p-4" style={{ background: "rgba(255,255,255,0.7)" }}>
@@ -47,36 +63,45 @@ const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
 
       <h5>📦 Vybrané sloty:</h5>
       <div className="mb-2 text-muted" style={{ fontSize: "0.95em" }}>
-        Tabulka níže zobrazuje vybrané sloty, jejich rozměry, cenu za metr čtvereční a vypočtenou cenu za každý slot. Celková cena je vypočtena podle zadaného termínu a pravidel události.
+        Tabulka níže zobrazuje vybrané sloty, jejich rozměry, cenu za metr čtvereční, počet dní rezervace a vypočtenou cenu za každý slot.
       </div>
       <Table bordered size="sm" style={{ background: "rgba(255,255,255,0.85)" }}>
         <thead>
           <tr>
-            <th>Číslo slotu</th>
-            <th>Rozměry (m)</th>
-            <th>Cena/m² (Kč)</th>
-            <th>Celkem za slot (Kč)</th>
+            <th>Slot</th>
+            <th>Detail</th>
+            <th>Hodnota</th>
           </tr>
         </thead>
         <tbody>
           {selectedSlot.map((slot) => {
             const pricePerM2 = parseFloat(slot.price_per_m2 || selectedEvent.price_per_m2);
             const area = slot.width * slot.height;
-            const price = area * pricePerM2;
+            const days = getReservedDays(selectedEvent.start, selectedEvent.end);
+            // const subtotal = area * pricePerM2 * days;
             return (
-              <tr key={slot.id}>
-                <td>{slot.number}</td>
-                <td>{slot.width} × {slot.height}</td>
-                <td>{pricePerM2.toFixed(2)}</td>
-                <td>{price.toFixed(2)}</td>
-              </tr>
+              <>
+                <tr key={`slot-info-${slot.id}`}>
+                  <td rowSpan={3}><strong>{slot.number}</strong></td>
+                  <td>Rozměry (šířka × výška)</td>
+                  <td>{slot.width} × {slot.height} m = <strong>{area} m²</strong></td>
+                </tr>
+                <tr key={`slot-days-${slot.id}`}>
+                  <td>Počet dní</td>
+                  <td>{days}</td>
+                </tr>
+                <tr key={`slot-price-m2-${slot.id}`}>
+                  <td>Cena za m²</td>
+                  <td>{pricePerM2.toFixed(2)} Kč</td>
+                </tr>
+              </>
             );
           })}
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={3} className="text-end">
-              <strong>Celková cena objednávky (včetně všech slotů a termínu):</strong>
+            <td colSpan={2} className="text-end">
+              <strong>Celková cena objednávky:</strong>
             </td>
             <td><strong>{totalPrice.toFixed(2)} Kč</strong></td>
           </tr>
@@ -110,3 +135,4 @@ const Step4Summary = ({ formData, onBack, onSubmit, note = '', setNote }) => {
 };
 
 export default Step4Summary;
+

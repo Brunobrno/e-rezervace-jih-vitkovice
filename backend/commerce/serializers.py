@@ -18,10 +18,10 @@ class SlotPriceInputSerializer(serializers.Serializer):
 
 #počítaní ceny!!! (počítá správně!!)
 class PriceCalculationSerializer(serializers.Serializer):
-    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
+    slot = serializers.PrimaryKeyRelatedField(queryset=MarketSlot.objects.all())
     reserved_from = RoundedDateTimeField()
     reserved_to = RoundedDateTimeField()
-    slots = SlotPriceInputSerializer(many=True)
+    used_extension = serializers.FloatField(min_value=0, required=False)
 
     final_price = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
 
@@ -43,30 +43,22 @@ class PriceCalculationSerializer(serializers.Serializer):
         data["reserved_to"] = reserved_to
         data["duration"] = days
 
-        event = None
-        market_slot = None
-        # You may need to fetch event/market_slot from data or DB
-        # ...existing code...
+        market_slot = data["slot"]
+        event = market_slot.event if hasattr(market_slot, "event") else None
 
-        # Get square from event
         if not event or not event.square:
-            raise serializers.ValidationError("Akce musí mít přiřazené náměstí.")
-        square = event.square
-        grid_area = square.grid_rows * square.grid_cols
-        cellsize = square.cellsize
+            raise serializers.ValidationError("Slot musí být přiřazen k akci, která má náměstí.")
 
-        # Use market_slot.price_per_m2 if set, else event.price_per_m2
-        price_per_m2 = None
-        if market_slot and market_slot.price_per_m2 and market_slot.price_per_m2 > 0:
-            price_per_m2 = market_slot.price_per_m2
-        else:
-            price_per_m2 = event.price_per_m2
+        # Get width and height from market_slot
+        area = market_slot.width * market_slot.height
+
+        price_per_m2 = market_slot.price_per_m2 if market_slot.price_per_m2 and market_slot.price_per_m2 > 0 else event.price_per_m2
 
         if not price_per_m2 or price_per_m2 < 0:
             raise serializers.ValidationError("Cena za m² není dostupná nebo je záporná.")
 
-        # Calculate final price
-        final_price = Decimal(grid_area) * Decimal(cellsize) * Decimal(price_per_m2)
+        # Calculate final price using slot area and reserved days
+        final_price = Decimal(area) * Decimal(price_per_m2) * Decimal(days)
         final_price = final_price.quantize(Decimal("0.01"))
 
         data["final_price"] = final_price

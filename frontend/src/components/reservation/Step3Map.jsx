@@ -81,10 +81,10 @@ export default function Step3Map({ data, setData, next, prev }) {
 
       // Call backend to check reservation and get price
       const res = await orderAPI.calculatePrice({
-        event: data.event.id,
+        slot: modalSlot.id,
         reserved_from,
         reserved_to,
-        slots: [{ slot_id: modalSlot.id, used_extension: 0 }],
+        used_extension: 0,
       });
 
       // If backend returns error (e.g., slot reserved), show validation error
@@ -92,7 +92,7 @@ export default function Step3Map({ data, setData, next, prev }) {
         setValidationError(res.error || "Toto místo je již rezervováno pro tento termín.");
         setPrice(null);
       } else {
-        setPrice(res.total_price ?? null);
+        setPrice(res.final_price ?? null);
         setSelectedRange(rangeObj);
         setData((prevData) => ({
           ...prevData,
