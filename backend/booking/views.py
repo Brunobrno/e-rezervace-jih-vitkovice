@@ -1,19 +1,26 @@
 from rest_framework import viewsets, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample
 
 from .models import Event, Reservation, MarketSlot, Square, ReservationCheck
-from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationCheckSerializer
+from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer, ReservedDaysSerializer, ReservationCheckSerializer
 from .filters import EventFilter, ReservationFilter
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.views import APIView
 
 from account.permissions import *
+
+import logging
+
+import logging
 
 from account.tasks import send_email_verification_task
 
@@ -34,6 +41,7 @@ from account.tasks import send_email_verification_task
 class SquareViewSet(viewsets.ModelViewSet):
     queryset = Square.objects.prefetch_related("square_events").all().order_by("name")
     serializer_class = SquareSerializer
+    parser_classes = [MultiPartParser, FormParser]  # Accept image uploads
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["city", "psc", "width", "height"]
     ordering_fields = ["name", "width", "height"]
@@ -103,20 +111,11 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
 @extend_schema(
     tags=["Reservation"],
     description=(
-        "Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd.\n\n"
-        "🔍 **Fulltextové vyhledávání (`?search=`)** prohledává:\n"
-        "- název události (`event.name`)\n"
-        "- název náměstí (`event.square.name`)\n"
-        "- město (`event.square.city`)\n"
-        "- poznámku (`note`)\n"
-        "- e-mail uživatele (`user.email`)\n"
-        "- jméno a příjmení uživatele (`user.first_name`, `user.last_name`)\n\n"
-        "**Příklady:** `?search=jan.novak@example.com`, `?search=Velikonoční`, `?search=Ostrava`"
+        "Správa rezervací – vytvoření, úprava a výpis. Filtrování podle eventu, statusu, uživatele atd."
     )
 )
 class ReservationViewSet(viewsets.ModelViewSet):
-    # queryset = Reservation.objects.select_related("event", "marketSlot", "user").all().order_by("-created_at")
-    queryset = Reservation.objects.all().order_by("-created_at")
+    queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = ReservationFilter
@@ -139,6 +138,16 @@ class ReservationViewSet(viewsets.ModelViewSet):
         if hasattr(user, "role") and user.role == "seller":
             return queryset.filter(user=user)
         return queryset
+
+    # Optionally, override create() to add logging or debug info
+    def create(self, request, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Reservation create POST data: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in ReservationViewSet.create: {e}", exc_info=True)
+            raise
     
     def perform_create(self, serializer):
         self._check_blocked_permission(serializer.validated_data)
@@ -149,7 +158,15 @@ class ReservationViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def _check_blocked_permission(self, data):
-        slot_id = data.get("marketSlot")
+        # FIX: Always get the MarketSlot instance, not just the ID
+        # Accept both "market_slot" (object or int) and "marketSlot" (legacy)
+        slot = data.get("market_slot") or data.get("marketSlot")
+
+        # If slot is a MarketSlot instance, get its id
+        if hasattr(slot, "id"):
+            slot_id = slot.id
+        else:
+            slot_id = slot
 
         if not isinstance(slot_id, int):
             raise PermissionDenied("Neplatné ID prodejního místa.")
@@ -164,21 +181,58 @@ class ReservationViewSet(viewsets.ModelViewSet):
             if getattr(user, "role", None) not in ["admin", "clerk"]:
                 raise PermissionDenied("Toto prodejní místo je zablokované.")
 
+@extend_schema(
+    tags=["Reservation"],
+    summary="Check reservation availability",
+    request=ReservationAvailabilitySerializer,
+    responses={200: OpenApiExample(
+        'Availability Response',
+        value={"available": True},
+        response_only=True
+    )}
+)
+class ReservationAvailabilityCheckView(APIView):
+    def post(self, request):
+        serializer = ReservationAvailabilitySerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"available": True}, status=status.HTTP_200_OK)
+        return Response({"available": False}, status=status.HTTP_200_OK)
+
+logger = logging.getLogger(__name__)
 
 @extend_schema(
-    tags=["Reservation Checks"],
-    description="Správa kontrol rezervací – vytváření záznamů o kontrole a jejich výpis."
+    tags=["Reservation"],
+    summary="Get reserved days for a market slot in an event",
+    description=(
+        "Returns a list of reserved days for a given event and market slot. "
+        "Useful for visualizing slot occupancy and preventing double bookings. "
+        "Provide `event_id` and `market_slot_id` as query parameters."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="market_slot_id",
+            type=int,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="ID of the market slot"
+        ),
+    ],
+    responses={200: ReservedDaysSerializer}
 )
-class ReservationCheckViewSet(viewsets.ModelViewSet):
-    queryset = ReservationCheck.objects.select_related("reservation", "checker").all().order_by("-checked_at")
-    serializer_class = ReservationCheckSerializer
-    permission_classes = [OnlyRolesAllowed("admin", "checker")]  # Only checkers & admins can use it
-
-    def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, "role") and user.role == "checker":
-            return self.queryset.filter(checker=user)  # Checkers only see their own logs
-        return self.queryset
-
-    def perform_create(self, serializer):
-        serializer.save()
+class ReservedDaysView(APIView):
+    """
+    Returns reserved days for a given event and market slot.
+    GET params: event_id, market_slot_id
+    """
+    def get(self, request, *args, **kwargs):
+        market_slot_id = request.query_params.get("market_slot_id")
+        if not market_slot_id:
+            return Response(
+                {"detail": "market_slot_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = ReservedDaysSerializer({
+            "market_slot_id": market_slot_id
+        })
+        logger.debug(f"ReservedDaysView GET market_slot_id={market_slot_id}")
+        return Response(serializer.data)

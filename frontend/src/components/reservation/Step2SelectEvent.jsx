@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import eventAPI from '../../api/model/event';
+import dayjs from 'dayjs';
 
 const Step2SelectEvent = ({ data, setData, next, prev }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  console.log("Data: ", data);
 
   useEffect(() => {
     if (!data.square?.id) {
@@ -18,7 +17,7 @@ const Step2SelectEvent = ({ data, setData, next, prev }) => {
     setLoading(true);
     setError(null);
 
-    eventAPI.getEvents({ square_id: data.square.id })
+    eventAPI.getEvents({ square: data.square.id })
       .then(result => {
         setEvents(result);
         setLoading(false);
@@ -52,11 +51,19 @@ const Step2SelectEvent = ({ data, setData, next, prev }) => {
   if (error) return <Alert variant="danger">{error}</Alert>;
   if (events.length === 0) return <p>Pro vybrané náměstí nebyly nalezeny žádné události.</p>;
 
+  // Filter events to only show current or future events
+  const now = dayjs().startOf('day');
+  const filteredEvents = events.filter(event => {
+    // event.start and event.end are now date strings (YYYY-MM-DD)
+    const end = dayjs(event.end, "YYYY-MM-DD");
+    return end.isAfter(now) || end.isSame(now, 'day');
+  });
+
   return (
     <>
       <h2>Vyber událost</h2>
       <Row xs={1} sm={2} md={3} lg={3} className="g-4">
-        {events.map(ev => {
+        {filteredEvents.map(ev => {
           const selected = data.event?.id === ev.id;
           return (
             <Col key={ev.id} className='mb-5'>
@@ -84,7 +91,7 @@ const Step2SelectEvent = ({ data, setData, next, prev }) => {
                 <Card.Body>
                   <Card.Title>{ev.name}</Card.Title>
                   <Card.Subtitle className="mb-2 text-muted">
-                    {new Date(ev.start).toLocaleDateString()} – {new Date(ev.end).toLocaleDateString()}
+                    {ev.start} – {ev.end}
                   </Card.Subtitle>
                   <Card.Text style={{ whiteSpace: 'pre-line', height: 70, overflow: 'hidden' }}>
                     {ev.description}

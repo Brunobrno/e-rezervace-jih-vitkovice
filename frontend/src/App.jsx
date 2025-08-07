@@ -1,6 +1,4 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 import "/node_modules/react-grid-layout/css/styles.css";
 import "/node_modules/react-resizable/css/styles.css";
@@ -8,23 +6,35 @@ import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import Login from "./pages/Login";
 import Register from "./pages/register/Register";
-import SelectReservation from "./pages/SelectReservation";
 import Test from "./pages/Test";
+
 import EmailVerificationPage from "./pages/register/EmailVerification";
+
 import Home from "./pages/Home";
 import PaymentPage from "./pages/PaymentPage";
 import ResetPasswordPage from "./pages/PasswordReset";
 import UserSettings from "./pages/Settings";
 
+{/* Security routes */}
 import RequireRole from "./components/security/RequireRole";
 import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
-import Events from "./pages/Events";
-import Squares from "./pages/Squares";
-import Reservations from "./pages/Reservations";
-import Ticket from "./pages/Ticket";
-import MapEditor from "./pages/MapEditor"
+{/* manager */}
+import Events from "./pages/manager/Events";
+import MapEditor from "./pages/MapEditor"; {/* Map editor for events */ }
+import CreateEvent from "./pages/manager/create/create-event";
 
+import Squares from "./pages/manager/Squares";
+import SquareDesigner from "./pages/manager/create/SquareDesigner"; {/* Square designer for creating squares */ }
+
+import Reservations from "./pages/manager/Reservations";
+
+import Ticket from "./pages/Ticket";
+
+import Users from "./pages/manager/Users";
+import CreateUser from "./pages/manager/create/create-user";
+
+{/* Cart for reservations (multipurpouse)*/}
 import ReservationCart from "./pages/Reservation-cart"
 
 import { UserProvider } from './context/UserContext';
@@ -81,12 +91,19 @@ function App() {
             {/* CLERK & ADMIN */}
             <Route element={<RequireRole roles={[ "admin"]} />}>
 
+              <Route path="/manage/users" element={<Users />} />
+              <Route path="/manage/users/create" element={<CreateUser />} />
+
               <Route path="/manage/squares" element={<Squares />} />
+              <Route path="/manage/squares/designer" element={<SquareDesigner />} /> {/* Designer for squares (creation) */}
+
               <Route path="/manage/reservations" element={<Reservations />} />
+              <Route path="/manage/reservations/create" element={<Reservations />} />
+
               <Route path="/manage/events" element={<Events />} />
               <Route path="/manage/events/:id" element={<Events />} />
-
               <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
+              <Route path="/manage/events/create" element={<CreateEvent />} />
               
             </Route>
           </Route>

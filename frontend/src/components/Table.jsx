@@ -1,30 +1,10 @@
-import { Nav, Modal } from "react-bootstrap";
-import logo from "/img/logo.png";
 import sortBy from "lodash/sortBy";
 import {
-  ActionIcon,
-  Button,
-  Checkbox,
-  MultiSelect,
-  Stack,
-  TextInput,
-  Anchor,
-  Box,
-  Group,
-  Text,
-} from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
-import { useDebouncedValue } from "@mantine/hooks";
-import {
-  IconSearch,
-  IconX,
-  IconEye,
-  IconEdit,
-  IconTrash,
-  IconPlus,
-} from "@tabler/icons-react";
-import { DataTable } from "mantine-datatable";
-import dayjs from "dayjs";
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+} from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from "react";
 
 
@@ -39,6 +19,11 @@ function Table({
   initialQuery = "",
   withGlobalSearch = true,
   withActionsColumn = true,
+  withTableBorder,
+  borderRadius,
+  highlightOnHover,
+  verticalAlign,
+  titlePadding = "6px 8px", // default smaller padding
   ...props
 }) {
   const [sortStatus, setSortStatus] = useState({
@@ -48,8 +33,16 @@ function Table({
   
   const [records, setRecords] = useState([]);
   const [query, setQuery] = useState(initialQuery);
-  const [debouncedQuery] = useDebouncedValue(query, 200);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [query]);
   const [filters, setFilters] = useState({});
+  // Remove filter edit state, always show filter fields
   
   // Expose query changes to parent
   useEffect(() => {
@@ -58,7 +51,7 @@ function Table({
     }
   }, [query, onQueryChange]);
   
-  // Apply sorting and filtering
+    // Apply sorting and filtering
   useEffect(() => {
     if (!data || data.length === 0) {
       setRecords([]);
@@ -67,21 +60,14 @@ function Table({
     console.log(data)
     let filteredData = [...data];
     
-    // Apply global search
-    if (debouncedQuery) {
-      filteredData = filteredData.filter(item => 
-        Object.values(item).some(value => 
-          String(value).toLowerCase().includes(debouncedQuery.toLowerCase())
-        )
-      );
-    }
     
-    // Apply column filters
+    // Apply column filters (substring search, case-insensitive)
     Object.entries(filters).forEach(([key, value]) => {
       if (value && value.length > 0) {
-        filteredData = filteredData.filter(item => 
-          value.includes(item[key])
-        );
+        filteredData = filteredData.filter(item => {
+          const cellValue = item[key];
+          return cellValue !== undefined && String(cellValue).toLowerCase().includes(value.toLowerCase());
+        });
       }
     });
     
@@ -96,52 +82,115 @@ function Table({
 
   // Enhanced columns with actions
   const enhancedColumns = [...columns];
-  
-  // Add global search column if enabled
-  if (withGlobalSearch && !columns.some(col => col.isSearch)) {
-    enhancedColumns.unshift({
-      accessor: 'search',
-      title: 'Search',
-      isSearch: true,
-      filter: (
-        <TextInput
-          placeholder="Search all columns..."
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            query && (
-              <ActionIcon
-                size="sm"
-                variant="transparent"
-                color="dimmed"
-                onClick={() => setQuery("")}
-              >
-                <IconX size={14} />
-              </ActionIcon>
-            )
-          }
-        />
-      ),
-      filtering: query !== "",
-    });
-  }
+
+  // Prepare columns for TanStack Table
+  const tableColumns = useMemo(() =>
+    enhancedColumns.map(col => ({
+      accessorKey: col.accessor,
+      header: col.title || col.accessor,
+      cell: col.render ? info => col.render(info.row.original) : info => info.getValue(),
+      enableSorting: col.accessor !== 'actions',
+    })),
+    [enhancedColumns]
+  );
+
+  // TanStack Table instance
+  const table = useReactTable({
+    data: records,
+    columns: tableColumns,
+    state: {
+      sorting: sortStatus.columnAccessor ? [{
+        id: sortStatus.columnAccessor,
+        desc: sortStatus.direction === 'desc',
+      }] : [],
+    },
+    onSortingChange: updater => {
+      const sort = Array.isArray(updater) ? updater[0] : updater?.[0];
+      if (sort) {
+        setSortStatus({
+          columnAccessor: sort.id,
+          direction: sort.desc ? 'desc' : 'asc',
+        });
+      }
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    manualSorting: true,
+  });
 
   return (
-    <Box className="d-flex flex-column h-100" style={{ minHeight: 400 }}>
-      <DataTable
-        records={records}
-        columns={enhancedColumns}
-        sortStatus={sortStatus}
-        onSortStatusChange={setSortStatus}
-        fetching={fetching}
-        height="100%"
-        scrollAreaProps={{ style: { flex: 1 } }}
-        style={{ flex: 1 }}
-        onRowClick={withActionsColumn ? undefined : handleOpenModal}
-        {...props}
-      />
-    </Box>
+    <div className="custom-table-wrapper">
+      <table
+        className={`custom-table${withTableBorder ? " table-bordered" : ""}`}
+        style={{
+          borderRadius,
+          width: "100%",
+          borderCollapse: "separate",
+          borderSpacing: 0,
+          fontSize: "0.9rem",
+          tableLayout: "fixed",
+        }}
+      >
+        <colgroup>
+          {columns.map(col => (
+            <col
+              key={col.accessor}
+              style={{ width: col.width || "auto" }}
+            />
+          ))}
+        </colgroup>
+
+        <thead>
+          <tr>
+            {columns.map((col, idx) => (
+              <th
+                key={col.accessor || idx}
+                style={{
+                  padding: titlePadding,
+                  textAlign: col.textAlign || "left",
+                  minWidth: col.minWidth || undefined,
+                  maxWidth: col.maxWidth || undefined,
+                  // ...other style...
+                }}
+              >
+                {col.title}
+                {col.filter && <div style={{ marginTop: 2 }}>{col.filter}</div>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.length === 0 ? (
+            <tr>
+              <td colSpan={table.getAllLeafColumns().length} style={{
+                textAlign: 'center',
+                padding: 24,
+                color: '#888',
+              }}>
+                No data
+              </td>
+            </tr>
+          ) : (
+            table.getRowModel().rows.map(row => (
+              <tr key={row.id} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id} style={{
+                    padding: '10px 8px',
+                    fontSize: 15,
+                    width: cell.column.getSize(),
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

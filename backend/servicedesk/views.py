@@ -24,7 +24,7 @@ class ServiceTicketViewSet(viewsets.ModelViewSet):
     serializer_class = ServiceTicketSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = ServiceTicketFilter
-    ordering_fields = ["urgency", "created_at"]
+    ordering_fields = ["created_at"]
     search_fields = ["title", "description", "user__username"]
     permission_classes = [IsAuthenticated]
 
@@ -75,7 +75,6 @@ class ServiceTicketViewSet(viewsets.ModelViewSet):
 
                     Název: {user_request.title}
                     Kategorie: {user_request.get_category_display()}
-                    Urgence: {user_request.get_urgency_display()}
                     Popis: {user_request.description or "—"}
                     Vytvořeno: {user_request.created_at.strftime('%d.%m.%Y %H:%M')}
                     Zadal: {user_request.user.get_full_name()} ({user_request.user.email})

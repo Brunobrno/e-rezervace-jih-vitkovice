@@ -37,7 +37,21 @@ axios_instance.interceptors.request.use((config) => {
   return config;
 });
 
-
+// Přidej globální response interceptor pro redirect na login při 401 s detail hláškou
+axios_instance.interceptors.response.use(
+  response => response,
+  error => {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      error.response.data &&
+      error.response.data.detail === "Nebyly zadány přihlašovací údaje."
+    ) {
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 // 🔄 Obnova access tokenu pomocí refresh cookie
 export const refreshAccessToken = async () => {
@@ -55,8 +69,22 @@ export const refreshAccessToken = async () => {
 // ✅ Přihlášení
 export const login = async (username, password) => {
   logout();
-  const response = await axios_instance.post(`/account/token/`, { username, password });
-  return response.data;
+  try {
+    const response = await axios_instance.post(`/account/token/`, { username, password });
+    return response.data;
+  } catch (err) {
+    if (err.response) {
+      // Server responded with a status code outside 2xx
+      console.log('Login error status:', err.response.status);
+    } else if (err.request) {
+      // Request was made but no response received
+      console.log('Login network error:', err.request);
+    } else {
+      // Something else happened
+      console.log('Login setup error:', err.message);
+    }
+    throw err;
+  }
 };
 
 

@@ -32,8 +32,20 @@ function LoginCard() {
       }
     } catch (error) {
       console.error("Chyba při přihlášení:", error);
-      const err = error.response?.data?.non_field_errors || "Neočekávaná chyba při přihlášení.";
-      setErrorMessage(err);
+      // Rozlišení typu chyby
+      if (error.response) {
+        if (error.response.status === 0 || error.response.status >= 500) {
+          setErrorMessage("Chyba sítě nebo serveru. Zkuste to později.");
+        } else if (error.response.status === 401 || error.response.status === 400) {
+          setErrorMessage("Neplatné přihlašovací údaje.");
+        } else {
+          setErrorMessage("Neočekávaná chyba při přihlášení.");
+        }
+      } else if (error.request) {
+        setErrorMessage("Nelze se spojit se serverem. Zkontrolujte připojení k internetu.");
+      } else {
+        setErrorMessage("Chyba aplikace: " + error.message);
+      }
     } finally {
       setLoading(false);
     }

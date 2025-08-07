@@ -70,7 +70,7 @@ class ReservationAdmin(admin.ModelAdmin):
         if request.user.role == "admin":
             fields += ['is_deleted', 'deleted_at']
         return fields
-    
+
     def get_queryset(self, request):
         # Use the all_objects manager to show even soft-deleted entries
         if request.user.role == "admin":
@@ -78,7 +78,7 @@ class ReservationAdmin(admin.ModelAdmin):
         else:
             qs = self.model.objects.all()
         return qs
-    
+
 custom_admin_site.register(Reservation, ReservationAdmin)
 
 

@@ -9,7 +9,6 @@ const API_BASE_URL = "/service-tickets";
  *   - user: {number} ID uživatele
  *   - status: {'new'|'in_progress'|'resolved'|'closed'}
  *   - category: {'tech'|'ServiceTicket'|'payment'|'account'|'content'|'suggestion'|'other'}
- *   - urgency: {'low'|'medium'|'high'|'critical'}
  *   - ordering: {string} např. "-created_at"
  *   - search: {string} hledání v názvu nebo popisu
  *
@@ -39,7 +38,6 @@ export const getServiceTicketById = async (id) => {
  *   - description?: {string}
  *   - user?: {number} (volitelné – backend často určí automaticky dle tokenu)
  *   - category?: {'tech'|'ServiceTicket'|'payment'|'account'|'content'|'suggestion'|'other'}
- *   - urgency?: {'low'|'medium'|'high'|'critical'}
  *   - status?: {'new'|'in_progress'|'resolved'|'closed'} (výchozí "new")
  *
  * @returns {Promise<ServiceTicket>}
@@ -57,7 +55,6 @@ export const createServiceTicket = async (data) => {
  *   - title?: {string}
  *   - description?: {string}
  *   - category?: {string}
- *   - urgency?: {string}
  *   - status?: {string}
  *
  * @returns {Promise<ServiceTicket>}

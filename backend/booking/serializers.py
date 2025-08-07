@@ -1,9 +1,19 @@
 from rest_framework import serializers
+from datetime import timedelta
+from booking.models import Event, MarketSlot
+import logging
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+try:
+    from commerce.serializers import PriceCalculationSerializer
+except ImportError:
+    PriceCalculationSerializer = None
 
 from trznice.utils import RoundedDateTimeField
 from .models import Event, MarketSlot, Reservation, Square, ReservationCheck
 from account.models import CustomUser
 from product.serializers import EventProductSerializer
+
+logger = logging.getLogger(__name__)
 
 
 #----------------------SHORT SERIALIZERS---------------------------------
@@ -87,26 +97,29 @@ class ReservationCheckSerializer(serializers.ModelSerializer):
 
 
 class ReservationSerializer(serializers.ModelSerializer):
-    reserved_from = RoundedDateTimeField()
-    reserved_to = RoundedDateTimeField()
+    reserved_from = serializers.DateField()
+    reserved_to = serializers.DateField()
 
     event = EventShortSerializer(read_only=True)
     user = UserShortSerializer(read_only=True)
+    market_slot = serializers.PrimaryKeyRelatedField(
+        queryset=MarketSlot.objects.filter(is_deleted=False), required=True
+    )
 
     last_checked_by = UserShortSerializer(read_only=True)
     
     class Meta:
         model = Reservation
         fields = [
-            "id", "marketSlot",
+            "id", "market_slot",
             "used_extension", "reserved_from", "reserved_to",
             "created_at", "status", "note", "final_price",
             "event", "user", "is_checked", "last_checked_by", "last_checked_at"
         ]
         read_only_fields = ["id", "created_at", "is_checked", "last_checked_by", "last_checked_at"]
         extra_kwargs = {
-            "event": {"help_text": "ID a název akce (Event), ke které rezervace patří", "required": True},
-            "marketSlot": {"help_text": "Volitelné – ID konkrétního prodejního místa (MarketSlot)", "required": False},
+            "event": {"help_text": "ID (Event), ke které rezervace patří", "required": True},
+            "market_slot": {"help_text": "ID konkrétního prodejního místa (MarketSlot)", "required": True},
             "user": {"help_text": "ID a název uživatele, který rezervaci vytváří", "required": True},
             "used_extension": {"help_text": "Velikost rozšíření v m², které chce uživatel využít", "required": True},
             "reserved_from": {"help_text": "Datum a čas začátku rezervace", "required": True},
@@ -120,13 +133,69 @@ class ReservationSerializer(serializers.ModelSerializer):
             "last_checked_at": {"help_text": "Čas kdy byla provedena poslední kontrola.", "required": False, "read_only": True}
         }
 
+    def to_internal_value(self, data):
+        # Accept both "market_slot" and legacy "marketSlot" keys for compatibility
+        if "marketSlot" in data and "market_slot" not in data:
+            data["market_slot"] = data["marketSlot"]
+        # Debug: log incoming data for troubleshooting
+        logger.debug(f"ReservationSerializer.to_internal_value input data: {data}")
+        return super().to_internal_value(data)
+    
+
+    def to_internal_value(self, data):
+        # Accept both "market_slot" and legacy "marketSlot" keys for compatibility
+        if "marketSlot" in data and "market_slot" not in data:
+            data["market_slot"] = data["marketSlot"]
+        # Debug: log incoming data for troubleshooting
+        logger.debug(f"ReservationSerializer.to_internal_value input data: {data}")
+        return super().to_internal_value(data)
+
     def validate(self, data):
-        event = data.get("event")
-        market_slot = data.get("marketSlot")
+        logger.debug(f"ReservationSerializer.validate market_slot: {data.get('market_slot')}, event: {data.get('event')}")
+        # Get the event object from the provided event id (if present)
+        event_id = self.initial_data.get("event")
+        if event_id:
+            try:
+                event = Event.objects.get(pk=event_id)
+                data["event"] = event
+            except Event.DoesNotExist:
+                raise serializers.ValidationError({"event": "Zadaná akce (event) neexistuje."})
+        else:
+            event = data.get("event")
+
+        market_slot = data.get("market_slot")
+        # --- FIX: Ensure event is set before permission check in views ---
+        if event is None and market_slot is not None:
+            event = market_slot.event
+            data["event"] = event
+            logger.debug(f"ReservationSerializer.validate auto-filled event from market_slot: {event}")
+
+
+
         user = data.get("user")
+        request_user = self.context["request"].user if "request" in self.context else None
+
+        # If user is not specified, use the logged-in user
+        if user is None and request_user is not None:
+            user = request_user
+            data["user"] = user
+
+        # If user is specified and differs from logged-in user, check permissions
+        if user is not None and request_user is not None and user != request_user:
+            if request_user.role not in ["admin", "cityClerk", "squareManager"]:
+                raise serializers.ValidationError("Pouze administrátor, úředník nebo správce tržiště může vytvářet rezervace pro jiné uživatele.")
+
+
+
+        if user is None:
+            raise serializers.ValidationError("Rezervace musí mít přiřazeného uživatele.")
+        if user.user_reservations.filter(status="reserved").count() >= 5:
+            raise serializers.ValidationError("Uživatel už má 5 aktivních rezervací.")
+
         reserved_from = data.get("reserved_from")
         reserved_to = data.get("reserved_to")
         used_extension = data.get("used_extension", 0)
+        final_price = data.get("final_price", 0)
 
         if "status" in data:
             if self.instance:  # update
@@ -137,33 +206,146 @@ class ReservationSerializer(serializers.ModelSerializer):
         else:
             data["status"] = "reserved"
 
-        if "final_price" in data:
-            if self.instance:  # update
-                if data["final_price"] != self.instance.final_price and user.role not in ["admin", "cityClerk"]:
-                    raise serializers.ValidationError({
-                        "final_price": "Pouze administrátor nebo úředník může upravit finální cenu."
-                    })
-            else:  # create
-                if user.role not in ["admin", "cityClerk"]:
-                    raise serializers.ValidationError({
-                        "final_price": "Pouze administrátor nebo úředník může nastavit finální cenu."
-                    })
-        else:
-            data["final_price"] = 0
+        privileged_roles = ["admin", "cityClerk"]
 
-        if data.get("final_price") < 0:
-            raise serializers.ValidationError("Cena za m² nemůže být záporná.")
+        # Define max allowed price based on model's decimal constraints (8 digits, 2 decimal places)
+        MAX_FINAL_PRICE = Decimal("999999.99")
+
+        if user and getattr(user, "role", None) in privileged_roles:
+            # 🧠 Automatický výpočet ceny rezervace pokud není zadána
+            if not final_price or final_price == 0:
+                market_slot = data.get("market_slot")
+                event = data.get("event")
+                reserved_from = data.get("reserved_from")
+                reserved_to = data.get("reserved_to")
+                used_extension = data.get("used_extension", 0)
+                # --- Prefer PriceCalculationSerializer if available ---
+                if PriceCalculationSerializer:
+                    try:
+                        price_serializer = PriceCalculationSerializer(data={
+                            "market_slot": market_slot.id if market_slot else None,
+                            "used_extension": used_extension,
+                            "reserved_from": reserved_from,
+                            "reserved_to": reserved_to,
+                            "event": event.id if event else None,
+                            "user": user.id if user else None,
+                        })
+                        price_serializer.is_valid(raise_exception=True)
+                        calculated_price = price_serializer.validated_data.get("final_price")
+                        if calculated_price is not None:
+                            try:
+                                # Always quantize to two decimals
+                                decimal_price = Decimal(str(calculated_price)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                                # Clamp value to max allowed and raise error if exceeded
+                                if decimal_price > MAX_FINAL_PRICE:
+                                    logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                                    data["final_price"] = MAX_FINAL_PRICE
+                                    raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                                else:
+                                    data["final_price"] = decimal_price
+                            except (InvalidOperation, TypeError, ValueError):
+                                raise serializers.ValidationError("Výsledná cena není platné číslo.")
+                        else:
+                            raise serializers.ValidationError("Výpočet ceny selhal.")
+                    except Exception as e:
+                        logger.error(f"PriceCalculationSerializer failed: {e}", exc_info=True)
+                        market_slot = data.get("market_slot")
+                        event = data.get("event")
+                        reserved_from = data.get("reserved_from")
+                        reserved_to = data.get("reserved_to")
+                        used_extension = data.get("used_extension", 0)
+                        price_per_m2 = data.get("price_per_m2")
+                        if price_per_m2 is None:
+                            if market_slot and hasattr(market_slot, "price_per_m2"):
+                                price_per_m2 = market_slot.price_per_m2
+                            elif event and hasattr(event, "price_per_m2"):
+                                price_per_m2 = event.price_per_m2
+                            else:
+                                raise serializers.ValidationError("Cena za m² není dostupná.")
+                        base_size = getattr(market_slot, "base_size", None)
+                        if base_size is None:
+                            raise serializers.ValidationError("Základní velikost (base_size) není dostupná.")
+                        duration_days = (reserved_to - reserved_from).days
+                        base_size_decimal = Decimal(str(base_size))
+                        used_extension_decimal = Decimal(str(used_extension))
+                        duration_days_decimal = Decimal(str(duration_days))
+                        price_per_m2_decimal = Decimal(str(price_per_m2))
+                        calculated_price = duration_days_decimal * (price_per_m2_decimal * (base_size_decimal + used_extension_decimal))
+                        try:
+                            decimal_price = Decimal(str(calculated_price)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                            # Clamp value to max allowed and raise error if exceeded
+                            if decimal_price > MAX_FINAL_PRICE:
+                                logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                                data["final_price"] = MAX_FINAL_PRICE
+                                raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                            else:
+                                data["final_price"] = decimal_price
+                        except (InvalidOperation, TypeError, ValueError):
+                            raise serializers.ValidationError("Výsledná cena není platné číslo.")
+                else:
+                    price_per_m2 = data.get("price_per_m2")
+                    if price_per_m2 is None:
+                        if market_slot and hasattr(market_slot, "price_per_m2"):
+                            price_per_m2 = market_slot.price_per_m2
+                        elif event and hasattr(event, "price_per_m2"):
+                            price_per_m2 = event.price_per_m2
+                        else:
+                            raise serializers.ValidationError("Cena za m² není dostupná.")
+                    resolution = event.square.cellsize if event and hasattr(event, "square") else 1
+                    width = getattr(market_slot, "width", 1)
+                    height = getattr(market_slot, "height", 1)
+                    # If you want to include used_extension, add it to area
+                    area_m2 = Decimal(width) * Decimal(height) * Decimal(resolution) * Decimal(resolution)
+                    duration_days = (reserved_to - reserved_from).days
+
+                    price_per_m2_decimal = Decimal(str(price_per_m2))
+                    calculated_price = Decimal(duration_days) * area_m2 * price_per_m2_decimal
+                    try:
+                        decimal_price = Decimal(str(calculated_price)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                        # Clamp value to max allowed and raise error if exceeded
+                        if decimal_price > MAX_FINAL_PRICE:
+                            logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                            data["final_price"] = MAX_FINAL_PRICE
+                            raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                        else:
+                            data["final_price"] = decimal_price
+                    except (InvalidOperation, TypeError, ValueError):
+                        raise serializers.ValidationError("Výsledná cena není platné číslo.")
+            else:
+                if self.instance:  # update
+                    if final_price != self.instance.final_price and (not user or user.role not in privileged_roles):
+                        raise serializers.ValidationError({
+                            "final_price": "Pouze administrátor nebo úředník může upravit finální cenu."
+                        })
+                else:  # create
+                    if not user or user.role not in privileged_roles:
+                        raise serializers.ValidationError({
+                            "final_price": "Pouze administrátor nebo úředník může nastavit finální cenu."
+                        })
+            if data.get("final_price") is not None:
+                try:
+                    decimal_price = Decimal(str(data["final_price"])).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    # Clamp value to max allowed and raise error if exceeded
+                    if decimal_price > MAX_FINAL_PRICE:
+                        logger.error(f"ReservationSerializer: final_price ({decimal_price}) exceeds max allowed ({MAX_FINAL_PRICE})")
+                        data["final_price"] = MAX_FINAL_PRICE
+                        raise serializers.ValidationError({"final_price": f"Cena je příliš vysoká, maximálně {MAX_FINAL_PRICE} Kč."})
+                    data["final_price"] = decimal_price
+                except (InvalidOperation, TypeError, ValueError):
+                    raise serializers.ValidationError("Výsledná cena není platné číslo.")
+            if data.get("final_price") < 0:
+                raise serializers.ValidationError("Cena za m² nemůže být záporná.")
+        else:
+            # Remove final_price if not privileged
+            data.pop("final_price", None)
 
         if reserved_from >= reserved_to:
             raise serializers.ValidationError("Datum začátku rezervace musí být dříve než její konec.")
 
-        duration_days = (reserved_to - reserved_from).days
-        if duration_days not in (1, 7, 30):
-            raise serializers.ValidationError("Rezervace musí být na přesně 1, 7, nebo 30 dní.")
-
         if reserved_from < event.start or reserved_to > event.end:
             raise serializers.ValidationError("Rezervace musí být v rámci trvání akce.")
 
+        overlapping = None 
         if market_slot:
             if market_slot.event != event:
                 raise serializers.ValidationError("Prodejní místo nepatří do dané akce.")
@@ -171,19 +353,76 @@ class ReservationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Požadované rozšíření překračuje dostupné rozšíření.")
             overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
                 event=event,
-                marketSlot=market_slot,
+                market_slot=market_slot,
                 reserved_from__lt=reserved_to,
                 reserved_to__gt=reserved_from,
                 status="reserved"
             )
 
-        if overlapping.exists():
+        if overlapping is not None and overlapping.exists():
             raise serializers.ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
 
-        if user.user_reservations.filter(status="reserved").count() >= 5:
-            raise serializers.ValidationError("Uživatel už má 5 aktivních rezervací.")
+        return data
+
+class ReservationAvailabilitySerializer(serializers.Serializer):
+    event_id = serializers.IntegerField()
+    market_slot_id = serializers.IntegerField()
+    reserved_from = serializers.DateField()
+    reserved_to = serializers.DateField()
+
+    class Meta:
+        model = Reservation
+        fields = ["event", "market_slot", "reserved_from", "reserved_to"]
+        extra_kwargs = {
+            "event": {"help_text": "ID of the event"},
+            "market_slot": {"help_text": "ID of the market slot"},
+            "reserved_from": {"help_text": "Start date of the reservation"},
+            "reserved_to": {"help_text": "End date of the reservation"},
+        }
+
+    def validate(self, data):
+        event_id = data.get("event_id")
+        market_slot_id = data.get("market_slot_id")
+        reserved_from = data.get("reserved_from")
+        reserved_to = data.get("reserved_to")
+
+        if reserved_from >= reserved_to:
+            raise serializers.ValidationError("Konec rezervace musí být po začátku.")
+
+        # Zkontroluj existenci Eventu a Slotu
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            raise serializers.ValidationError("Událost neexistuje.")
+
+        try:
+            market_slot = MarketSlot.objects.get(id=market_slot_id)
+        except MarketSlot.DoesNotExist:
+            raise serializers.ValidationError("Slot neexistuje.")
+
+        # Zkontroluj status slotu
+        if market_slot.status == "blocked":
+            raise serializers.ValidationError("Tento slot je zablokovaný správcem.")
+
+        # Zkontroluj, že datumy spadají do rozsahu události
+        if reserved_from < event.date_from or reserved_to > event.date_to:
+            raise serializers.ValidationError("Vybrané datumy nespadají do trvání akce.")
+
+        # Zkontroluj, jestli už neexistuje kolizní rezervace
+        conflict = Reservation.objects.filter(
+            event=event,
+            market_slot=market_slot,
+            reserved_from__lt=reserved_to,
+            reserved_to__gt=reserved_from,
+            status="reserved"
+        ).exists()
+
+        if conflict:
+            raise serializers.ValidationError("Tento slot je v daném termínu již rezervován.")
 
         return data
+
+#--- Reservation end ----
 
 
 class MarketSlotSerializer(serializers.ModelSerializer):
@@ -242,8 +481,8 @@ class EventSerializer(serializers.ModelSerializer):
     market_slots = MarketSlotSerializer(many=True, read_only=True, source="event_marketSlots")
     event_products = EventProductSerializer(many=True, read_only=True)
 
-    start = RoundedDateTimeField()
-    end = RoundedDateTimeField()
+    start = serializers.DateField()
+    end = serializers.DateField()
 
     class Meta:
         model = Event
@@ -296,6 +535,8 @@ class EventSerializer(serializers.ModelSerializer):
 
 class SquareSerializer(serializers.ModelSerializer):
 
+    image = serializers.ImageField(required=False, allow_null=True)  # Ensure DRF handles image upload
+
     class Meta:
         model = Square
         fields = [
@@ -318,5 +559,44 @@ class SquareSerializer(serializers.ModelSerializer):
             "image": {"help_text": "Obrázek / mapa náměstí", "required": False},
         }
 
-
 #-----------------------------------------------------------------------
+class ReservedDaysSerializer(serializers.Serializer):
+    market_slot_id = serializers.IntegerField()
+    reserved_days = serializers.ListField(child=serializers.DateField(), read_only=True)
+
+    def to_representation(self, instance):
+        # Accept instance as dict or int
+        if isinstance(instance, dict):
+            market_slot_id = instance.get("market_slot_id")
+        else:
+            market_slot_id = instance  # assume int
+
+        try:
+            market_slot = MarketSlot.objects.get(id=market_slot_id)
+        except MarketSlot.DoesNotExist:
+            return {"market_slot_id": market_slot_id, "reserved_days": []}
+
+        # Get all reserved days for this slot, return each day individually
+        reservations = Reservation.objects.filter(
+            market_slot_id=market_slot_id,
+            status="reserved"
+        )
+        reserved_days = set()
+        for reservation in reservations:
+            current = reservation.reserved_from
+            end = reservation.reserved_to
+            # Convert to date if it's a datetime
+            if hasattr(current, "date"):
+                current = current.date()
+            if hasattr(end, "date"):
+                end = end.date()
+            # Include both start and end dates
+            while current <= end:
+                reserved_days.add(current)
+                current += timedelta(days=1)
+
+        # Return reserved days as a sorted list of individual dates
+        return {
+            "market_slot_id": market_slot_id,
+            "reserved_days": sorted(reserved_days)
+        }

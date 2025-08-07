@@ -68,7 +68,6 @@ class CustomUser(SoftDeleteModel, AbstractUser):
     )
     
     email = models.EmailField(unique=True, db_index=True)
-    otc = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True) #FIXME:se nevyuziva
     create_time = models.DateTimeField(auto_now_add=True)
 
     var_symbol = models.PositiveIntegerField(null=True, blank=True, validators=[
@@ -170,7 +169,9 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         is_new = self.pk is None  # check BEFORE saving
 
         if is_new:
-            # self.generate_login() neni treba
+            # Ensure first_name and last_name are provided before generating login
+            if self.first_name and self.last_name:
+                self.username = self.generate_login(self.first_name, self.last_name)
             if self.is_superuser or self.role in ["admin", "cityClerk", "squareManager"]:
                 # self.is_staff = True
                 self.is_active = True

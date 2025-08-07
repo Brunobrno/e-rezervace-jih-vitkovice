@@ -309,6 +309,10 @@ INSTALLED_APPS = [
 
     'drf_spectacular', #rest framework, grafické zobrazení
 
+    #Nastavení stránky
+    #'constance', 
+    #'constance.backends.database',
+
     'django.contrib.sitemaps',
 
     'tinymce',
@@ -489,8 +493,14 @@ AUTH_USER_MODEL = 'account.CustomUser' #class CustomUser(AbstractUser) best prac
 
 #--------------------------------END DATABASE 💾---------------------------------
 
+#--------------------------------------PAGE SETTINGS -------------------------------------
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
-
+# Configuration for Constance(variables)
+CONSTANCE_CONFIG = {
+    'BITCOIN_WALLET': ('', 'Public BTC wallet address'),
+    'SUPPORT_EMAIL': ('admin@example.com', 'Support email'),
+}
 
 #--------------------------------------EMAIL 📧--------------------------------------
 

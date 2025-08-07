@@ -1,50 +1,28 @@
 import { useEffect, useState, useCallback } from "react";
-import { Button, FormCheck, Alert, Spinner, Col, Row, Container } from "react-bootstrap";
-
+import { Button, Alert, Spinner, Col, Row, Container, Modal } from "react-bootstrap";
 import DynamicGrid from "../DynamicGrid";
-
 import eventAPI from "../../api/model/event";
 import orderAPI from "../../api/model/order";
-
-import { format, isBefore, isAfter } from "date-fns";
-
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
-
-import { useDebouncedCallback } from "use-debounce"; // npm i use-debounce
-
-import cs from "date-fns/locale/cs";
+import reservationAPI from "../../api/model/reservation";
+import { format } from "date-fns";
+import DaySelectorCalendar from "./step3/Calendar";
+import dayjs from "dayjs";
 
 export default function Step3Map({ data, setData, next, prev }) {
   const [slots, setSlots] = useState([]);
-  const [selectedIndices, setSelectedIndices] = useState([]);
-  const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
+  const [selectedSlotIdx, setSelectedSlotIdx] = useState(null);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [modalSlot, setModalSlot] = useState(null);
+  const [selectedRange, setSelectedRange] = useState(null);
   const [price, setPrice] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [priceError, setPriceError] = useState(null);
+  const [validationError, setValidationError] = useState('');
+  const [bookedRanges, setBookedRanges] = useState([]);
 
-  const eventStart = data?.event?.start ? new Date(data.event.start) : null;
-  const eventEnd = data?.event?.end ? new Date(data.event.end) : null;
-
-  if (eventStart) eventStart.setHours(0, 0, 0, 0);
-  if (eventEnd) eventEnd.setHours(23, 59, 59, 999);
-
-  const disabledDays = [
-    {
-      before: eventStart,
-    },
-    {
-      after: eventEnd,
-    },
-  ];
-
-  // Vybrané datum - defaultně dnes (můžeš změnit)
-  const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // Načti sloty z eventu
+  // Load all slots for the selected event on initial load
   useEffect(() => {
     if (!data?.event?.id) return;
-
     eventAPI.getEventById(data.event.id).then((eventData) => {
       if (eventData?.market_slots) {
         const mappedSlots = eventData.market_slots.map((slot) => ({
@@ -60,151 +38,173 @@ export default function Step3Map({ data, setData, next, prev }) {
     });
   }, [data?.event?.id]);
 
-  // Výběr slotu
-  const handleSlotSelect = (index) => {
-    const selected = slots[index];
-    if (!selected?.id) return;
+  // When user clicks a slot, open date picker modal (with delay)
+  const handleSlotSelect = async (idx) => {
+    setSelectedSlotIdx(idx);
+    setModalSlot(slots[idx]);
+    setValidationError('');
+    setPrice(null);
+    setPriceError(null);
+    setSelectedRange(null);
 
-    setSelectedIndices((prev) =>
-      multiSelectEnabled
-        ? prev.includes(index)
-          ? prev.filter((i) => i !== index)
-          : [...prev, index]
-        : [index]
-    );
-
-    setData((prev) => {
-      const isAlreadySelected = (prev.slots ?? []).some((s) => s.id === selected.id);
-      const updatedSlots = isAlreadySelected
-        ? prev.slots.filter((s) => s.id !== selected.id)
-        : multiSelectEnabled
-        ? [...(prev.slots || []), selected]
-        : [selected];
-
-      return { ...prev, slots: updatedSlots };
-    });
-  };
-
-  const calculatePrice = useCallback(async () => {
-    if (!data?.event?.id || !(data.slots?.length > 0) || !selectedDate) {
-      setPrice(null);
-      return;
+    // Fetch reserved days for this slot (expects array of dates)
+    const slotId = slots[idx]?.id;
+    if (slotId) {
+      try {
+        const res = await reservationAPI.getReservedRanges(slotId);
+        // Expecting { reserved_days: [date1, date2, ...] }
+        setBookedRanges(res?.reserved_days ?? []);
+      } catch (e) {
+        setBookedRanges([]);
+      }
+    } else {
+      setBookedRanges([]);
     }
 
+    setTimeout(() => {
+      setShowDateModal(true);
+      console.log("data:", data);
+    }, 500); // small delay for state propagation
+  };
+
+  // When user picks a date range, submit to backend
+  const handleDateRangeSubmit = async (rangeObj) => {
+    if (!modalSlot?.id || !rangeObj?.start || !rangeObj?.end) return;
     setLoadingPrice(true);
     setPriceError(null);
-
-    const reserved_from = new Date(selectedDate);
-    reserved_from.setHours(0, 0, 0, 0);
-
-    const reserved_to = new Date(reserved_from);
-    reserved_to.setDate(reserved_to.getDate() + 1);
-
+    setValidationError('');
+    
     try {
-      console.log("Volám API pro výpočet ceny...");
+      // Use date only (YYYY-MM-DD)
+      const reserved_from = dayjs(rangeObj.start).format("YYYY-MM-DD");
+      const reserved_to = dayjs(rangeObj.end).format("YYYY-MM-DD");
+
+      // Call backend to check reservation and get price
       const res = await orderAPI.calculatePrice({
-        event: data.event.id,
-        reserved_from: reserved_from.toISOString(),
-        reserved_to: reserved_to.toISOString(),
-        slots: data.slots.map((s) => ({ slot_id: s.id, used_extension: 0 })),
+        slot: modalSlot.id,
+        reserved_from,
+        reserved_to,
+        used_extension: 0,
       });
 
-      setPrice(res.total_price ?? null);
+      // If backend returns error (e.g., slot reserved), show validation error
+      if (res?.error) {
+        setValidationError(res.error || "Toto místo je již rezervováno pro tento termín.");
+        setPrice(null);
+      } else {
+        setPrice(res.final_price ?? null);
+        setSelectedRange(rangeObj);
+        setData((prevData) => ({
+          ...prevData,
+          slots: [{ ...modalSlot }],
+          date: {
+            start: reserved_from,
+            end: reserved_to,
+          },
+        }));
+        setValidationError('');
+      }
     } catch (error) {
-      console.error("Chyba výpočtu ceny:", error);
-      setPriceError("Nepodařilo se spočítat cenu.");
+      setPriceError("Nepodařilo se spočítat cenu rezervace.");
       setPrice(null);
     } finally {
       setLoadingPrice(false);
+      setShowDateModal(false);
+      console.log("Data:", data);
     }
-  }, [data.event?.id, data.slots, selectedDate]);
-
-  // Debounce volání calculatePrice - čeká 300 ms po poslední změně
-  const debouncedCalculatePrice = useDebouncedCallback(() => {
-    calculatePrice();
-  }, 300);
-
-  // Zavolání debouncedCalculatePrice když se změní slots nebo datum
-  useEffect(() => {
-    debouncedCalculatePrice();
-  }, [data.slots, selectedDate, debouncedCalculatePrice]);
-
-  // Změna vybraného data v kalendáři
-  const handleDateClick = (date) => {
-    if (!date) return;
-    if (eventStart && isBefore(date, eventStart)) return;
-    if (eventEnd && isAfter(date, eventEnd)) return;
-
-    setSelectedDate(date);
-    setData((prev) => ({ ...prev, date: format(date, "yyyy-MM-dd") }));
   };
 
-  const dynamicGridSelectedIndex = multiSelectEnabled
-    ? selectedIndices
-    : selectedIndices.length === 1
-    ? selectedIndices[0]
-    : null;
+  // Validate before next
+  const validateSelection = () => {
+    if (!data.slots || data.slots.length === 0 || !selectedRange) {
+      setValidationError('Musíte vybrat místo a termín.');
+      return false;
+    }
+    setValidationError('');
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateSelection()) {
+      next();
+    }
+  };
+
+  // Get grid config from selected square or fallback to defaults
+  const gridConfig = data.square
+    ? {
+        cols: data.square.grid_cols || 60,
+        rows: data.square.grid_rows || 44,
+        cellSize: data.square.cellsize || 20,
+      }
+    : { cols: 60, rows: 44, cellSize: 20 };
 
   return (
     <div className="d-flex flex-column align-items-center gap-3 w-100">
       <Container className="w-100 mb-5">
         <Row>
           <Col>
-            <h5>Vyber datum rezervace:</h5>
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateClick}
-              disabled={disabledDays}
-              modifiersClassNames={{
-                selected: "bg-primary text-white rounded",
-              }}
-              modifiersStyles={{
-                disabled: { color: "#ccc", backgroundColor: "#f8f9fa", cursor: "not-allowed" },
-              }}
-              pagedNavigation
-              locale={cs}
-            />
+            <h5>Vyberte místo na mapě:</h5>
+            <p>Klikněte na volné místo pro výběr termínu rezervace.</p>
           </Col>
           <Col>
-              <Row className="fs-3">
-                {loadingPrice ? (
-                  <Spinner animation="border" />
-                ) : priceError ? (
-                  <Alert variant="danger">{priceError}</Alert>
-                ) : price !== null ? (
-                  <Alert variant="info">
-                    Cena za rezervaci: <strong>{price} Kč</strong>
-                  </Alert>
-                ) : null}
-              </Row>
-              <Row>
-                <FormCheck
-                  type="switch"
-                  id="multiSelectSwitch"
-                  label="Povolit vícenásobný výběr"
-                  checked={multiSelectEnabled}
-                  onChange={() => setMultiSelectEnabled(!multiSelectEnabled)}
-                  className="my-5 fs-2"
-                />
-              </Row>
+            {loadingPrice ? (
+              <Spinner animation="border" />
+            ) : priceError ? (
+              <Alert variant="danger">{priceError}</Alert>
+            ) : price !== null ? (
+              <Alert variant="info">
+                Cena za rezervaci: <strong>{price} Kč</strong>
+              </Alert>
+            ) : null}
           </Col>
         </Row>
-        
-
-
-        
       </Container>
+
+      {/* Always show map with all slots */}
       <DynamicGrid
-        config={{ cols: 60, rows: 44, cellSize: 20 }}
+        config={gridConfig}
         reservations={slots}
         onReservationsChange={() => {}}
-        selectedIndex={dynamicGridSelectedIndex}
+        selectedIndex={selectedSlotIdx}
         onSelectedIndexChange={handleSlotSelect}
         static={true}
-        multiSelect={multiSelectEnabled}
+        multiSelect={false}
         clickableStatic={true}
+        backgroundImage={data.square?.image} // <-- use image from API if present
+        ref={el => {
+          if (el) {
+            console.log('[Step3Map] DynamicGrid props:', {
+              selectedIndex: selectedSlotIdx,
+              slots,
+            });
+          }
+        }}
       />
+
+      {/* Date picker modal for slot selection */}
+      <Modal
+        show={showDateModal}
+        onHide={() => setShowDateModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Vyberte termín pro místo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <DaySelectorCalendar
+            onSelectDate={handleDateRangeSubmit}
+            eventStart={data?.event?.start ? new Date(data.event.start) : null}
+            eventEnd={data?.event?.end ? new Date(data.event.end) : null}
+            defaultDate={data?.event?.start ? new Date(data.event.start) : null}
+            bookedRanges={bookedRanges} // <-- now array of dates
+          />
+        </Modal.Body>
+      </Modal>
+
+      {validationError && (
+        <div style={{ color: 'red', marginBottom: 8 }}>{validationError}</div>
+      )}
 
       <div className="d-flex justify-content-between w-100 mt-4 px-4">
         <Button variant="secondary" onClick={prev}>
@@ -212,8 +212,8 @@ export default function Step3Map({ data, setData, next, prev }) {
         </Button>
         <Button
           variant="primary"
-          onClick={next}
-          disabled={data.slots?.length === 0 || !selectedDate}
+          onClick={handleNext}
+          disabled={!data.slots?.length || !selectedRange}
         >
           ➡️ Pokračovat
         </Button>
