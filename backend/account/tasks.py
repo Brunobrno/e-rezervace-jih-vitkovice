@@ -72,8 +72,8 @@ def send_email_clerk_add_var_symbol_task(user_id):
     url = f"{settings.FRONTEND_URL}/clerk/add-var-symbol/{uid}/"
     message = f"Byl vytvořen nový uživatel:\n {user.firstname} {user.secondname} {user.email} .\n Doplňte variabilní symbol {url} ."
 
-    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+    # if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+    #     logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
 
     
     send_email_with_context(
@@ -97,8 +97,8 @@ def send_email_clerk_accepted_task(user_id):
     message = f"Úředník potvrdil vaší registraci. Můžete se přihlásit."
 
 
-    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+    # if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+    #     logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
     
     send_email_with_context(
         recipients=user.email,
@@ -124,7 +124,7 @@ def send_email_with_context(recipients, subject, message):
             fail_silently=False,
         )
         if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-            logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
+            logger.debug("\nEMAIL OBSAH:\n%s\nKONEC OBSAHU", message)
         return True
     except Exception as e:
         logger.error(f"E-mail se neodeslal: {e}")
