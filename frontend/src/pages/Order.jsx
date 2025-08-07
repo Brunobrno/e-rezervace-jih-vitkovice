@@ -1,5 +1,6 @@
 import QrPayment from "../components/QRPayment";
-import React from "react";
+import { React, useContext } from "react";
+import { UserContext } from "../context/UserContext"; 
 
 function Order() {
   return (
@@ -7,10 +8,6 @@ function Order() {
       <h1>Order Page</h1>
       <QrPayment
         amount={322.4}
-        accountNumber={"19-2000145399/0800"}
-        variableSymbol={"126303"}
-        constantSymbol={"126303"}
-        specificSymbol={"126303"}
         message={"Payment for order #126303"}
       />
     </div>

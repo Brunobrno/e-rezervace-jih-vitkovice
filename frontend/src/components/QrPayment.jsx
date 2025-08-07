@@ -1,22 +1,33 @@
 import { createQrPaymentSvg } from "@tedyno/cz-qr-payment";
+import React, { useContext } from "react";
+import { UserContext } from "../context/UserContext";
 
 function QrPayment({
   amount,
-  accountNumber,
-  variableSymbol = "126303",
-  constantSymbol = "126303",
-  specificSymbol = "126303",
-  message = "Payment for order #126303",
+  constantSymbol,
+  specificSymbol,
+  variableSymbol,
+  message = "Payment",
 }) {
+  const { user } = useContext(UserContext) || {};
+
+  // Pokud props nejsou definované, vezmeme z usera
+  const resolvedAccountNumber = "4655628722/0100";
+  const resolvedVariableSymbol = variableSymbol || user?.var_symbol;
+
   const options = {
-    VS: variableSymbol,
-    KS: constantSymbol,
-    SS: specificSymbol,
-    message
+    VS: resolvedVariableSymbol?.toString(),
+    KS: constantSymbol?.toString(),
+    SS: specificSymbol?.toString(),
+    message,
   };
 
-  // Vytvoří SVG string
-  const svgString = createQrPaymentSvg(amount, accountNumber, options);
+
+  if (!amount || !resolvedAccountNumber || !resolvedVariableSymbol) {
+    return <div>Neplatné údaje pro QR platbu.</div>;
+  }
+
+  const svgString = createQrPaymentSvg(amount, resolvedAccountNumber, options);
 
   return (
     <div
