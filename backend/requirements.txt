@@ -70,6 +70,7 @@ django-tinymce
 django-cors-headers #csfr
 
 celery #slouží k vytvaření asynchoních úkolu (třeba každou hodinu vyčistit cache atd.)
+django-celery-beat #slouží k plánování úkolů pro Celery
 
 
 # -- EDITING photos, gifs, videos --

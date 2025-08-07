@@ -15,6 +15,19 @@ python -m venv venv
 daphne -b localhost -p 8000 trznice.asgi:application
 ```
 
+if run locally in backend folder:
+dont forget to run redis:
+docker run redis
+
+#create scheduled tasks in db
+python manage.py seed_celery_beat
+
+#run CELERY Terminal 1 
+celery -A trznice worker --pool=solo --loglevel=info
+
+#run CELERY BEAT Terminal 2
+celery -A trznice beat --loglevel=info
+
 
 
 ## django command that will use barebones settings.py for basic work

@@ -4,7 +4,7 @@ from django.utils.encoding import force_bytes, force_str
 
 from .serializers import *
 from .permissions import *
-from .email import send_password_reset_email, send_email_verification
+from .tasks import *
 from .models import CustomUser
 from .tokens import *
 from .filters import UserFilter
@@ -262,7 +262,13 @@ class UserRegistrationViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        send_email_verification(user) # posílaní emailu pro potvrzení registrace
+        try:
+            send_email_verification_task.delay(user.id) # posílaní emailu pro potvrzení registrace - CELERY TASK
+        except Exception as e:
+            logger.error(f"Celery not available, using fallback. Error: {e}")
+            send_email_verification_task(user.id) # posílaní emailu pro potvrzení registrace
+
+
             
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -311,7 +317,11 @@ class UserActivationViewSet(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        send_email_clerk_accepted(user)
+        try:
+            send_email_clerk_accepted_task.delay(user.id) # posílaní emailu pro informování uživatele o dokončení registrace, uředník doplnil variabilní symbol - CELERY TASK
+        except Exception as e:
+            logger.error(f"Celery not available, using fallback. Error: {e}")
+            send_email_clerk_accepted_task(user.id) # posílaní emailu pro informování uživatele o dokončení registrace, uředník doplnil variabilní symbol
 
         return Response(serializer.to_representation(user), status=status.HTTP_200_OK)
 
@@ -331,10 +341,19 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
-            user = User.objects.get(email=serializer.validated_data['email'])
-            send_password_reset_email(user, request)
+            try:
+                user = User.objects.get(email=serializer.validated_data['email'])
+            except User.DoesNotExist:
+                # Always return 200 even if user doesn't exist to avoid user enumeration
+                return Response({"detail": "E-mail s odkazem byl odeslán."})
+            try:
+                send_password_reset_email_task.delay(user.id) # posílaní emailu pro obnovení hesla - CELERY TASK
+            except Exception as e:
+                logger.error(f"Celery not available, using fallback. Error: {e}")
+                send_password_reset_email_task(user.id) # posílaní emailu pro obnovení hesla registrace
 
             return Response({"detail": "E-mail s odkazem byl odeslán."})
+        
         return Response(serializer.errors, status=400)
     
 #2. Confirming reset

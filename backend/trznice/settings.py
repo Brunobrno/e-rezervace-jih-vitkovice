@@ -289,7 +289,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'corsheaders',#cors
+    'corsheaders', #cors
+
+    'django_celery_beat', #slouží k plánování úkolů pro Celery
 
     
     #'chat.apps.GlobalChatCheck', #tohle se spusti při každé django inicializaci (migration, createmigration, runserver)
@@ -399,27 +401,54 @@ else:
 
 #-------------------------------------CELERY 📅------------------------------------
 
-if not DEBUG:
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_TIMEZONE = 'Europe/Prague'
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
-    from celery.schedules import crontab
+try:
+    import redis
+    # test connection
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    r.ping()
+except Exception:
+    CELERY_BROKER_URL = 'memory://'
 
-    CELERY_BEAT_SCHEDULE = {
-        'hard_delete_soft_deleted_monthly': {
-            'task': 'account.tasks.hard_delete_soft_deleted_records',
-            'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
-        },
-        'delete_old_reservations_monthly': {
-            'task': 'account.tasks.delete_old_reservations',
-            'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
-        },
-    }
-else:
-    # Nebo nastav dummy broker, aby se úlohy neodesílaly
-    CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
+CELERY_ACCEPT_CONTENT = os.getenv("CELERY_ACCEPT_CONTENT")
+CELERY_TASK_SERIALIZER = os.getenv("CELERY_TASK_SERIALIZER")
+CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE")
+
+CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER")
+# if DEBUG:
+#     CELERY_BROKER_URL = 'redis://localhost:6379/0'
+#     try:
+#         import redis
+#         # test connection
+#         r = redis.Redis(host='localhost', port=6379, db=0)
+#         r.ping()
+#     except Exception:
+#         CELERY_BROKER_URL = 'memory://'
+
+#     CELERY_ACCEPT_CONTENT = ['json']
+#     CELERY_TASK_SERIALIZER = 'json'
+#     CELERY_TIMEZONE = 'Europe/Prague'
+
+#     CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+    # from celery.schedules import crontab
+
+    # CELERY_BEAT_SCHEDULE = {
+    #     'hard_delete_soft_deleted_monthly': {
+    #         'task': 'trznice.tasks.hard_delete_soft_deleted_records',
+    #         'schedule': crontab(minute=0, hour=0, day_of_month=1),  # každý první den v měsíci o půlnoci
+    #     },
+    #     'delete_old_reservations_monthly': {
+    #         'task': 'account.tasks.delete_old_reservations',
+    #         'schedule': crontab(minute=0, hour=1, day_of_month=1),  # každý první den v měsíci v 1:00 ráno
+    #     },
+    # }
+# else:
+#     # Nebo nastav dummy broker, aby se úlohy neodesílaly
+#     CELERY_BROKER_URL = 'memory://'  # broker v paměti, pro testování bez Redis
 
 #-------------------------------------END CELERY 📅------------------------------------
 
@@ -474,12 +503,12 @@ else:
 
 EMAIL_HOST = os.getenv("EMAIL_HOST_DEV")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT_DEV", 465))
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = False
+EMAIL_USE_TLS = True           # ❌ Keep this OFF when using SSL
+EMAIL_USE_SSL = False          # ✅ Must be True for port 465
 EMAIL_HOST_USER = os.getenv("EMAIL_USER_DEV")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_USER_PASSWORD_DEV")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 1
+EMAIL_TIMEOUT = 10
 
 print("---------EMAIL----------\nEMAIL_HOST =", os.getenv("EMAIL_HOST_DEV"))
 print("EMAIL_PORT =", os.getenv("EMAIL_PORT_DEV"))
@@ -858,8 +887,3 @@ SPECTACULAR_DEFAULTS: Dict[str, Any] = {
     'OAUTH2_REFRESH_URL': None,
     'OAUTH2_SCOPES': None,
 }
-
-# Celery - Pavel
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
