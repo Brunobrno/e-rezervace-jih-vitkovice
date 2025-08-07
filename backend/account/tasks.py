@@ -123,6 +123,8 @@ def send_email_with_context(recipients, subject, message):
             recipient_list=recipients,
             fail_silently=False,
         )
+        if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+            logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
         return True
     except Exception as e:
         logger.error(f"E-mail se neodeslal: {e}")

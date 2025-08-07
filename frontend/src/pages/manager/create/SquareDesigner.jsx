@@ -225,7 +225,7 @@ export default function SquareDesigner() {
                       setShowSuccessModal(true);
                       setTimeout(() => {
                         setShowSuccessModal(false);
-                        navigate("/manager/squares");
+                        navigate("/manage/squares");
                       }, 1400);
                     } catch (err) {
                       setError("Chyba při vytváření náměstí. Zkontrolujte data.");

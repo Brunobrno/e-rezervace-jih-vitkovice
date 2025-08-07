@@ -170,7 +170,7 @@ def create_market_slots(events, max_slots=8):
         for _ in range(count):
             slot = MarketSlot(
                 event=event,
-                status=random.choice(["allowed", "blocked"]),  # <-- fix status values
+                status=random.choice(["allowed", "blocked"]),
                 base_size=round(random.uniform(2, 10), 2),
                 available_extension=round(random.uniform(0, 5), 2),
                 x=random.randint(0, 30),
@@ -181,6 +181,11 @@ def create_market_slots(events, max_slots=8):
             )
             slot.full_clean()
             slot.save()
+            # Check fields and relations
+            assert slot.event == event
+            assert slot.status in ["allowed", "blocked"]
+            assert isinstance(slot.base_size, float) or isinstance(slot.base_size, Decimal)
+            assert isinstance(slot.price_per_m2, Decimal)
             slots.append(slot)
     print(f"✅ Vytvořeno {len(slots)} prodejních míst")
     return slots
@@ -221,17 +226,22 @@ def create_reservations(users, slots, event_products, max_per_user=2):
             try:
                 res = Reservation(
                     event=event,
-                    market_slot=slot,  # <-- fix field name
+                    market_slot=slot,
                     user=user,
                     used_extension=used_extension,
                     reserved_from=start,
                     reserved_to=end,
                     status="reserved",
                     final_price=final_price,
-                    price=price,  # <-- set price field
+                    price=price,
                 )
                 res.full_clean()
                 res.save()
+                # Check fields and relations
+                assert res.event == event
+                assert res.market_slot == slot
+                assert res.user == user
+                assert res.status == "reserved"
                 # Add event_products to reservation
                 if event_products:
                     chosen_eps = random.sample(event_products, k=min(len(event_products), random.randint(0, 2)))
@@ -256,6 +266,10 @@ def create_orders(users, reservations):
         try:
             order.full_clean()
             order.save()
+            # Check fields and relations
+            assert order.user == user
+            assert order.reservation == res
+            assert order.status in ["payed", "pending", "cancelled"]
             orders.append(order)
         except ValidationError:
             continue

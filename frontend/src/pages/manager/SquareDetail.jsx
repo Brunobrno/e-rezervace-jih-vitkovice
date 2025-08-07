@@ -220,7 +220,7 @@ export default function SquareDesigner() {
                       setShowSuccessModal(true);
                       setTimeout(() => {
                         setShowSuccessModal(false);
-                        navigate("/manager/squares");
+                        navigate("/manage/squares");
                         window.location.reload(); // <-- force reload after redirect
                       }, 1400);
                     } catch (err) {

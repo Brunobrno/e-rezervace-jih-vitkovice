@@ -8,6 +8,7 @@ export default function CreateEvent({ onCreated }) {
   const [form, setForm] = useState({ ...eventAPI.defaultEvent });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorDetail, setErrorDetail] = useState(null);
   const [squares, setSquares] = useState([]);
   const [squaresLoading, setSquaresLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -34,18 +35,37 @@ export default function CreateEvent({ onCreated }) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorDetail(null);
+    // Require square selection
+    if (!form.square_id) {
+      setError("Vyberte náměstí (plocha) pro událost.");
+      setLoading(false);
+      return;
+    }
     try {
       const response = await eventAPI.createEvent(form);
       setForm({ ...eventAPI.defaultEvent, square: null });
       setConfirmed(true);
       if (onCreated) onCreated();
     } catch (err) {
-      console.error("API error:", err); // Debug: log error
-      if (err && err.response && err.response.data && err.response.data.detail) {
-        setError(`Chyba: ${err.response.data.detail}`);
+      // Show error message in UI
+      let msg = "Chyba při vytváření události.";
+      if (err && err.response && err.response.data) {
+        if (typeof err.response.data === "string") {
+          msg = `Chyba: ${err.response.data}`;
+        } else if (err.response.data.detail) {
+          msg = `Chyba: ${err.response.data.detail}`;
+        } else {
+          // Validation errors: show all fields
+          msg = Object.entries(err.response.data)
+            .map(([field, val]) => `${field}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .join("\n");
+        }
+        setErrorDetail(err.response.data);
       } else {
-        setError("Chyba při vytváření události.");
+        setErrorDetail(err);
       }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -53,7 +73,7 @@ export default function CreateEvent({ onCreated }) {
 
   const handleConfirmOk = () => {
     setConfirmed(false);
-    window.location.href = "/manager/events";
+    window.location.href = "/manage/events";
   };
 
   return (
@@ -191,10 +211,28 @@ export default function CreateEvent({ onCreated }) {
             </Col>
           </Row>
           {/* Error and submit */}
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && (
+            <Alert variant="danger">
+              <div>{error}</div>
+              {errorDetail && (
+                <details style={{ marginTop: 8 }}>
+                  <summary>Detail chyby</summary>
+                  <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
+                    {typeof errorDetail === "object"
+                      ? JSON.stringify(errorDetail, null, 2)
+                      : String(errorDetail)}
+                  </pre>
+                </details>
+              )}
+            </Alert>
+          )}
           <Row>
             <Col md={12} className="mb-3">
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={loading || !form.square_id}
+              >
                 {loading ? "Ukládání..." : "Vytvořit událost"}
               </Button>
             </Col>

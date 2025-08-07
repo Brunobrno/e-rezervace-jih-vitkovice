@@ -345,9 +345,12 @@ class Reservation(SoftDeleteModel):
             order.delete()
 
         # Fix: Use a valid status value for MarketSlot
-        if self.market_slot and self.market_slot.event.end > timezone.now():
-            self.market_slot.status = "allowed"
-            self.market_slot.save()
+        if self.market_slot:
+            event_end_date = self.market_slot.event.end
+            now_date = timezone.now().date()
+            if event_end_date > now_date:
+                self.market_slot.status = "allowed"
+                self.market_slot.save()
 
         self.checks.all().update(is_deleted=True, deleted_at=timezone.now())
 

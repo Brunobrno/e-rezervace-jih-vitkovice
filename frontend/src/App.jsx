@@ -21,13 +21,15 @@ import RequireAuthLayout from "./components/security/RequireAuthLayout";
 
 {/* manager */}
 import Events from "./pages/manager/Events";
-import MapEditor from "./pages/MapEditor"; {/* Map editor for events */ }
+import MapEditor from "./pages/manager/edit/MapEditor"; {/* Map editor for events */ }
 import CreateEvent from "./pages/manager/create/create-event";
 
 import Squares from "./pages/manager/Squares";
 import SquareDesigner from "./pages/manager/create/SquareDesigner"; {/* Square designer for creating squares */ }
 
 import Reservations from "./pages/manager/Reservations";
+
+import Orders from "./pages/manager/Orders";
 
 import Ticket from "./pages/Ticket";
 
@@ -104,6 +106,8 @@ function App() {
               <Route path="/manage/events/:id" element={<Events />} />
               <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
               <Route path="/manage/events/create" element={<CreateEvent />} />
+
+              <Route path="/manage/orders" element={<Orders />} />
               
             </Route>
           </Route>

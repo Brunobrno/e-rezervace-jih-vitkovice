@@ -19,7 +19,7 @@ import {
   Stack,
   Button
 } from "@mantine/core";
-import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconReceipt2 } from "@tabler/icons-react";
 import apiSquares from "../../api/model/square";
 
 function Squares() {
@@ -261,7 +261,10 @@ function Squares() {
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
-            <h1>Náměstí</h1>
+            <h1>
+              <IconReceipt2 size={30} style={{ marginRight: 10, marginTop: -4 }} />
+              Náměstí
+            </h1>
             <Button component="a" href="/manage/squares/designer" leftSection={<IconPlus size={16} />}>Přidat náměstí</Button>
           </Group>
 

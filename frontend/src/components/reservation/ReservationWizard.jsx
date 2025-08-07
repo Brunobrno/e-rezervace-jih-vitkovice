@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ProgressBar, Form, InputGroup, Table, Spinner, Alert, Card, Container, Row, Col } from 'react-bootstrap';
 import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 
 import Step1SelectSquare from './Step1SelectSquare';
 import Step2SelectEvent from './Step2SelectEvent';
@@ -51,6 +52,7 @@ const ReservationWizard = () => {
   const [userFilters, setUserFilters] = useState({});
   const [roleChoices, setRoleChoices] = useState([]);
   const [accountTypeChoices, setAccountTypeChoices] = useState([]);
+  const navigate = useNavigate();
 
   // Fetch choices for select fields on mount (inspired by create-user.jsx)
   useEffect(() => {
@@ -151,6 +153,8 @@ const ReservationWizard = () => {
       });
       alert('Objednávka byla úspěšně odeslána!');
       console.log('📦 Objednáno:', response);
+      // Redirect to payment page after alert confirmation
+      navigate(`/payment/${response.id}`);
     } catch (error) {
       // Log the error and show backend validation errors if present
       console.error('❌ Chyba při odesílání objednávky:', error);

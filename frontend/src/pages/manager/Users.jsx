@@ -22,8 +22,9 @@ import {
   Badge,
   Tooltip,
 } from "@mantine/core";
-import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconReceipt2 } from "@tabler/icons-react";
 import userAPI from "../../api/model/user";
+import { fetchEnumFromSchemaJson } from "../../api/get_chocies";
 
 function Users() {
   // State
@@ -60,9 +61,12 @@ function Users() {
     RC: "",
     GDPR: false,
     is_active: true,
+    var_symbol: "", // <-- add this line
   });
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [roleDropdownOptions, setRoleDropdownOptions] = useState([]);
+  const [accountTypeDropdownOptions, setAccountTypeDropdownOptions] = useState([]);
 
   // Fetch users
   useEffect(() => {
@@ -90,6 +94,26 @@ function Users() {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    // Načti možnosti pro role
+    fetchEnumFromSchemaJson("/api/account/users/", "post", "role")
+      .then((choices) => setRoleDropdownOptions(choices))
+      .catch(() => setRoleDropdownOptions([
+        { value: "admin", label: "Administrátor" },
+        { value: "seller", label: "Prodejce" },
+        { value: "squareManager", label: "Správce tržiště" },
+        { value: "cityClerk", label: "Úředník" },
+        { value: "checker", label: "Kontrolor" },
+      ]));
+    // Načti možnosti pro typ účtu
+    fetchEnumFromSchemaJson("/api/account/users/", "post", "account_type")
+      .then((choices) => setAccountTypeDropdownOptions(choices))
+      .catch(() => setAccountTypeDropdownOptions([
+        { value: "company", label: "Firma" },
+        { value: "individual", label: "Fyzická osoba" },
+      ]));
   }, []);
 
   // Role/group options
@@ -166,6 +190,7 @@ function Users() {
       RC: user.RC || "",
       GDPR: user.GDPR || false,
       is_active: user.is_active ?? true,
+      var_symbol: user.var_symbol || "",
     });
     setModalType('edit');
     setShowModal(true);
@@ -201,7 +226,11 @@ function Users() {
     setSubmitting(true);
     console.log("Submitting edit:", formData);
     try {
-      await userAPI.updateUser(selectedUser.id, formData);
+      await userAPI.updateUser(selectedUser.id, {
+        ...formData,
+        account_type: formData.account_type,
+        var_symbol: formData.var_symbol, // <-- ensure this is sent
+      });
       setShowModal(false);
       const data = await userAPI.getUsers();
       setUsers(data);
@@ -362,7 +391,11 @@ function Users() {
       width: "7%",
       render: (row) =>
         row.account_type ? (
-          <Badge color="gray" variant="light">{row.account_type}</Badge>
+          <Badge color="gray" variant="light">
+            {
+              accountTypeDropdownOptions.find(opt => opt.value === row.account_type)?.label || row.account_type
+            }
+          </Badge>
         ) : (
           <Text c="dimmed" fs="italic">—</Text>
         ),
@@ -371,13 +404,7 @@ function Users() {
         <MultiSelect
           label="Filtrovat typ účtu"
           placeholder="Typ účtu"
-          data={accountTypeOptions.map(type => ({
-            value: type,
-            label: {
-              "company": "Firma",
-              "individual": "Fyzická osoba",
-            }[type] || type
-          }))}
+          data={accountTypeDropdownOptions}
           value={selectedAccountTypes}
           onChange={setSelectedAccountTypes}
           clearable
@@ -466,7 +493,10 @@ function Users() {
         </Col>
         <Col xs={10} className="px-0 bg-white d-flex flex-column" style={{ minWidth: 0 }}>
           <Group justify="space-between" align="center" px="md" py="sm">
-            <h1>Uživatelé</h1>
+            <h1>
+              <IconReceipt2 size={30} style={{ marginRight: 10, marginTop: -4 }} />
+              Uživatelé
+            </h1>
             <Button component="a" href="/manage/users/create" leftSection={<IconPlus size={16} />}>Vytvořit uživatele</Button>
           </Group>
 
@@ -532,8 +562,8 @@ function Users() {
                   <Form.Label>Role</Form.Label>
                   <Form.Select name="role" value={formData.role} onChange={handleChange}>
                     <option value="">—</option>
-                    {roleOptions.map(role => (
-                      <option key={role} value={role}>{role}</option>
+                    {roleDropdownOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -541,8 +571,8 @@ function Users() {
                   <Form.Label>Typ účtu</Form.Label>
                   <Form.Select name="account_type" value={formData.account_type} onChange={handleChange}>
                     <option value="">—</option>
-                    {accountTypeOptions.map(type => (
-                      <option key={type} value={type}>{type}</option>
+                    {accountTypeDropdownOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -573,6 +603,17 @@ function Users() {
                 <Form.Group className="mb-3">
                   <Form.Label>Rodné číslo</Form.Label>
                   <Form.Control name="RC" value={formData.RC} onChange={handleChange} />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Variabilní symbol</Form.Label>
+                  <Form.Control
+                    name="var_symbol"
+                    value={formData.var_symbol}
+                    onChange={handleChange}
+                    type="number"
+                    min="0"
+                    max="9999999999"
+                  />
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Check

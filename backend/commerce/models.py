@@ -33,15 +33,9 @@ class Order(SoftDeleteModel):
     
     payed_at = models.DateTimeField(null=True, blank=True)
     
-    order_number = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-        help_text="Jedinečné číslo objednávky."
-    )
 
     def __str__(self):
-        return f"Objednávka {self.order_number} od uživatele {self.user}"
+        return f"Objednávka {self.id} od uživatele {self.user}"
     
     def clean(self):
 
@@ -111,3 +105,9 @@ class Order(SoftDeleteModel):
         #     self.price_to_pay = self.reservation.final_price
         
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.reservation.status = "cancelled"
+        self.reservation.save()
+        
+        return super().delete(*args, **kwargs)

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Container, Row, Col, Card, ListGroup } from "react-bootstrap";
-import DynamicGrid, { DEFAULT_CONFIG } from "../components/DynamicGrid";
-import apiEvent from "../api/model/event";
-import apiSquare from "../api/model/square";
-import apiMarketSlot from "../api/model/market_slot";
+import DynamicGrid, { DEFAULT_CONFIG } from "../../../components/DynamicGrid";
+import apiEvent from "../../../api/model/event";
+import apiSquare from "../../../api/model/square";
+import apiMarketSlot from "../../../api/model/market_slot";
 
 function MapEditor() {
   const { eventId } = useParams();
@@ -164,6 +164,7 @@ function MapEditor() {
             selectedIndex={selectedIndex}
             onSelectedIndexChange={setSelectedIndex}
             marketSlots={marketSlots}
+            backgroundImage={squareObject?.image}
           />
         </Col>
         <Col sm={6} md={4}>
@@ -174,72 +175,75 @@ function MapEditor() {
                 {reservations.length}
               </span>
             </Card.Header>
-            <ListGroup className="list-group-flush">
-              {reservations.map((res, i) => (
-                <ListGroup.Item
-                  key={res.id || i}
-                  action
-                  active={i === selectedIndex}
-                  onClick={() => setSelectedIndex(i)}
-                >
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{i + 1}.</strong> {res.name}
+            {/* Make the list scrollable */}
+            <div style={{ maxHeight: "80vh", overflowY: "auto" }}>
+              <ListGroup className="list-group-flush">
+                {reservations.map((res, i) => (
+                  <ListGroup.Item
+                    key={res.id || i}
+                    action
+                    active={i === selectedIndex}
+                    onClick={() => setSelectedIndex(i)}
+                  >
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>{i + 1}.</strong> {res.name}
+                      </div>
+                      <span className="badge bg-secondary">
+                        {res.w}×{res.h}
+                      </span>
                     </div>
-                    <span className="badge bg-secondary">
-                      {res.w}×{res.h}
-                    </span>
-                  </div>
-                  <div className="text-muted mt-1">
-                    [{res.x},{res.y}] → [{res.x + res.w - 1},{res.y + res.h - 1}]
-                  </div>
-                  {/* Editable fields */}
-                  <div className="mt-2">
-                    <label className="form-label mb-1" style={{ fontSize: "0.95em" }}>
-                      Základní velikost (m²):
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        style={{ width: "100px", display: "inline-block", marginLeft: "8px" }}
-                        value={res.base_size ?? ""}
-                        min={0}
-                        onChange={e => {
-                          const value = e.target.value === "" ? undefined : Number(e.target.value);
-                          setReservations(prev =>
-                            prev.map((r, idx) =>
-                              idx === i ? { ...r, base_size: value } : r
-                            )
-                          );
-                        }}
-                        placeholder="volitelné"
-                      />
-                    </label>
-                  </div>
-                  <div className="mt-2">
-                    <label className="form-label mb-1" style={{ fontSize: "0.95em" }}>
-                      Možnost rozšíření (m²):
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        style={{ width: "100px", display: "inline-block", marginLeft: "8px" }}
-                        value={res.available_extension ?? ""}
-                        min={0}
-                        required
-                        onChange={e => {
-                          const value = Number(e.target.value);
-                          setReservations(prev =>
-                            prev.map((r, idx) =>
-                              idx === i ? { ...r, available_extension: value } : r
-                            )
-                          );
-                        }}
-                        placeholder="povinné"
-                      />
-                    </label>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+                    <div className="text-muted mt-1">
+                      [{res.x},{res.y}] → [{res.x + res.w - 1},{res.y + res.h - 1}]
+                    </div>
+                    {/* Editable fields */}
+                    <div className="mt-2">
+                      <label className="form-label mb-1" style={{ fontSize: "0.95em" }}>
+                        Základní velikost (m²):
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          style={{ width: "100px", display: "inline-block", marginLeft: "8px" }}
+                          value={res.base_size ?? ""}
+                          min={0}
+                          onChange={e => {
+                            const value = e.target.value === "" ? undefined : Number(e.target.value);
+                            setReservations(prev =>
+                              prev.map((r, idx) =>
+                                idx === i ? { ...r, base_size: value } : r
+                              )
+                            );
+                          }}
+                          placeholder="volitelné"
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-2">
+                      <label className="form-label mb-1" style={{ fontSize: "0.95em" }}>
+                        Možnost rozšíření (m²):
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          style={{ width: "100px", display: "inline-block", marginLeft: "8px" }}
+                          value={res.available_extension ?? ""}
+                          min={0}
+                          required
+                          onChange={e => {
+                            const value = Number(e.target.value);
+                            setReservations(prev =>
+                              prev.map((r, idx) =>
+                                idx === i ? { ...r, available_extension: value } : r
+                              )
+                            );
+                          }}
+                          placeholder="povinné"
+                        />
+                      </label>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </div>
           </Card>
         </Col>
       </Row>

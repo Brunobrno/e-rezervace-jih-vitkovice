@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.conf.urls.static import static
+from django.conf import settings
 
 from rest_framework import permissions
 
@@ -53,4 +55,5 @@ urlpatterns = [
 
     path('', views.index, name='index'),
     path('test/email', views.test_mail, name='test-email')
-]
+    
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
