@@ -43,78 +43,80 @@ import { UserProvider } from './context/UserContext';
 
 function App() {
   return (
-    <>
+    <div className="app-container">
       <UserProvider>
 
       
         <header>
           <NavBar />
         </header>
+        <main className="app-content">
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            // after user registers, they will be redirected from email, to the
+            email verification page
+            <Route path="/email-verification" element={<EmailVerificationPage />} />
+            <Route path="/email-verification/:uidb64/:token" element={<EmailVerificationPage />}/>
 
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          // after user registers, they will be redirected from email, to the
-          email verification page
-          <Route path="/email-verification" element={<EmailVerificationPage />} />
-          <Route path="/email-verification/:uidb64/:token" element={<EmailVerificationPage />}/>
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
 
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/reset-password/:uidb64/:token" element={<ResetPasswordPage />}/>
+            {/*test*/}
 
-          {/*test*/}
-
-          {/*<Route path="/seller/reservation" element={<SelectReservation />} />*/}
-
-          
-          {/* AUTHENTICATED */}
-          <Route element={<RequireAuthLayout />}>
-            <Route path="/tickets" element={<Ticket />} />
-
-            <Route path="/home" element={<Home />} />
+            {/*<Route path="/seller/reservation" element={<SelectReservation />} />*/}
 
             
+            {/* AUTHENTICATED */}
+            <Route element={<RequireAuthLayout />}>
+              <Route path="/tickets" element={<Ticket />} />
 
-            <Route path="/settings" element={<UserSettings />} />
-            
-            <Route path="/payment/:orderId" element={<PaymentPageWrapper />} />
+              <Route path="/home" element={<Home />} />
 
-            {/* ADMIN */}
-            <Route element={<RequireRole roles={["admin"]} />}>
-              <Route path="/test" element={<Test />} />
-            </Route>
-
-            {/* SELLER && ADMIN */}
-            <Route element={<RequireRole roles={["seller", "admin"]} />}>
-              <Route path="/create-reservation" element={<ReservationCart />} />
-            </Route>
-
-            {/* CLERK & ADMIN */}
-            <Route element={<RequireRole roles={[ "admin"]} />}>
-
-              <Route path="/manage/users" element={<Users />} />
-              <Route path="/manage/users/create" element={<CreateUser />} />
-
-              <Route path="/manage/squares" element={<Squares />} />
-              <Route path="/manage/squares/designer" element={<SquareDesigner />} /> {/* Designer for squares (creation) */}
-
-              <Route path="/manage/reservations" element={<Reservations />} />
-              <Route path="/manage/reservations/create" element={<Reservations />} />
-
-              <Route path="/manage/events" element={<Events />} />
-              <Route path="/manage/events/:id" element={<Events />} />
-              <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
-              <Route path="/manage/events/create" element={<CreateEvent />} />
-
-              <Route path="/manage/orders" element={<Orders />} />
               
-            </Route>
-          </Route>
-        </Routes>
-      </UserProvider>
 
-      <footer className="mt-auto">
+              <Route path="/settings" element={<UserSettings />} />
+              
+              <Route path="/payment/:orderId" element={<PaymentPageWrapper />} />
+
+              {/* ADMIN */}
+              <Route element={<RequireRole roles={["admin"]} />}>
+                <Route path="/test" element={<Test />} />
+              </Route>
+
+              {/* SELLER && ADMIN */}
+              <Route element={<RequireRole roles={["seller", "admin"]} />}>
+                <Route path="/create-reservation" element={<ReservationCart />} />
+              </Route>
+
+              {/* CLERK & ADMIN */}
+              <Route element={<RequireRole roles={[ "admin"]} />}>
+
+                <Route path="/manage/users" element={<Users />} />
+                <Route path="/manage/users/create" element={<CreateUser />} />
+
+                <Route path="/manage/squares" element={<Squares />} />
+                <Route path="/manage/squares/designer" element={<SquareDesigner />} /> {/* Designer for squares (creation) */}
+
+                <Route path="/manage/reservations" element={<Reservations />} />
+                <Route path="/manage/reservations/create" element={<Reservations />} />
+
+                <Route path="/manage/events" element={<Events />} />
+                <Route path="/manage/events/:id" element={<Events />} />
+                <Route path="/manage/events/map/:eventId" element={<MapEditor />} />
+                <Route path="/manage/events/create" element={<CreateEvent />} />
+
+                <Route path="/manage/orders" element={<Orders />} />
+                
+              </Route>
+            </Route>
+          </Routes>
+        </main>
+      </UserProvider>
+      
+
+      <footer className="mt-5 ">
         <p>
           eTržnice ©
           <a href="mailto:helpdesk@vitkovice.com">
@@ -124,7 +126,7 @@ function App() {
           |<a href="/test"> Nápověda</a>
         </p>
       </footer>
-    </>
+    </div>
   );
 }
 import { useParams } from "react-router-dom";
