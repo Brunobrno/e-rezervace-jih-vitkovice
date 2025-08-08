@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model, authenticate
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
 
 from .serializers import *
 from .permissions import *
@@ -9,7 +9,7 @@ from .models import CustomUser
 from .tokens import *
 from .filters import UserFilter
 
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
@@ -20,15 +20,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, AuthenticationFailed
 from django_filters.rest_framework import DjangoFilterBackend
 
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from django.conf import settings
-from celery.exceptions import OperationalError
 
 User = get_user_model()
 
 #general user view API
  
-
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 #---------------------------------------------TOKENY------------------------------------------------

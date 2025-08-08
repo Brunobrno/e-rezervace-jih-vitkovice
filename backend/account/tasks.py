@@ -72,10 +72,6 @@ def send_email_clerk_add_var_symbol_task(user_id):
     url = f"{settings.FRONTEND_URL}/clerk/add-var-symbol/{uid}/"
     message = f"Byl vytvořen nový uživatel:\n {user.firstname} {user.secondname} {user.email} .\n Doplňte variabilní symbol {url} ."
 
-    # if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-    #     logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
-
-    
     send_email_with_context(
         recipients=user.email,
         subject="Doplnění variabilního symbolu",
@@ -95,10 +91,6 @@ def send_email_clerk_accepted_task(user_id):
     token = account_activation_token.make_token(user)
 
     message = f"Úředník potvrdil vaší registraci. Můžete se přihlásit."
-
-
-    # if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-    #     logger.debug("\nEMAIL OBSAH:\n",message, "\nKONEC OBSAHU")
     
     send_email_with_context(
         recipients=user.email,

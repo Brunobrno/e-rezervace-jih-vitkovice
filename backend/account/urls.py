@@ -4,7 +4,7 @@ from .views import *
 
 
 router = DefaultRouter()
-router.register(r'users', UserView, basename='user') # change URL to plural users ?
+router.register(r'users', UserView, basename='users')
 
 urlpatterns = [
     path('', include(router.urls)),  # automaticky přidá všechny cesty z viewsetu
