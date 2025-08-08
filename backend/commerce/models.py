@@ -51,12 +51,12 @@ class Order(SoftDeleteModel):
         except Reservation.DoesNotExist:
             raise ValidationError("Neplatné ID Rezervace.")
 
-        try:
+        """try:
             user_obj = CustomUser.objects.get(pk=self.user_id)
             if reservation_obj.user != user_obj:
                 raise ValidationError("Tato rezervace naleží jinému Uživatelovi.")
         except CustomUser.DoesNotExist:
-            raise ValidationError("Neplatné ID Uživatele.")
+            raise ValidationError("Neplatné ID Uživatele.")"""
 
         # Overlapping sales window check
         overlapping = Order.objects.exclude(id=self.id).filter(

@@ -178,7 +178,7 @@ class MarketSlot(SoftDeleteModel):
     
     def delete(self, *args, **kwargs):
 
-        for reservation in self.marketslot_reservations.all():
+        for reservation in self.reservations.all():
             reservation.delete()
         # self.marketslot_reservations.all().update(is_deleted=True, deleted_at=timezone.now())
 
