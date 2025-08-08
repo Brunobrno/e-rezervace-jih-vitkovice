@@ -410,6 +410,7 @@ else:
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
+CELERY_ENABLED = os.getenv("CELERY_ENABLED")
 try:
     import redis
     # test connection
@@ -417,11 +418,11 @@ try:
     r.ping()
 except Exception:
     CELERY_BROKER_URL = 'memory://'
+    CELERY_ENABLED = False
 
 CELERY_ACCEPT_CONTENT = os.getenv("CELERY_ACCEPT_CONTENT")
 CELERY_TASK_SERIALIZER = os.getenv("CELERY_TASK_SERIALIZER")
 CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE")
-
 CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER")
 # if DEBUG:
 #     CELERY_BROKER_URL = 'redis://localhost:6379/0'

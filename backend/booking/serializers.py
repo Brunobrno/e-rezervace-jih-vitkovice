@@ -103,7 +103,7 @@ class ReservationSerializer(serializers.ModelSerializer):
     event = EventShortSerializer(read_only=True)
     user = UserShortSerializer(read_only=True)
     market_slot = serializers.PrimaryKeyRelatedField(
-        queryset=MarketSlot.objects.filter(is_deleted=False), required=True
+        queryset=MarketSlot.objects.all(), required=True
     )
 
     last_checked_by = UserShortSerializer(read_only=True)
@@ -132,14 +132,6 @@ class ReservationSerializer(serializers.ModelSerializer):
             "last_checked_by": {"help_text": "Kontrolor, který provedl poslední kontrolu.", "required": False, "read_only": True},
             "last_checked_at": {"help_text": "Čas kdy byla provedena poslední kontrola.", "required": False, "read_only": True}
         }
-
-    def to_internal_value(self, data):
-        # Accept both "market_slot" and legacy "marketSlot" keys for compatibility
-        if "marketSlot" in data and "market_slot" not in data:
-            data["market_slot"] = data["marketSlot"]
-        # Debug: log incoming data for troubleshooting
-        logger.debug(f"ReservationSerializer.to_internal_value input data: {data}")
-        return super().to_internal_value(data)
     
 
     def to_internal_value(self, data):
@@ -186,7 +178,6 @@ class ReservationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Pouze administrátor, úředník nebo správce tržiště může vytvářet rezervace pro jiné uživatele.")
 
 
-
         if user is None:
             raise serializers.ValidationError("Rezervace musí mít přiřazeného uživatele.")
         if user.user_reservations.filter(status="reserved").count() >= 5:
@@ -210,7 +201,8 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         # Define max allowed price based on model's decimal constraints (8 digits, 2 decimal places)
         MAX_FINAL_PRICE = Decimal("999999.99")
-
+        
+        #FIXME: Kamo to je hrozné!!!
         if user and getattr(user, "role", None) in privileged_roles:
             # 🧠 Automatický výpočet ceny rezervace pokud není zadána
             if not final_price or final_price == 0:
@@ -336,6 +328,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             if data.get("final_price") < 0:
                 raise serializers.ValidationError("Cena za m² nemůže být záporná.")
         else:
+            #TODO: Moožna 0 místo None?
             # Remove final_price if not privileged
             data.pop("final_price", None)
 
@@ -429,7 +422,7 @@ class MarketSlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketSlot
         fields = [
-            "id", "event", "number", "status",
+            "id", "title", "event", "number", "status",
             "base_size", "available_extension",
             "x", "y", "width", "height",
             "price_per_m2"
@@ -439,6 +432,7 @@ class MarketSlotSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "event": {"help_text": "ID akce (Event), ke které toto místo patří", "required": True},
             "number": {"help_text": "Pořadové číslo prodejního místa u Akce, ke které toto místo patří", "required": False},
+            "title": {"help_text": "Název tohoto prodejního místa", "required": False},
             "status": {"help_text": "Stav prodejního místa", "required": False},
             "base_size": {"help_text": "Základní velikost (m²)", "required": True},
             "available_extension": {"help_text": "Možnost rozšíření (m²)", "required": False, "default": 0},

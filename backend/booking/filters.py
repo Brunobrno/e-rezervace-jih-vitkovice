@@ -1,5 +1,5 @@
 import django_filters
-from .models import Event, Reservation
+from .models import Event, Reservation, MarketSlot
 
 class EventFilter(django_filters.FilterSet):
     start_after = django_filters.IsoDateTimeFilter(field_name="start", lookup_expr="gte")
@@ -12,7 +12,6 @@ class EventFilter(django_filters.FilterSet):
         fields = ["start_after", "end_before", "city", "square"]  # přidáno "square"
 
 
-
 class ReservationFilter(django_filters.FilterSet):
     event = django_filters.NumberFilter(field_name="event__id")
     user = django_filters.NumberFilter(field_name="user__id")
@@ -21,3 +20,16 @@ class ReservationFilter(django_filters.FilterSet):
     class Meta:
         model = Reservation
         fields = ["event", "user", "status"]
+
+
+class MarketSlotFilter(django_filters.FilterSet):
+    event = django_filters.NumberFilter(field_name="event__id")
+    event_name = django_filters.CharFilter(field_name="event__name", lookup_expr="icontains")
+    status = django_filters.ChoiceFilter(choices=MarketSlot.STATUS_CHOICES)
+    title = django_filters.CharFilter(lookup_expr="icontains")
+    number = django_filters.NumberFilter()
+
+    class Meta:
+        model = MarketSlot
+        fields = ["event", "event_name", "number", "status", "title"]
+

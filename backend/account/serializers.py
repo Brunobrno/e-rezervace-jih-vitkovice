@@ -1,17 +1,12 @@
 import re
+
 from django.utils.text import slugify
+from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.translation import gettext_lazy as _
+
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.utils.translation import gettext_lazy as _
-from django.utils.text import slugify
-
-from .permissions import *
-from .email import *
-
-
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import PermissionDenied  
 
@@ -67,6 +62,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         password = attrs.get("password")
 
         # Allow login by username or email
+        #TODO: email__iexact=login dává tohle smysl??
         user = User.objects.filter(email__iexact=login).first() or \
                User.objects.filter(username__iexact=login).first()
 
@@ -96,7 +92,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'phone_number', 'account_type',
-            'password','city', 'street', 'PSC', 'bank_account', 'RC', 'ICO', 'GDPR'
+            'password', 'city', 'street', 'PSC', 'bank_account', 'RC', 'ICO', 'GDPR'
         ]
         extra_kwargs = {
             'first_name': {'required': True, 'help_text': 'Křestní jméno uživatele'},

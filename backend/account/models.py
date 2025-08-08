@@ -1,7 +1,6 @@
-import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
-from django.core.validators import RegexValidator, MinLengthValidator, MaxValueValidator, MinValueValidator
+from django.core.validators import RegexValidator, MaxValueValidator, MinValueValidator
 
 from django.conf import settings
 from django.db import models
@@ -76,7 +75,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         ],
     )
     bank_account = models.CharField(
-        max_length=255,
+        max_length=50,
         null=True, 
         blank=True, 
         validators=[
@@ -87,7 +86,6 @@ class CustomUser(SoftDeleteModel, AbstractUser):
             )
         ],
     )
-
     ICO = models.CharField(
         max_length=8,
         blank=True,
@@ -101,6 +99,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         ]
     )
 
+    #TODO: Je RČ nutné? možná sjednotit do jednoho fieldu s IČO?
     RC = models.CharField(
         max_length=11,
         blank=True,
@@ -133,6 +132,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
 
     is_active = models.BooleanField(default=False)
 
+    # Custom object managers to handle SoftDelete model logic
     objects = CustomUserActiveManager()
     all_objects = CustomUserAllManager()
 
@@ -140,7 +140,8 @@ class CustomUser(SoftDeleteModel, AbstractUser):
 
 
     def __str__(self):
-        return f"{self.email} at {self.create_time.strftime('%d-%m-%Y %H:%M:%S')}"
+        # return f"{self.email} at {self.create_time.strftime('%d-%m-%Y %H:%M:%S')}"
+        return f"{self.username} {self.email}"
 
     def generate_login(self, first_name, last_name):
         """
@@ -185,7 +186,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         
         return super().save(*args, **kwargs)
 
-        # NEMAZAT prozatim to nechame, kdybychom to potrebovali
+        # NEMAZAT prozatim to necháme, kdybychom to potrebovali
 
         # Now assign permissions after user exists
         # if is_new and self.role:

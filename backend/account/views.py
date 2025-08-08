@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model, authenticate
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
 
 from .serializers import *
 from .permissions import *
@@ -9,7 +9,7 @@ from .models import CustomUser
 from .tokens import *
 from .filters import UserFilter
 
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
@@ -20,14 +20,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, AuthenticationFailed
 from django_filters.rest_framework import DjangoFilterBackend
 
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
-
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from django.conf import settings
 
 User = get_user_model()
 
 #general user view API
  
-
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 #---------------------------------------------TOKENY------------------------------------------------
@@ -264,15 +263,16 @@ class UserRegistrationViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-
-        try:
-            send_email_verification_task.delay(user.id) # posílaní emailu pro potvrzení registrace - CELERY TASK
-        except Exception as e:
-            logger.error(f"Celery not available, using fallback. Error: {e}")
-            send_email_verification_task(user.id) # posílaní emailu pro potvrzení registrace
-
-
-            
+        if getattr(settings, 'CELERY_ENABLED', False):
+            try:
+                send_email_verification_task.delay(user.id) # posílaní emailu pro potvrzení registrace - CELERY TASK
+            except Exception as e:
+                logger.error(f"Celery not available, using fallback. Error: {e}")
+                send_email_verification_task(user.id) # posílaní emailu pro potvrzení registrace
+        else:
+            logger.warning("\tCelery is disabled by settings. Falling back.")
+            send_password_reset_email_task(user.id)
+      
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
@@ -321,13 +321,16 @@ class UserActivationViewSet(APIView):
         serializer = UserActivationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-
-        try:
-            send_email_clerk_accepted_task.delay(user.id) # posílaní emailu pro informování uživatele o dokončení registrace, uředník doplnil variabilní symbol - CELERY TASK
-        except Exception as e:
-            logger.error(f"Celery not available, using fallback. Error: {e}")
-            send_email_clerk_accepted_task(user.id) # posílaní emailu pro informování uživatele o dokončení registrace, uředník doplnil variabilní symbol
-
+        if getattr(settings, 'CELERY_ENABLED', False):
+            try:
+                send_email_clerk_accepted_task.delay(user.id) # posílaní emailu pro informování uživatele o dokončení registrace, uředník doplnil variabilní symbol - CELERY TASK
+            except Exception as e:
+                logger.error(f"Celery not available, using fallback. Error: {e}")
+                send_email_clerk_accepted_task(user.id) # posílaní emailu pro informování uživatele o dokončení registrace, uředník doplnil variabilní symbol
+        else:
+            logger.warning("\tCelery is disabled by settings. Falling back.")
+            send_password_reset_email_task(user.id)
+        
         return Response(serializer.to_representation(user), status=status.HTTP_200_OK)
 
 #-------------------------------------------------END REGISTRACE-------------------------------------------------------------
@@ -352,16 +355,33 @@ class PasswordResetRequestView(APIView):
             except User.DoesNotExist:
                 # Always return 200 even if user doesn't exist to avoid user enumeration
                 return Response({"detail": "E-mail s odkazem byl odeslán."})
-            try:
-                send_password_reset_email_task.delay(user.id) # posílaní emailu pro obnovení hesla - CELERY TASK
-            except Exception as e:
-                logger.error(f"Celery not available, using fallback. Error: {e}")
-                send_password_reset_email_task(user.id) # posílaní emailu pro obnovení hesla registrace
+            # print("\n\n\t", getattr(settings, 'CELERY_ENABLED', False), "\n\n")
+            if getattr(settings, 'CELERY_ENABLED', False):
+                try:
+                    send_password_reset_email_task.delay(user.id)
+                    # logger.debug("Task queued")
+                except Exception as e:
+                    logger.warning(f"Celery send failed, fallback used: {e}")
+                    send_password_reset_email_task(user.id)
+            else:
+                logger.warning("\tCelery is disabled by settings. Falling back.")
+                send_password_reset_email_task(user.id)
+            # try:
+            #     if getattr(settings, "CELERY_ENABLED", False):
+            #         send_password_reset_email_task.delay(user.id)
+            #         logger.info("Password reset task sent to Celery")
+            #     else:
+            #         raise OperationalError("Celery is disabled by settings")
+            # except OperationalError as e:
+            #     logger.warning(f"Celery not used or failed: {e}. Falling back.")
+            #     send_password_reset_email_task(user.id)
+
 
             return Response({"detail": "E-mail s odkazem byl odeslán."})
         
         return Response(serializer.errors, status=400)
     
+
 #2. Confirming reset
 @extend_schema(
     tags=["User password reset"],

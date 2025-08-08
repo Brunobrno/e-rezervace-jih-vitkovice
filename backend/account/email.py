@@ -10,7 +10,7 @@ User = get_user_model()
 from django.conf import settings
 from rest_framework.response import Response
 
-
+# NEPOUŽIVAT -  použit Celery v account/tasks.py
 import logging
 logger = logging.getLogger(__name__)
 

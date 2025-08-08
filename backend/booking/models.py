@@ -7,7 +7,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from trznice.models import SoftDeleteModel
-from trznice.utils import truncate_to_minutes
+from trznice.utils import truncate_to_minutes # Kdybychom potřebovali zpatky vratit DateTimeField místo DateField
 
 
 #náměstí
@@ -70,11 +70,7 @@ class Square(SoftDeleteModel):
 
 
 class Event(SoftDeleteModel):
-    """Celé náměstí
-
-    Args:
-        models (args): w,h skutečné rozměry náměstí | x,y souřadnice levého horního rohu
-        
+    """Celé náměstí    
     """
     name = models.CharField(max_length=255, null=False, blank=False)
     description = models.TextField(blank=True, null=True)
@@ -86,7 +82,6 @@ class Event(SoftDeleteModel):
 
     price_per_m2 = models.DecimalField(max_digits=8, decimal_places=2, help_text="Cena za m² pro rezervaci", validators=[MinValueValidator(0)], null=False, blank=False)
 
-    
     image = models.ImageField(upload_to="squares-imgs/", blank=True, null=True)
 
 
@@ -116,6 +111,7 @@ class Event(SoftDeleteModel):
         return self.name
     
     def delete(self, *args, **kwargs):
+        #FIXME: check later if Bruno changed the related name
         for market_slot in self.event_marketSlots.all():
             market_slot.delete()
         # self.event_marketSlots.all().update(is_deleted=True, deleted_at=timezone.now())
@@ -127,6 +123,7 @@ class Event(SoftDeleteModel):
 
 class MarketSlot(SoftDeleteModel):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_marketSlots", null=False, blank=False)
+    title = models.CharField(max_length=255, null=True, blank=True)
 
     STATUS_CHOICES = [
         ("allowed", "Povoleno"),
@@ -163,6 +160,7 @@ class MarketSlot(SoftDeleteModel):
         # TODO: Fix this hovno logic, kdy uyivatel zada 0, se nastavi cena. Vymyslet neco noveho
         # If price_per_m2 is 0, use the event default
         # if self.event and hasattr(self.event, 'price_per_m2'):
+        # FIXME: Bruno smazal všechny validace
         if self.price_per_m2 == 0 and self.event and hasattr(self.event, 'price_per_m2'):
             self.price_per_m2 = self.event.price_per_m2
 
@@ -174,7 +172,7 @@ class MarketSlot(SoftDeleteModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Prodejní místo {self.number} na {self.event}"
+        return f"{self.title} prodejní místo {self.number} na {self.event}"
     
     def delete(self, *args, **kwargs):
 
@@ -191,7 +189,7 @@ class Reservation(SoftDeleteModel):
         ("reserved", "Zarezervováno"),
         ("cancelled", "Zrušeno"),
     ]
-
+    #TODO: potřebujeme Event? anebo jenom marketslot s eventem
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_reservations", null=False, blank=False)
     market_slot = models.ForeignKey(
         'MarketSlot',
@@ -203,6 +201,7 @@ class Reservation(SoftDeleteModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_reservations", null=False, blank=False)
     
     used_extension = models.FloatField(default=0 ,help_text="Použité rozšíření (m2)", validators=[MinValueValidator(0.0)])
+
     reserved_from = models.DateField(null=False, blank=False)
     reserved_to = models.DateField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -219,6 +218,8 @@ class Reservation(SoftDeleteModel):
         validators=[MinValueValidator(0)],
         help_text="Cena vypočtena automaticky na zakladě ceny za m² prodejního místa a počtu dní rezervace."
     )
+
+    #FIXME: Co je tohle?
     price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -241,6 +242,7 @@ class Reservation(SoftDeleteModel):
         related_name="reservations_checker"
     )
 
+
     def update_check_status(self):
         last_check = self.checks.filter(is_deleted=False).order_by("-checked_at").first()
         if last_check:
@@ -259,7 +261,9 @@ class Reservation(SoftDeleteModel):
         if not self.market_slot:
             raise ValidationError("Rezervace musí mít přiřazené prodejní místo.")
 
-        area = self.market_slot.width * self.market_slot.height
+        #TODO: Zkotrolovat, že Bruno se nezlobí. Upravil jsem plochu - ne podle mapy
+        # area = self.market_slot.width * self.market_slot.height
+        area = self.market_slot.base_size + self.used_extension
 
         price_per_m2 = None
         if self.market_slot.price_per_m2 and self.market_slot.price_per_m2 > 0:
@@ -285,19 +289,17 @@ class Reservation(SoftDeleteModel):
         # Remove truncate_to_minutes and timezone logic
         if self.reserved_from > self.reserved_to:
             raise ValidationError("Datum začátku rezervace musí být dříve než její konec.")
+        #FIXME: Nespadne to kvůli stejnému dni v DateFiels?
         if self.reserved_from == self.reserved_to:
             raise ValidationError("Začátek a konec rezervace nemohou být stejné.")
 
         # Only check for overlapping reservations on the same market_slot
-        if self.market_slot:
-            overlapping = Reservation.objects.exclude(id=self.id).filter(
-                market_slot=self.market_slot,
-                status="reserved",
-                reserved_from__lt=self.reserved_to,
-                reserved_to__gt=self.reserved_from,
-            )
-        else:
-            raise ValidationError("Rezervace musí mít v sobě prodejní místo (MarketSlot).")
+        overlapping = Reservation.objects.exclude(id=self.id).filter(
+            market_slot=self.market_slot,
+            status="reserved",
+            reserved_from__lt=self.reserved_to,
+            reserved_to__gt=self.reserved_from,
+        )
 
         if overlapping.exists():
             raise ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
@@ -331,6 +333,7 @@ class Reservation(SoftDeleteModel):
 
 
     def save(self, *args, validate=True, **kwargs):
+        #TODO validate to je co?
         if validate:
             self.full_clean()
 

@@ -49,6 +49,8 @@ class PriceCalculationSerializer(serializers.Serializer):
         if not event or not event.square:
             raise serializers.ValidationError("Slot musí být přiřazen k akci, která má náměstí.")
 
+        #FIXME: Pročmáme 2 PriceCalculateSerializer??? Vzorec ceny není spravný: 
+        #TODO: Spavný vzorec: area = self.market_slot.base_size + self.used_extension
         # Get width and height from market_slot
         area = market_slot.width * market_slot.height
 

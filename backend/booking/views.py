@@ -9,7 +9,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRespon
 
 from .models import Event, Reservation, MarketSlot, Square, ReservationCheck
 from .serializers import EventSerializer, ReservationSerializer, MarketSlotSerializer, SquareSerializer, ReservationAvailabilitySerializer, ReservedDaysSerializer, ReservationCheckSerializer
-from .filters import EventFilter, ReservationFilter
+from .filters import EventFilter, ReservationFilter, MarketSlotFilter
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
@@ -102,7 +102,8 @@ class MarketSlotViewSet(viewsets.ModelViewSet):
     queryset = MarketSlot.objects.all().order_by("event")
     serializer_class = MarketSlotSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ["event", "status"]
+    filterset_class = MarketSlotFilter
+    filterset_fields = ["event__name", "number", "status", "title"]
     ordering_fields = ["price_per_m2", "x", "y"]
 
     permission_classes = [RoleAllowed("admin", "squareManager")]
@@ -140,14 +141,14 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return queryset
 
     # Optionally, override create() to add logging or debug info
-    def create(self, request, *args, **kwargs):
-        logger = logging.getLogger(__name__)
-        logger.debug(f"Reservation create POST data: {request.data}")
-        try:
-            return super().create(request, *args, **kwargs)
-        except Exception as e:
-            logger.error(f"Error in ReservationViewSet.create: {e}", exc_info=True)
-            raise
+    # def create(self, request, *args, **kwargs):
+    #     logger = logging.getLogger(__name__)
+    #     logger.debug(f"Reservation create POST data: {request.data}")
+    #     try:
+    #         return super().create(request, *args, **kwargs)
+    #     except Exception as e:
+    #         logger.error(f"Error in ReservationViewSet.create: {e}", exc_info=True)
+    #         raise
     
     def perform_create(self, serializer):
         self._check_blocked_permission(serializer.validated_data)

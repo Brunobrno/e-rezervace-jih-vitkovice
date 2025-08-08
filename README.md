@@ -19,6 +19,10 @@ if run locally in backend folder:
 dont forget to run redis:
 docker run redis
 
+
+#----------------------Celery---------------------------
+#in .env file set CELERY_ENABLED=True
+
 #create scheduled tasks in db
 python manage.py seed_celery_beat
 
