@@ -201,7 +201,8 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         # Define max allowed price based on model's decimal constraints (8 digits, 2 decimal places)
         MAX_FINAL_PRICE = Decimal("999999.99")
-
+        
+        #FIXME: Kamo to je hrozné!!!
         if user and getattr(user, "role", None) in privileged_roles:
             # 🧠 Automatický výpočet ceny rezervace pokud není zadána
             if not final_price or final_price == 0:
