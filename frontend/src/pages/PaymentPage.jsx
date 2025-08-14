@@ -51,7 +51,7 @@ export default function PaymentPage({ orderId }) {
   const qrString = `SPD*1.0*ACC:${bankAccount}*AM:${amount}*CC:${currency}*X-VS:${varSymbol}`;
 
   return (
-  <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+  <Container className="d-flex justify-content-center align-items-center mt-5">
     <Card style={{ maxWidth: '800px', width: '100%' }} className="shadow">
       <Card.Body>
         <Card.Title className="text-center mb-4">ZAPLAŤTE OBJEDNÁVKU</Card.Title>
