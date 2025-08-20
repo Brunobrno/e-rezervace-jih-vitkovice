@@ -89,18 +89,7 @@ ipconfig /flushdns
 
 ```
 cd frontend
-npm config set strict-ssl false
-npm install --progress=false --cache
-
-npm install vite --save-de
-npm install -g npm@11.4.2
-npm i mantine-datatable clsx
-npm install @mantine/dates
-npm install dayjs
-npm install lodash
-npm install @tabler/icons-react
-npm install @apidevtools/swagger-parser
-npm install react-big-calendar date-fns
+npm install 
 
 
 
