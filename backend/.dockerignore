@@ -16,3 +16,5 @@ build/
 .idea/
 
 db.sqlite3
+celerybeat-schedule-shm
+celerybeat-schedule-wal
