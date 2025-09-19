@@ -123,6 +123,10 @@ if DEBUG:
 else:
     SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
+# Honor reverse proxy host/port even without SSL
+USE_X_FORWARDED_HOST = True
+# Optionally honor proto if you terminate SSL at proxy
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 SESSION_COOKIE_AGE = 86400  # one day
 
@@ -213,7 +217,7 @@ if USE_SSL is True:
     SECURE_SSL_REDIRECT = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    USE_X_FORWARDED_HOST = True
+    # USE_X_FORWARDED_HOST stays True (set above)
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 else:
     SESSION_COOKIE_SECURE = False
@@ -221,8 +225,7 @@ else:
     SECURE_SSL_REDIRECT = False
     SECURE_BROWSER_XSS_FILTER = False
     SECURE_CONTENT_TYPE_NOSNIFF = False
-    USE_X_FORWARDED_HOST = False
-
+    # USE_X_FORWARDED_HOST stays True (set above)
 print(f"\nUsing SSL: {USE_SSL}\n")
 
 #--------------------------------END-SSL 🧾---------------------------------
@@ -494,7 +497,7 @@ if USE_PRODUCTION_DB is False:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',  # Database engine
             'NAME': BASE_DIR / 'db.sqlite3',         # Path to the SQLite database file
-        } 
+        }
     }
 else:
     #PRODUCTION
@@ -606,10 +609,10 @@ if USE_AWS is False:
             "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
-
+    
     # Media and Static URL for local dev
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    MEDIA_URL = os.getenv("MEDIA_URL") # URL prefix for media files
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # Local folder for user-uploaded files
     
     STATIC_URL = '/static/'
 
