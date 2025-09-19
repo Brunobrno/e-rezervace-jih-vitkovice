@@ -157,13 +157,17 @@ CSRF_TRUSTED_ORIGINS = [
     'https://domena.cz',
     "https://www.domena.cz",
     "http://localhost:3000", #react docker
-    "http://localhost:5173"  #react dev
+    "http://localhost:5173",  #react dev
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
 ]
 
 if DEBUG:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",
         "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
     ]
 else:
     CORS_ALLOWED_ORIGINS = [
@@ -218,7 +222,7 @@ print(f"\nUsing SSL: {USE_SSL}\n")
 #-------------------------------------REST FRAMEWORK 🛠️------------------------------------
 
 # ⬇️ Základní lifetime konfigurace
-ACCESS_TOKEN_LIFETIME = timedelta(minutes=15)
+ACCESS_TOKEN_LIFETIME = timedelta(seconds=10)
 REFRESH_TOKEN_LIFETIME = timedelta(days=1)
 
 # ⬇️ Nastavení SIMPLE_JWT podle režimu
@@ -228,10 +232,12 @@ if DEBUG:
         "REFRESH_TOKEN_LIFETIME": REFRESH_TOKEN_LIFETIME,
 
         "AUTH_COOKIE": "access_token",
-        "AUTH_COOKIE_SECURE": False,         # není HTTPS
+        "AUTH_COOKIE_REFRESH": "refresh_token",
+        "AUTH_COOKIE_DOMAIN": None,
+        "AUTH_COOKIE_SECURE": False,              # není HTTPS
         "AUTH_COOKIE_HTTP_ONLY": True,
         "AUTH_COOKIE_PATH": "/",
-        "AUTH_COOKIE_SAMESITE": "Lax",       # není cross-site
+        "AUTH_COOKIE_SAMESITE": "Lax",            # není cross-site
 
         "ROTATE_REFRESH_TOKENS": True,
         "BLACKLIST_AFTER_ROTATION": True,
@@ -242,10 +248,12 @@ else:
         "REFRESH_TOKEN_LIFETIME": REFRESH_TOKEN_LIFETIME,
 
         "AUTH_COOKIE": "access_token",
-        "AUTH_COOKIE_SECURE": True,          # HTTPS only
+        "AUTH_COOKIE_REFRESH": "refresh_token",   # ensure refresh cookie is recognized/used
+        "AUTH_COOKIE_DOMAIN": None,
+        "AUTH_COOKIE_SECURE": True,               # HTTPS only
         "AUTH_COOKIE_HTTP_ONLY": True,
         "AUTH_COOKIE_PATH": "/",
-        "AUTH_COOKIE_SAMESITE": "None",      # potřebné pro cross-origin
+        "AUTH_COOKIE_SAMESITE": "None",           # potřebné pro cross-origin
 
         "ROTATE_REFRESH_TOKENS": True,
         "BLACKLIST_AFTER_ROTATION": True,
@@ -253,7 +261,7 @@ else:
 
 
 REST_FRAMEWORK = {
-    "DATETIME_FORMAT": "%Y-%m-%d %H:%M", # Pavel
+    "DATETIME_FORMAT": "%Y-%m-%d %H:%M",
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'account.tokens.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',

@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .serializers import *
 from .permissions import *
@@ -26,6 +29,9 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 User = get_user_model()
 
 #general user view API
+
+import logging
+logger = logging.getLogger(__name__)
  
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -39,7 +45,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView
     request=CustomTokenObtainPairSerializer,
     description="Authentication - získaš Access a Refresh token... lze do <username> vložit E-mail nebo username"
 )
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class CookieTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -63,18 +71,18 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             secure=jwt_settings.get("AUTH_COOKIE_SECURE", not settings.DEBUG),
             samesite=jwt_settings.get("AUTH_COOKIE_SAMESITE", "Lax"),
             path=jwt_settings.get("AUTH_COOKIE_PATH", "/"),
-            max_age=5 * 60,  # 5 minut
+            max_age=int(settings.ACCESS_TOKEN_LIFETIME.total_seconds()),
         )
 
         # Refresh token cookie
         response.set_cookie(
-            key="refresh_token",
+            key=jwt_settings.get("AUTH_COOKIE_REFRESH", "refresh_token"),
             value=refresh,
-            httponly=True,
-            secure=not settings.DEBUG,
-            samesite="Lax",
-            path="/",
-            max_age=7 * 24 * 60 * 60,  # 7 dní
+            httponly=jwt_settings.get("AUTH_COOKIE_HTTP_ONLY", True),
+            secure=jwt_settings.get("AUTH_COOKIE_SECURE", not settings.DEBUG),
+            samesite=jwt_settings.get("AUTH_COOKIE_SAMESITE", "Lax"),
+            path=jwt_settings.get("AUTH_COOKIE_PATH", "/"),
+            max_age=int(settings.REFRESH_TOKEN_LIFETIME.total_seconds()),
         )
 
         return response
@@ -103,9 +111,12 @@ class CookieTokenObtainPairView(TokenObtainPairView):
     summary="Refresh JWT token using cookie",
     description="Refresh JWT token"
 )
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class CookieTokenRefreshView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        refresh_token = request.COOKIES.get('refresh_token')
+        refresh_token = request.COOKIES.get('refresh_token') or request.data.get('refresh')
         if not refresh_token:
             return Response({"detail": "Refresh token cookie not found."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -119,32 +130,34 @@ class CookieTokenRefreshView(APIView):
                 "refresh": new_refresh_token,
             })
 
-            # Nastav nové HttpOnly cookies
-            # Access token cookie (např. 5 minut platnost)
+            jwt_settings = settings.SIMPLE_JWT
+
+            # Access token cookie
             response.set_cookie(
-                "access_token",
-                access_token,
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                max_age=5 * 60,
-                path="/",
+                key=jwt_settings.get("AUTH_COOKIE", "access_token"),
+                value=access_token,
+                httponly=jwt_settings.get("AUTH_COOKIE_HTTP_ONLY", True),
+                secure=jwt_settings.get("AUTH_COOKIE_SECURE", not settings.DEBUG),
+                samesite=jwt_settings.get("AUTH_COOKIE_SAMESITE", "Lax"),
+                path=jwt_settings.get("AUTH_COOKIE_PATH", "/"),
+                max_age=int(5),
             )
 
-            # Refresh token cookie (delší platnost, např. 7 dní)
+            # Refresh token cookie
             response.set_cookie(
-                "refresh_token",
-                new_refresh_token,
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                max_age=7 * 24 * 60 * 60,
-                path="/",
+                key=jwt_settings.get("AUTH_COOKIE_REFRESH", "refresh_token"),
+                value=new_refresh_token,
+                httponly=jwt_settings.get("AUTH_COOKIE_HTTP_ONLY", True),
+                secure=jwt_settings.get("AUTH_COOKIE_SECURE", not settings.DEBUG),
+                samesite=jwt_settings.get("AUTH_COOKIE_SAMESITE", "Lax"),
+                path=jwt_settings.get("AUTH_COOKIE_PATH", "/"),
+                max_age=int(settings.REFRESH_TOKEN_LIFETIME.total_seconds()),
             )
 
             return response
 
         except TokenError:
+            logger.error("Invalid refresh token used.")
             return Response({"detail": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
         
 #---------------------------------------------LOGIN/LOGOUT------------------------------------------------

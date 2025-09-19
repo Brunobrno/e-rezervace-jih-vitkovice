@@ -41,6 +41,10 @@ import ReservationCart from "./pages/Reservation-cart"
 
 import { UserProvider } from './context/UserContext';
 
+// Add products pages
+import Products from "./pages/manager/Products";
+import CreateProduct from "./pages/manager/create/create-product";
+
 function App() {
   return (
     <div className="app-container">
@@ -91,7 +95,7 @@ function App() {
               </Route>
 
               {/* CLERK & ADMIN */}
-              <Route element={<RequireRole roles={[ "admin"]} />}>
+              <Route element={<RequireRole roles={[ "admin"]} />} >
 
                 <Route path="/manage/users" element={<Users />} />
                 <Route path="/manage/users/create" element={<CreateUser />} />
@@ -108,6 +112,10 @@ function App() {
                 <Route path="/manage/events/create" element={<CreateEvent />} />
 
                 <Route path="/manage/orders" element={<Orders />} />
+
+                {/* Products */}
+                <Route path="/manage/products" element={<Products />} />
+                <Route path="/manage/products/create" element={<CreateProduct />} />
                 
               </Route>
             </Route>
