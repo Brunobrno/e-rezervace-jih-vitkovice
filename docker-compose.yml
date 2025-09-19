@@ -27,8 +27,6 @@ services:
     build:
       context: ./frontend
     container_name: frontend-e-trznice
-    ports:
-      - "3000:80"
     networks:
       - app_network
 
@@ -105,10 +103,10 @@ services:
       - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - static-data:/code/collectedstaticfiles  # Django statické soubory
-      - ./frontend/build:/usr/share/nginx/html  # React build
+      - static-data:/code/collectedstaticfiles
     depends_on:
       - backend
+      - frontend
     networks:
       - app_network
 
@@ -118,5 +116,7 @@ networks:
 
 volumes:
   redis-data:
+  db-data:
+  static-data:
   db-data:
   static-data:
