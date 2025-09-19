@@ -212,7 +212,7 @@ function Squares() {
       width: "8%",
       render: (row) =>
         row.image ? (
-          <img src={row.image} alt={row.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} />
+          <img src={getPublicUrl(row.image)} alt={row.name} style={{ width: "100px", height: "auto", borderRadius: "8px" }} />
         ) : (
           <Text c="dimmed" fs="italic">
             Žádný obrázek
@@ -312,7 +312,7 @@ function Squares() {
                   <p><strong>Počet událostí:</strong> {selectedSquare.events?.length || 0}</p>
                   <p><strong>Obrázek:</strong><br />
                     {selectedSquare.image
-                      ? <img src={selectedSquare.image} alt={selectedSquare.name} style={{ width: "100px", borderRadius: "8px" }} />
+                      ? <img src={getPublicUrl(selectedSquare.image)} alt={selectedSquare.name} style={{ width: "100px", borderRadius: "8px" }} />
                       : <span style={{ color: "#888", fontStyle: "italic" }}>Žádný obrázek</span>
                     }
                   </p>
