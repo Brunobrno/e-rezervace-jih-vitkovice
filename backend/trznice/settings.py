@@ -154,12 +154,12 @@ AUTHENTICATION_BACKENDS = [
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://domena.cz',
-    "https://www.domena.cz",
+    "https://itsolutions.vontor.cz",
     "http://localhost:3000", #react docker
     "http://localhost:5173",  #react dev
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://192.168.67.98"
 ]
 
 if DEBUG:
@@ -168,10 +168,12 @@ if DEBUG:
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
+        "http://192.168.67.98",
     ]
 else:
     CORS_ALLOWED_ORIGINS = [
-        "https://www.domena.cz",
+        "https://itsolutions.vontor.cz",
+        "https://itsolutions.vontor.cz",
     ]
 
 CORS_ALLOW_CREDENTIALS = True
