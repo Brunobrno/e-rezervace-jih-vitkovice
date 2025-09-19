@@ -79,6 +79,10 @@ Feel free to use or modify this table for your project!
  ```
  docker compose up --build
  ```
+## Vytvoření superuživatele na serveru v docker compose konfiguraci
+```
+sudo docker exec -it e-rezervace-jih-vitkovice-backend python manage.py createsuperuser
+```
 
 ## dns reset windows
 ```
