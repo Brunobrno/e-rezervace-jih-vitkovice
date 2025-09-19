@@ -27,7 +27,6 @@ services:
     build:
       context: ./frontend
     container_name: frontend-e-trznice
-    name: frontend-e-trznice
     ports:
       - "3000:80"  # Access on http://localhost:3000
     depends_on:
