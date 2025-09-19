@@ -184,7 +184,7 @@ else:
     ]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True  # Tohle musí být false, když používáš credentials
+CORS_ALLOW_ALL_ORIGINS = False  # Tohle musí být false, když používáš credentials
 
 print("CORS_ALLOWED_ORIGINS =", CORS_ALLOWED_ORIGINS)
 print("CSRF_TRUSTED_ORIGINS =", CSRF_TRUSTED_ORIGINS)
