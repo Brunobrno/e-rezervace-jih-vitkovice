@@ -154,7 +154,9 @@ AUTHENTICATION_BACKENDS = [
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
+    "http://192.168.67.98",
     "https://itsolutions.vontor.cz",
+
     "http://localhost:3000", #react docker
     "http://localhost:5173",  #react dev
     "http://127.0.0.1:3000",
@@ -168,11 +170,13 @@ if DEBUG:
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
+        
         "http://192.168.67.98",
+        "https://itsolutions.vontor.cz",
     ]
 else:
     CORS_ALLOWED_ORIGINS = [
-        "https://itsolutions.vontor.cz",
+        "http://192.168.67.98",
         "https://itsolutions.vontor.cz",
     ]
 
