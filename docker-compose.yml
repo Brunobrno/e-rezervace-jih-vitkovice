@@ -13,30 +13,28 @@ services:
       - db
       - redis
     volumes:
-      - static-data:/code/collectedstaticfiles   # přidáno
+      - static-data:/code/collectedstaticfiles
     command: sh -c "
       python manage.py check &&
       python manage.py collectstatic --clear --noinput --verbosity 3 &&
       python manage.py makemigrations --noinput &&
       python manage.py migrate --verbosity 3 --noinput &&
       gunicorn -k uvicorn.workers.UvicornWorker trznice.asgi:application --bind 0.0.0.0:8000"
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
 
   frontend:
     build:
       context: ./frontend
     container_name: frontend-e-trznice
     ports:
-      - "3000:80"  # Access on http://localhost:3000
+      - "3000:80"
     depends_on:
       - backend
     env_file:
       - ./frontend/.env
     networks:
       - app_network
-
-
 
   redis:
     container_name: redis-e-trznice
@@ -66,7 +64,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"   # Pokud chceš přistupovat i zvenčí (např. lokálně)
+      - "5432:5432"
     networks:
       - app_network
 
@@ -104,7 +102,6 @@ services:
     networks:
       - app_network
 
-  
   nginx:
     image: nginx:latest
     container_name: nginx-e-trznice
@@ -113,7 +110,7 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - static-data:/code/collectedstaticfiles
-      - ./frontend/build:/usr/share/nginx/html  # pokud chceš prod React build
+      - ./frontend/build:/usr/share/nginx/html
     depends_on:
       - backend
     networks:
@@ -126,8 +123,4 @@ networks:
 volumes:
   redis-data:
   db-data:
-  static-data: #django
-
-
-#OBNOVA ZÁLOHY (spustin vevnitř containeru databáze)
-#docker-compose run --rm db psql -U ${DATABASE_USER} -d ${DATABASE_NAME} -f /backups/<název-zálohy>.sql
+  static-data:
