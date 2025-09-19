@@ -22,16 +22,7 @@ services:
       gunicorn -k uvicorn.workers.UvicornWorker trznice.asgi:application --bind 0.0.0.0:8000"
     expose:
       - "8000"
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: dockerfile
-    container_name: frontend-e-trznice
-    networks:
-      - app_network
-    volumes:
-    - frontend-build:/usr/share/nginx/html
+    
 
   redis:
     container_name: redis-e-trznice
@@ -99,14 +90,31 @@ services:
     networks:
       - app_network
 
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    container_name: frontend-e-trznice
+    ports:
+      - "3000:80"
+    networks:
+      - app_network
+    depends_on:
+      - backend
+
   nginx:
     image: nginx:latest
     container_name: nginx-e-trznice
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
     ports:
       - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - static-data:/code/collectedstaticfiles
+      - frontend-build:/usr/share/nginx/html
     depends_on:
       - backend
       - frontend

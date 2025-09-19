@@ -5,6 +5,7 @@ COPY . .
 RUN npm install
 RUN npm run build
 
-# Copy build into shared volume at runtime
-FROM busybox AS copy
+FROM nginx:stable-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
