@@ -29,10 +29,6 @@ services:
     container_name: frontend-e-trznice
     ports:
       - "3000:80"
-    depends_on:
-      - backend
-    env_file:
-      - ./frontend/.env
     networks:
       - app_network
 
@@ -109,8 +105,8 @@ services:
       - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - static-data:/code/collectedstaticfiles
-      - ./frontend/build:/usr/share/nginx/html
+      - static-data:/code/collectedstaticfiles  # Django statické soubory
+      - ./frontend/build:/usr/share/nginx/html  # React build
     depends_on:
       - backend
     networks:
