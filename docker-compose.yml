@@ -1,6 +1,6 @@
 services:
   backend:
-    container_name: web-vontor-cz
+    container_name: backend-e-trznice
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -12,6 +12,8 @@ services:
     depends_on:
       - db
       - redis
+    volumes:
+      - static-data:/code/collectedstaticfiles   # přidáno
     command: sh -c "
       python manage.py check &&
       python manage.py collectstatic --clear --noinput --verbosity 3 &&
@@ -24,7 +26,8 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: frontend
+    container_name: frontend-e-trznice
+    name: frontend-e-trznice
     ports:
       - "3000:80"  # Access on http://localhost:3000
     depends_on:
@@ -37,7 +40,7 @@ services:
 
 
   redis:
-    container_name: redis-vontor-cz
+    container_name: redis-e-trznice
     image: redis:alpine
     restart: always
     env_file:
@@ -53,6 +56,7 @@ services:
 
   db:
     image: postgres:15-alpine
+    container_name: postgres-e-trznice
     restart: always
     environment:
       POSTGRES_USER: ${DATABASE_USER}
@@ -68,6 +72,7 @@ services:
       - app_network
 
   celery:
+    container_name: celery-e-trznice
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -84,6 +89,7 @@ services:
       - app_network
 
   celery-beat:
+    container_name: celery-beat-e-trznice
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -99,16 +105,20 @@ services:
     networks:
       - app_network
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared-vontor-cz
-    restart: always
-    command: tunnel --no-autoupdate run --token eyJhIjoiYmE0ODYwMDBiOWNkMDA0OWIyNTA2NzQyNTYyMjJhNjMiLCJ0IjoiODI4MzFiYzAtODFhZC00NDc5LWI2NTctOGE3YjZkZTE0ZDJiIiwicyI6Ik9EUTNPVEk0TmpZdFltTXhOQzAwTURjMkxXRmlNRFl0WVRCaFlUQTBObU15TURreCJ9
+  
+  nginx:
+    image: nginx:latest
+    container_name: nginx-e-trznice
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - static-data:/code/collectedstaticfiles
+      - ./frontend/build:/usr/share/nginx/html  # pokud chceš prod React build
     depends_on:
       - backend
     networks:
       - app_network
-
 
 networks:
   app_network:
@@ -117,6 +127,7 @@ networks:
 volumes:
   redis-data:
   db-data:
+  static-data: #django
 
 
 #OBNOVA ZÁLOHY (spustin vevnitř containeru databáze)
