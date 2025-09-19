@@ -30,6 +30,8 @@ services:
     container_name: frontend-e-trznice
     networks:
       - app_network
+    volumes:
+    - frontend-build:/usr/share/nginx/html
 
   redis:
     container_name: redis-e-trznice
@@ -119,3 +121,5 @@ volumes:
   redis-data:
   db-data:
   static-data:
+  frontend-build:
+
