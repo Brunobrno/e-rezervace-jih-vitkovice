@@ -481,7 +481,7 @@ function Home() {
       </Row>
 
       {/* TAB TABULKY */}
-      <Row className="my-5 mx-5">
+      <Row className="my-5 mx-5 bg-white">
         <Tabs defaultActiveKey="reservations" id="user-data-tabs" className="my-4 mx-2 d-flex">
           <Tab id="tabusek" eventKey="reservations" title="Rezervace">
               <Table

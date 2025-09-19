@@ -17,7 +17,8 @@ import {
   Text,
   MultiSelect,
   Stack,
-  Button
+  Button,
+  Badge
 } from "@mantine/core";
 import { IconSearch, IconX, IconEye, IconEdit, IconTrash, IconPlus, IconReceipt2 } from "@tabler/icons-react";
 import orderAPI from "../../api/model/order";
@@ -52,6 +53,8 @@ function Orders() {
     setError(null);
     setSubmitting(true);
     try {
+      // Explicitly send all formData fields, including status
+      console.log(formData);
       await orderAPI.updateOrder(selectedOrder.id, formData);
       setShowEditModal(false);
       setFormData({
@@ -135,6 +138,13 @@ function Orders() {
     { value: "payed", label: "Zaplaceno" },
     { value: "cancelled", label: "Stornováno" },
   ];
+
+  // Status colors
+  const statusColors = {
+    pending: "yellow",
+    payed: "green",
+    cancelled: "red",
+  };
 
   // Filtering
   const filteredOrders = useMemo(() => {
@@ -231,7 +241,12 @@ function Orders() {
       filtering: selectedStatus.length > 0,
       render: (row) => {
         const statusObj = statusOptions.find(opt => opt.value === row.status);
-        return statusObj ? statusObj.label : row.status;
+        const color = statusColors[row.status] || "gray";
+        return (
+          <Badge color={color} variant="light">
+            {statusObj ? statusObj.label : row.status}
+          </Badge>
+        );
       },
     },
     { accessor: "price_to_pay", title: "Cena", width: "8%" },
@@ -311,7 +326,12 @@ function Orders() {
                   <p><strong>Uživatel:</strong> {selectedOrder.user ? `${selectedOrder.user.first_name} ${selectedOrder.user.last_name} (${selectedOrder.user.email})` : "—"}</p>
                   <p><strong>Rezervace:</strong> {selectedOrder.reservation ? `ID: ${selectedOrder.reservation.id}` : "—"}</p>
                   <p><strong>Vytvořeno:</strong> {selectedOrder.created_at}</p>
-                  <p><strong>Stav:</strong> {selectedOrder.status}</p>
+                  <p>
+                    <strong>Stav:</strong>{" "}
+                    <Badge color={statusColors[selectedOrder.status] || "gray"} variant="light">
+                      {statusOptions.find(opt => opt.value === selectedOrder.status)?.label || selectedOrder.status}
+                    </Badge>
+                  </p>
                   <p><strong>Cena:</strong> {selectedOrder.price_to_pay}</p>
                   <p><strong>Zaplaceno dne:</strong> {selectedOrder.payed_at || "—"}</p>
                   <p><strong>Poznámka:</strong> {selectedOrder.note || "—"}</p>
@@ -337,7 +357,11 @@ function Orders() {
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Stav</Form.Label>
-                  <Form.Select name="status" value={formData.status} onChange={handleChange}>
+                  <Form.Select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                  >
                     <option value="">Vyberte stav</option>
                     {statusOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>

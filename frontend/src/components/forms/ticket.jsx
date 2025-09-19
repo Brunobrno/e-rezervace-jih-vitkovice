@@ -79,7 +79,7 @@ function TicketForm() {
     );
 
   return (
-    <Form onSubmit={handleSubmit} className="p-4 border rounded shadow-sm bg-light">
+    <Form onSubmit={handleSubmit} className="p-4 border rounded shadow-sm bg-light m-5">
       <h3>Odeslat Ticket</h3>
 
       {error && <Alert variant="danger">{error}</Alert>}

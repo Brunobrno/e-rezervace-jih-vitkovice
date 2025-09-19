@@ -9,7 +9,9 @@ from booking.models import Event, MarketSlot, Reservation
 from .models import Order
 
 from decimal import Decimal
+import logging
 
+logger = logging.getLogger(__name__)
 
 #počítaní ceny!!! (taky validní)
 class SlotPriceInputSerializer(serializers.Serializer):
@@ -98,7 +100,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "price_to_pay",
             "payed_at",
         ]
-        read_only_fields = ["id", "created_at", "status", "price_to_pay", "payed_at"]
+        read_only_fields = ["id", "created_at", "price_to_pay", "payed_at"]
         
         extra_kwargs = {
             "user_id": {"help_text": "ID uživatele, který objednávku vytvořil", "required": False},
@@ -168,6 +170,8 @@ class OrderSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         old_status = instance.status
         new_status = validated_data.get("status", old_status)
+
+        logger.debug(f"\n\nUpdating order {instance.id} from status {old_status} to {new_status}\n\n")
 
         if old_status != "payed" and new_status == "payed":
             validated_data["payed_at"] = timezone.now()

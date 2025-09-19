@@ -99,6 +99,16 @@ services:
     networks:
       - app_network
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-vontor-cz
+    restart: always
+    command: tunnel --no-autoupdate run --token eyJhIjoiYmE0ODYwMDBiOWNkMDA0OWIyNTA2NzQyNTYyMjJhNjMiLCJ0IjoiODI4MzFiYzAtODFhZC00NDc5LWI2NTctOGE3YjZkZTE0ZDJiIiwicyI6Ik9EUTNPVEk0TmpZdFltTXhOQzAwTURjMkxXRmlNRFl0WVRCaFlUQTBObU15TURreCJ9
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
 
 networks:
   app_network:

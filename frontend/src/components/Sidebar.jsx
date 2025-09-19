@@ -13,6 +13,7 @@ import {
   IconMapPin,
   IconUsers,
   IconReceipt2 ,
+  IconPackage,
 } from "@tabler/icons-react";
 
 function Sidebar() {
@@ -40,6 +41,10 @@ function Sidebar() {
         <Nav.Link href="/manage/orders" eventKey="link-5">
           <IconReceipt2 size={20} style={{ marginRight: 8, marginBottom: 2 }} />
           Objednávky
+        </Nav.Link>
+        <Nav.Link href="/manage/products" eventKey="link-6">
+          <IconPackage size={20} style={{ marginRight: 8, marginBottom: 2 }} />
+          Produkty
         </Nav.Link>
         <hr />
         <Nav.Link href="/manage/users" eventKey="link-4">

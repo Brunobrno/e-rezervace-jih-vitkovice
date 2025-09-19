@@ -349,8 +349,10 @@ class ReservationSerializer(serializers.ModelSerializer):
         if market_slot:
             if market_slot.event != event:
                 raise serializers.ValidationError("Prodejní místo nepatří do dané akce.")
+            
             if used_extension > market_slot.available_extension:
                 raise serializers.ValidationError("Požadované rozšíření překračuje dostupné rozšíření.")
+            
             overlapping = Reservation.objects.exclude(id=self.instance.id if self.instance else None).filter(
                 event=event,
                 market_slot=market_slot,
@@ -360,6 +362,7 @@ class ReservationSerializer(serializers.ModelSerializer):
             )
 
         if overlapping is not None and overlapping.exists():
+            logger.debug(f"ReservationSerializer.validate: Found overlapping reservations for market_slot {market_slot.id} in event {event.id}")
             raise serializers.ValidationError("Rezervace se překrývá s jinou rezervací na stejném místě.")
 
         return data

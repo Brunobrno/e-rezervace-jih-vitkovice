@@ -5,3 +5,15 @@
 .nav-tabs{
     margin: 0 !important;
 }
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1 0 auto;
+  /* Zabrání překrytí footerem */
+  overflow-y: scroll;
+}

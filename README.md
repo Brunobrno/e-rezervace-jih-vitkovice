@@ -15,33 +15,42 @@ python -m venv venv
 daphne -b localhost -p 8000 trznice.asgi:application
 ```
 
-if run locally in backend folder:
-dont forget to run redis:
+# if run locally in backend folder:
+## dont forget to run redis:
+```
 docker run redis
+```
 
-#create scheduled tasks in db
+## 1. create scheduled tasks in db
+```
 python manage.py seed_celery_beat
-
-#run CELERY Terminal 1 
+```
+## 2. run CELERY Terminal 1 
+```
 celery -A trznice worker --pool=solo --loglevel=info
+```
 
-#run CELERY BEAT Terminal 2
+## 3. run CELERY BEAT Terminal 2
+```
 celery -A trznice beat --loglevel=info
+```
 
+--------------------------------------------------------------------
 
-
-## django command that will use barebones settings.py for basic work
+# django command that will use barebones settings.py for basic work
 ```python manage.py runserver --settings=trznice.base_settings```
 
 
-## logovaní do dockeru (klasický print nefunguje kvůli bezpečnosti)
-```import logging
+# logovaní do dockeru (klasický print nefunguje kvůli bezpečnosti)
+```
+import logging
 
 logger = logging.getLogger(__name__)
-logger.debug("Tvoje hláška")```
+logger.debug("Tvoje hláška")
+```
 
 # Django Management Commands
-
+```
 | Command | Description | Example |
 |---------|-------------|---------|
 | `startproject <name>` | Create a new Django project | `python manage.py startproject myproject` |
@@ -60,34 +69,27 @@ logger.debug("Tvoje hláška")```
 | `dumpdata [app]` | Export database data as JSON | `python manage.py dumpdata myapp > data.json` |
 | `loaddata <file>` | Load data from a JSON file | `python manage.py loaddata data.json` |
 | `help` | Show available commands | `python manage.py help` |
-
+```
 Feel free to use or modify this table for your project!
 
 
 
-## docker compose
+# Docker Compose
  spuštění dockeru pro lokální hosting, s instantníma změnami během editace ve vscodu.
- ```docker compose up --build```
+ ```
+ docker compose up --build
+ ```
 
 ## dns reset windows
-```ipconfig /flushdns```
+```
+ipconfig /flushdns
+```
 
 # NPM
 
 ```
 cd frontend
-npm config set strict-ssl false
-npm install --progress=false --cache
-
-npm install vite --save-de
-npm install -g npm@11.4.2
-npm i mantine-datatable clsx
-npm install @mantine/dates
-npm install dayjs
-npm install lodash
-npm install @tabler/icons-react
-npm install @apidevtools/swagger-parser
-npm install react-big-calendar date-fns
+npm install 
 
 
 
@@ -95,4 +97,6 @@ npm i react-router-dom
 npm audit fix
 npm run dev
 ```
-```ipconfig /flushdns```
+```
+ipconfig /flushdns
+```

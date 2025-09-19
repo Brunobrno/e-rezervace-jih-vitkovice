@@ -10,10 +10,16 @@ const axios_instance = axios.create({
 axios_instance.defaults.xsrfCookieName = "csrftoken";
 axios_instance.defaults.xsrfHeaderName = "X-CSRFToken";
 
-export default axios_instance;
+// Axios instance without Authorization for auth endpoints (refresh/login/logout)
+const axios_no_auth = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+axios_no_auth.defaults.xsrfCookieName = "csrftoken";
+axios_no_auth.defaults.xsrfHeaderName = "X-CSRFToken";
 
-// 🔐 Axios response interceptor: automatická obnova při 401
-axios_instance.interceptors.request.use((config) => {
+// Minimal CSRF helper for authless client
+const addCsrfHeader = (config) => {
   const getCookie = (name) => {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {
@@ -28,95 +34,111 @@ axios_instance.interceptors.request.use((config) => {
     }
     return cookieValue;
   };
-
-  const csrfToken = getCookie("csrftoken");
-  if (csrfToken && ["post", "put", "patch", "delete"].includes(config.method)) {
-    config.headers["X-CSRFToken"] = csrfToken;
+  const token = getCookie("csrftoken");
+  const method = (config.method || "").toLowerCase();
+  if (token && ["post", "put", "patch", "delete"].includes(method)) {
+    config.headers["X-CSRFToken"] = token;
   }
-
+  // ensure no Authorization on authless client
+  if (config.headers && "Authorization" in config.headers) {
+    delete config.headers.Authorization;
+  }
   return config;
-});
+};
 
-// Přidej globální response interceptor pro redirect na login při 401 s detail hláškou
+// Attach CSRF only to authless client
+axios_no_auth.interceptors.request.use(addCsrfHeader);
+
+export default axios_instance;
+
+// REMOVE queue-based handler (isRefreshing, refreshSubscribers) and replace with simple logic
 axios_instance.interceptors.response.use(
-  response => response,
-  error => {
-    if (
-      error.response &&
-      error.response.status === 401 &&
-      error.response.data &&
-      error.response.data.detail === "Nebyly zadány přihlašovací údaje."
-    ) {
+  (response) => response,
+  async (error) => {
+    const { response, config } = error;
+    if (!response || response.status !== 401) return Promise.reject(error);
+
+    const originalRequest = config || {};
+    const url = (originalRequest?.url || "").toString();
+
+    // Skip auth endpoints, redirect directly
+    if (url.includes("/account/token/") || url.includes("/account/logout/")) {
       window.location.href = "/login";
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    if (originalRequest._retry) {
+      window.location.href = "/login";
+      return Promise.reject(error);
+    }
+    originalRequest._retry = true;
+
+    try {
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+      return axios_instance(originalRequest);
+    } catch (e) {
+      window.location.href = "/login";
+      return Promise.reject(e);
+    }
   }
 );
 
-// 🔄 Obnova access tokenu pomocí refresh cookie
+// 🔄 Obnova access tokenu pomocí refresh cookie (no Authorization header)
 export const refreshAccessToken = async () => {
   try {
-    const res = await axios_instance.post(`/account/token/refresh/`);
-    return res.data; // { access, refresh }
+    const res = await axios_no_auth.post(`/account/token/refresh/`, {});
+    if (res?.data?.access) {
+      axios_instance.defaults.headers.common.Authorization = `Bearer ${res.data.access}`;
+    }
+    return res.data;
   } catch (err) {
     console.error("Token refresh failed", err);
-    logout();
+    // do not call logout here; the interceptor will handle redirect/cleanup
     return null;
   }
 };
-
-
-// ✅ Přihlášení
+// ✅ Přihlášení (no Authorization header)
 export const login = async (username, password) => {
-  logout();
+  // ensure no stale Authorization header is present before login
+  if (axios_instance.defaults.headers.common.Authorization) {
+    delete axios_instance.defaults.headers.common.Authorization;
+  }
   try {
-    const response = await axios_instance.post(`/account/token/`, { username, password });
+    const response = await axios_no_auth.post(`/account/token/`, { username, password });
+    if (response?.data?.access) {
+      axios_instance.defaults.headers.common.Authorization = `Bearer ${response.data.access}`;
+    }
     return response.data;
   } catch (err) {
     if (err.response) {
-      // Server responded with a status code outside 2xx
-      console.log('Login error status:', err.response.status);
+      console.log("Login error status:", err.response.status);
     } else if (err.request) {
-      // Request was made but no response received
-      console.log('Login network error:', err.request);
+      console.log("Login network error:", err.request);
     } else {
-      // Something else happened
-      console.log('Login setup error:', err.message);
+      console.log("Login setup error:", err.message);
     }
     throw err;
   }
 };
 
-
 // ❌ Odhlášení s CSRF tokenem
 export const logout = async () => {
   try {
-    const getCookie = (name) => {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== "") {
-        const cookies = document.cookie.split(";");
-        for (let cookie of cookies) {
-          cookie = cookie.trim();
-          if (cookie.startsWith(name + "=")) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
-    };
-
-    const csrfToken = getCookie("csrftoken");
-
-    const response = await axios_instance.post(
+    const response = await axios_no_auth.post(
       "/account/logout/",
       {},
       {
         headers: {
-          "X-CSRFToken": csrfToken,
+          // CSRF header added by interceptor
         },
       }
     );
+    // Clear header-based auth if it was set
+    delete axios_instance.defaults.headers.common.Authorization;
     console.log(response.data);
     return response.data; // např. { detail: "Logout successful" }
   } catch (err) {
@@ -124,8 +146,6 @@ export const logout = async () => {
     throw err;
   }
 };
-
-
 
 // 📡 Obecný request (např. pro formuláře)
 export const apiRequest = async (method, endpoint, data = {}, config = {}) => {
@@ -141,32 +161,22 @@ export const apiRequest = async (method, endpoint, data = {}, config = {}) => {
     });
 
     return response.data;
-    
   } catch (err) {
     if (err.response) {
-      // Server odpověděl s kódem mimo rozsah 2xx
       console.error("API Error:", {
         status: err.response.status,
         data: err.response.data,
         headers: err.response.headers,
       });
     } else if (err.request) {
-      // Request byl odeslán, ale nedošla odpověď
       console.error("No response received:", err.request);
     } else {
-      // Něco jiného se pokazilo při sestavování requestu
       console.error("Request setup error:", err.message);
     }
 
     throw err;
   }
 };
-
-
-
-
-
-
 
 // 👤 Funkce pro získání aktuálně přihlášeného uživatele
 export async function getCurrentUser() {
@@ -183,7 +193,5 @@ export async function isAuthenticated() {
     return false; // pokud padne 401, není přihlášen
   }
 }
-
-
 
 export { axios_instance, API_URL };
